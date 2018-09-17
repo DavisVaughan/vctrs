@@ -1,0 +1,11 @@
+pandoc: '2.2'
+pkgdown: 1.1.0.9000
+pkgdown_sha: 8922bbd8e73ced6900d74eb51832bcfe7376dffc
+articles:
+  s3-vector: s3-vector.html
+  theory: theory.html
+  vctrs-vs-base: vctrs-vs-base.html
+urls:
+  reference: https://vctrs.r-lib.org/reference
+  article: https://vctrs.r-lib.org/articles
+

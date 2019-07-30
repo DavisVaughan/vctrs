@@ -82,7 +82,7 @@ static SEXP vec_c(SEXP xs,
     SEXP x = VECTOR_ELT(xs, i);
     SEXP elt = PROTECT(vec_cast(x, ptype, args_empty, args_empty));
 
-    init_compact_seq(idx_ptr, counter, counter + size);
+    init_compact_seq(idx_ptr, counter, counter + size - 1);
 
     if (is_shaped) {
       SEXP idx = PROTECT(r_seq(counter + 1, counter + size + 1));

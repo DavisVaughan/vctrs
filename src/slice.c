@@ -63,17 +63,19 @@ static void stop_bad_index_length(R_len_t n, R_len_t i) {
   return out
 
 #define SLICE_COMPACT_SEQ(RTYPE, CTYPE, DEREF, CONST_DEREF)           \
-  const CTYPE* data = CONST_DEREF(x);                                 \
-                                                                      \
   int* index_data = INTEGER(index);                                   \
-  R_len_t from = index_data[0];                                       \
-  R_len_t to = index_data[1];                                         \
-  R_len_t n = to - from;                                              \
+  R_len_t start = index_data[0];                                      \
+  R_len_t n = index_data[1];                                          \
+  R_len_t step = index_data[2];                                       \
+                                                                      \
+  const CTYPE* data = CONST_DEREF(x) + start;                         \
                                                                       \
   SEXP out = PROTECT(Rf_allocVector(RTYPE, n));                       \
   CTYPE* out_data = DEREF(out);                                       \
                                                                       \
-  memcpy(out_data, data + from, sizeof(CTYPE) * n);                   \
+  for (int i = 0; i < n; ++i, ++out_data, data += step) {             \
+    *out_data = *data;                                                \
+  }                                                                   \
                                                                       \
   UNPROTECT(1);                                                       \
   return out
@@ -145,17 +147,14 @@ static SEXP raw_slice(SEXP x, SEXP index) {
 
 #define SLICE_BARRIER_COMPACT_SEQ(RTYPE, GET, SET)  \
   int* index_data = INTEGER(index);                 \
-  R_len_t from = index_data[0];                     \
-  R_len_t to = index_data[1];                       \
-  R_len_t n = to - from;                            \
+  R_len_t start = index_data[0];                    \
+  R_len_t n = index_data[1];                        \
+  R_len_t step = index_data[2];                     \
                                                     \
   SEXP out = PROTECT(Rf_allocVector(RTYPE, n));     \
                                                     \
-  R_len_t j = from;                                 \
-                                                    \
-  for (R_len_t i = 0; i < n; ++i, ++j) {            \
-    SEXP elt = GET(x, j);                           \
-    SET(out, i, elt);                               \
+  for (R_len_t i = 0; i < n; ++i, start += step) {  \
+    SET(out, i, GET(x, start));                     \
   }                                                 \
                                                     \
   UNPROTECT(1);                                     \

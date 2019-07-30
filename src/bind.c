@@ -104,7 +104,7 @@ static SEXP vec_rbind(SEXP xs, SEXP ptype, SEXP names_to, enum name_repair_arg n
     }
 
     SEXP tbl = PROTECT(vec_cast(VECTOR_ELT(xs, i), ptype, args_empty, args_empty));
-    init_compact_seq(idx_ptr, counter, counter + size);
+    init_compact_seq(idx_ptr, counter, counter + size - 1);
     df_assign(out, idx, tbl, false);
 
     // Assign current name to group vector, if supplied
@@ -277,7 +277,7 @@ static SEXP vec_cbind(SEXP xs, SEXP ptype, SEXP size, enum name_repair_arg name_
     }
 
     R_len_t xn = Rf_length(x);
-    init_compact_seq(idx_ptr, counter, counter + xn);
+    init_compact_seq(idx_ptr, counter, counter + xn - 1);
     list_assign(out, idx, x, false);
 
     SEXP xnms = PROTECT(r_names(x));

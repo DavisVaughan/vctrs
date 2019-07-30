@@ -251,41 +251,58 @@ SEXP s3_find_method(const char* generic, SEXP x) {
 // Initialised at load time
 SEXP compact_seq_attrib = NULL;
 
+// p[0] = Start value
+// p[1] = Sequence size. Always >= 1.
+// p[2] = Increasing step if `from <= to`, decreasing step if `from > to`
 void init_compact_seq(int* p, R_len_t from, R_len_t to) {
+  int step = from <= to ? 1 : -1;
+  int size = abs(to - from) + 1;
+
   p[0] = from;
-  p[1] = to;
+  p[1] = size;
+  p[2] = step;
 }
 
 // Returns a compact sequence that `vec_slice()` understands
 // `from` and `to` are 0-based
-// The sequence is generated as `[from, to)`
+// The sequence is generated as `[from, to]`
 SEXP compact_seq(R_len_t from, R_len_t to) {
-  if (to < from) {
-    Rf_error("Internal error: Negative length in `compact_seq()`");
+  if (from < 0) {
+    Rf_error("Internal error: `from` must not be negative in `compact_seq()`.");
   }
 
-  SEXP seq = PROTECT(Rf_allocVector(INTSXP, 2));
+  if (to < 0) {
+    Rf_error("Internal error: `to` must not be negative in `compact_seq()`.");
+  }
 
-  int* p = INTEGER(seq);
+  SEXP info = PROTECT(Rf_allocVector(INTSXP, 3));
+
+  int* p = INTEGER(info);
   init_compact_seq(p, from, to);
 
-  SET_ATTRIB(seq, compact_seq_attrib);
+  SET_ATTRIB(info, compact_seq_attrib);
 
   UNPROTECT(1);
-  return seq;
+  return info;
 }
+
 bool is_compact_seq(SEXP x) {
   return ATTRIB(x) == compact_seq_attrib;
 }
 
 // Materialize a 1-based sequence
 SEXP compact_seq_materialize(SEXP x) {
-  R_len_t from = r_int_get(x, 0);
-  R_len_t to = r_int_get(x, 1);
-  R_len_t n = to - from;
+  int* p = INTEGER(x);
+  R_len_t start = p[0] + 1;
+  R_len_t n = p[1];
+  R_len_t step = p[2];
 
   SEXP out = PROTECT(Rf_allocVector(INTSXP, n));
-  r_int_fill_seq(out, from + 1, n);
+  int* out_data = INTEGER(out);
+
+  for (R_len_t i = 0; i < n; ++i, ++out_data, start += step) {
+    *out_data = start;
+  }
 
   UNPROTECT(1);
   return out;
@@ -350,7 +367,7 @@ R_len_t vec_index_size(SEXP x) {
   if (is_compact_rep(x)) {
     return r_int_get(x, 1);
   } else if (is_compact_seq(x)) {
-    return r_int_get(x, 1) - r_int_get(x, 0);
+    return r_int_get(x, 1);
   } else {
     return vec_size(x);
   }

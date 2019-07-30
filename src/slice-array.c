@@ -173,15 +173,17 @@ struct vec_slice_shaped_info {
   SEXP out = PROTECT(Rf_allocArray(RTYPE, info.out_dim));                      \
   CTYPE* out_data = DEREF(out);                                                \
                                                                                \
-  int from = info.p_index[0];                                                  \
-  int to = info.p_index[1];                                                    \
+  R_len_t original_size_index = info.p_index[0];                               \
+  R_len_t n = info.p_index[1];                                                 \
+  R_len_t step = info.p_index[2];                                              \
                                                                                \
   const CTYPE* x_data = CONST_DEREF(x);                                        \
                                                                                \
   for (int i = 0; i < info.shape_elem_n; ++i) {                                \
+    R_len_t size_index = original_size_index;                                  \
                                                                                \
     /* Find and add the next `x` element */                                    \
-    for (int size_index = from; size_index < to; ++size_index, ++out_data) {   \
+    for (int j = 0; j < n; ++j, size_index += step, ++out_data) {              \
       int loc = vec_strided_loc(                                               \
         size_index,                                                            \
         info.p_shape_index,                                                    \
@@ -323,15 +325,17 @@ static SEXP raw_slice_shaped(SEXP x, SEXP index, struct vec_slice_shaped_info in
 #define SLICE_BARRIER_SHAPED_COMPACT_SEQ(RTYPE, GET, SET)                      \
   SEXP out = PROTECT(Rf_allocArray(RTYPE, info.out_dim));                      \
                                                                                \
-  int from = info.p_index[0];                                                  \
-  int to = info.p_index[1];                                                    \
+  R_len_t original_size_index = info.p_index[0];                               \
+  R_len_t n = info.p_index[1];                                                 \
+  R_len_t step = info.p_index[2];                                              \
                                                                                \
   int out_loc = 0;                                                             \
                                                                                \
   for (int i = 0; i < info.shape_elem_n; ++i) {                                \
+    R_len_t size_index = original_size_index;                                  \
                                                                                \
     /* Find and add the next `x` element */                                    \
-    for (int size_index = from; size_index < to; ++size_index, ++out_loc) {    \
+    for (int j = 0; j < n; ++j, size_index += step, ++out_loc) {               \
       int loc = vec_strided_loc(                                               \
         size_index,                                                            \
         info.p_shape_index,                                                    \

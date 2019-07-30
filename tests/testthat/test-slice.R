@@ -443,6 +443,18 @@ test_that("can subset base vectors with compact seqs", {
   expect_identical(vec_slice_seq(list(1, 2, 3), from, to), list(2, 3))
 })
 
+test_that("can subset base vectors with decreasing compact seqs", {
+  from <- 2L
+  to <- 1L
+  expect_identical(vec_slice_seq(lgl(1, 0, 1), from, to), lgl(1, 0))
+  expect_identical(vec_slice_seq(int(1, 2, 3), from, to), int(3, 2))
+  expect_identical(vec_slice_seq(dbl(1, 2, 3), from, to), dbl(3, 2))
+  expect_identical(vec_slice_seq(cpl(1, 2, 3), from, to), cpl(3, 2))
+  expect_identical(vec_slice_seq(chr("1", "2", "3"), from, to), chr("3", "2"))
+  expect_identical(vec_slice_seq(bytes(1, 2, 3), from, to), bytes(3, 2))
+  expect_identical(vec_slice_seq(list(1, 2, 3), from, to), list(3, 2))
+})
+
 test_that("can subset shaped base vectors with compact seqs", {
   from <- 1L
   to <- 2L
@@ -454,6 +466,19 @@ test_that("can subset shaped base vectors with compact seqs", {
   expect_identical(vec_slice_seq(mat(chr("1", "2", "3")), from, to), mat(chr("2", "3")))
   expect_identical(vec_slice_seq(mat(bytes(1, 2, 3)), from, to), mat(bytes(2, 3)))
   expect_identical(vec_slice_seq(mat(list(1, 2, 3)), from, to), mat(list(2, 3)))
+})
+
+test_that("can subset shaped base vectors with decreasing compact seqs", {
+  from <- 2L
+  to <- 1L
+  mat <- as.matrix
+  expect_identical(vec_slice_seq(mat(lgl(1, 0, 1)), from, to), mat(lgl(1, 0)))
+  expect_identical(vec_slice_seq(mat(int(1, 2, 3)), from, to), mat(int(3, 2)))
+  expect_identical(vec_slice_seq(mat(dbl(1, 2, 3)), from, to), mat(dbl(3, 2)))
+  expect_identical(vec_slice_seq(mat(cpl(1, 2, 3)), from, to), mat(cpl(3, 2)))
+  expect_identical(vec_slice_seq(mat(chr("1", "2", "3")), from, to), mat(chr("3", "2")))
+  expect_identical(vec_slice_seq(mat(bytes(1, 2, 3)), from, to), mat(bytes(3, 2)))
+  expect_identical(vec_slice_seq(mat(list(1, 2, 3)), from, to), mat(list(3, 2)))
 })
 
 test_that("can subset object of any dimensionality with compact seqs", {
@@ -474,14 +499,17 @@ test_that("can subset data frames with compact seqs", {
   df <- data_frame(x = 1:5, y = letters[1:5])
   expect_equal(vec_slice_seq(df, 0L, 0L), vec_slice(df, 1L))
   expect_equal(vec_slice_seq(df, 0L, 2L), vec_slice(df, 1:3))
+  expect_equal(vec_slice_seq(df, 2L, 0L), vec_slice(df, 3:1))
 
   df$df <- df
   expect_equal(vec_slice_seq(df, 0L, 0L), vec_slice(df, 1L))
   expect_equal(vec_slice_seq(df, 0L, 2L), vec_slice(df, 1:3))
+  expect_equal(vec_slice_seq(df, 2L, 0L), vec_slice(df, 3:1))
 })
 
 test_that("can subset S3 objects using the fallback method with compact seqs", {
   x <- factor(c("a", "b", "c", "d"))
   expect_equal(vec_slice_seq(x, 0L, 0L), vec_slice(x, 1L))
   expect_equal(vec_slice_seq(x, 2L, 3L), vec_slice(x, 3:4))
+  expect_equal(vec_slice_seq(x, 3L, 2L), vec_slice(x, 4:3))
 })

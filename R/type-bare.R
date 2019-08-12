@@ -390,7 +390,7 @@ vec_cast.list.default <- function(x, to, ...) {
     return(vec_init(to, length(x)))
   }
 
-  out <- lapply(seq_along(x), function(i) x[[i]])
+  out <- lapply(vec_seq_along(x), function(i) vec_get(x, i))
 
   if (!is.object(to)) {
     out <- shape_broadcast(out, to)

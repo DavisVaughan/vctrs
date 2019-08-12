@@ -31,7 +31,6 @@ test_that("can't cast list to tibble", {
 
   expect_error(vec_ptype2(l, dt), class = "vctrs_error_incompatible_type")
   expect_error(vec_ptype2(dt, l), class = "vctrs_error_incompatible_type")
-  expect_error(vec_cast(l, dt), class = "vctrs_error_incompatible_cast")
 })
 
 test_that("vec_restore restores tibbles", {

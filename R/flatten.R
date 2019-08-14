@@ -67,11 +67,12 @@ flatten_impl <- function(x) {
   out
 }
 
+#' @export
 vctrs_flatten_vec <- function(x, ptype = list()) {
   flatten_vec_impl(x, ptype = ptype)
 }
 
-
+#' @export
 vctrs_flatten <- function(x) {
   flatten_impl(x)
 }

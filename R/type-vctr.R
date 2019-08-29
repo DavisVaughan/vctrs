@@ -60,8 +60,57 @@ new_vctr <- function(.data, ..., class = character()) {
   nms <- validate_names(.data)
   attrib <- list(names = nms, ..., class = c(class, "vctrs_vctr"))
 
-  vec_set_attributes(.data, attrib)
+  .data <- vec_set_attributes(.data, attrib)
+
+  .data <- asS4(.data)
+
+  # take care of ensuring the new classes are also S4-able
+  # (this makes method dispatch work correctly)
+  # c("x", "vctrs_vctr") will S3 dispatch -> `.vctrs_vctr` method
+  setOldClass(attrib$class)
+
+  .data
 }
+
+# Register an S4 class for vctrs_vctr objects that say that they
+# "contain" a vector object, allowing us to call `asS4()` on an
+# S3 vctrs_vctr
+setClass(
+  "vctrs_vctr",
+  contains = "vector"
+)
+
+# Declare the S3 vctrs_vctr class as usable in S4 methods, with
+# the above constructor as the one to use
+setOldClass(
+  "vctrs_vctr",
+  S4Class = "vctrs_vctr"
+)
+
+setMethod(
+  "show",
+  "vctrs_vctr",
+  function(object) {
+    obj_print(object)
+    invisible(object)
+  }
+)
+
+setMethod(
+  "+",
+  signature(e1 = "vctrs_vctr", e2 = "ANY"),
+  function(e1, e2) {
+    vec_arith("+", e1, e2)
+  }
+)
+
+setMethod(
+  "+",
+  signature(e1 = "ANY", e2 = "vctrs_vctr"),
+  function(e1, e2) {
+    vec_arith("+", e1, e2)
+  }
+)
 
 validate_names <- function(.data) {
   nms <- names(.data)
@@ -506,14 +555,7 @@ is.nan.vctrs_vctr <- function(x) {
 
 # Arithmetic --------------------------------------------------------------
 
-#' @export
-`+.vctrs_vctr` <- function(e1, e2) {
-  if (missing(e2)) {
-    vec_arith("+", e1, MISSING())
-  } else {
-    vec_arith("+", e1, e2)
-  }
-}
+
 
 #' @export
 `-.vctrs_vctr` <- function(e1, e2) {

@@ -67,10 +67,12 @@ new_vctr <- function(.data, ..., class = character()) {
   # take care of ensuring the new classes are also S4-able
   # (this makes method dispatch work correctly)
   # c("x", "vctrs_vctr") will S3 dispatch -> `.vctrs_vctr` method
-  setOldClass(attrib$class, where = globalenv())
+  setOldClass(attrib$class, where = old_class_env)
 
   .data
 }
+
+old_class_env <- new.env(parent = baseenv())
 
 # Register an S4 class for vctrs_vctr objects that say that they
 # "contain" a vector object, allowing us to call `asS4()` on an

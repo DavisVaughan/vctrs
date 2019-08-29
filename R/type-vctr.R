@@ -67,7 +67,7 @@ new_vctr <- function(.data, ..., class = character()) {
   # take care of ensuring the new classes are also S4-able
   # (this makes method dispatch work correctly)
   # c("x", "vctrs_vctr") will S3 dispatch -> `.vctrs_vctr` method
-  setOldClass(attrib$class)
+  setOldClass(attrib$class, where = globalenv())
 
   .data
 }

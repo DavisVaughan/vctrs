@@ -76,6 +76,10 @@ vec_data <- function(x) {
     x <- vec_set_attributes(x, list(names = names(x)))
   }
 
+  if (isS4(x)) {
+    x <- asS3(x)
+  }
+
   x
 }
 #' @rdname vec_data

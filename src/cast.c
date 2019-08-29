@@ -470,6 +470,10 @@ SEXP vec_restore_default(SEXP x, SEXP to) {
     Rf_setAttrib(x, R_ClassSymbol, class);
   }
 
+  if (IS_S4_OBJECT(to)) {
+    SET_S4_OBJECT(x);
+  }
+
   UNPROTECT(n_protect);
   return x;
 }

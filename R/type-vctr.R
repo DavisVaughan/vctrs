@@ -91,8 +91,7 @@ setMethod(
   "show",
   "vctrs_vctr",
   function(object) {
-    obj_print(object)
-    invisible(object)
+    print(object)
   }
 )
 

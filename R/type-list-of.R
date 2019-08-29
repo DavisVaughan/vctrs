@@ -123,9 +123,7 @@ vec_ptype_abbr.vctrs_list_of <- function(x, ...) {
 
 #' @export
 as.list.vctrs_list_of <- function(x, ...) {
-  attr(x, "ptype") <- NULL
-  attr(x, "class") <- NULL
-  x
+  vec_data(x)
 }
 #' @export
 as.character.vctrs_list_of <- function(x, ...) {

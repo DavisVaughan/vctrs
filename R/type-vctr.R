@@ -67,13 +67,15 @@ new_vctr <- function(.data, ..., class = character()) {
   # take care of ensuring the new classes are also S4-able
   # (this makes method dispatch work correctly)
   # c("x", "vctrs_vctr") will S3 dispatch -> `.vctrs_vctr` method
+  rlang::env_unlock(old_class_env)
+  rlang::env_binding_unlock(old_class_env, ".requireCachedGenerics")
   setOldClass(attrib$class, where = old_class_env)
 
   .data
 }
 
-# at a minimum, methods::initialize() generic needs to be defined here
-old_class_env <- new.env(parent = ns_env("methods"))
+# initialized in the onload()
+old_class_env <- emptyenv()
 
 # Register an S4 class for vctrs_vctr objects that say that they
 # "contain" a vector object, allowing us to call `asS4()` on an

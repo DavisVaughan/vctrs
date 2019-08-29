@@ -287,14 +287,14 @@ test_that("summary is unimplemented", {
 test_that("class preserved when subsetting", {
   h <- new_hidden(1:4)
 
-  expect_s3_class(h, "hidden")
-  expect_s3_class(h[1], "hidden")
-  expect_s3_class(h[[1]], "hidden")
-  expect_s3_class(rep(h[1], 2), "hidden")
-  expect_s3_class(as.list(h)[[1]], "hidden")
+  expect_is(h, "hidden")
+  expect_is(h[1], "hidden")
+  expect_is(h[[1]], "hidden")
+  expect_is(rep(h[1], 2), "hidden")
+  expect_is(as.list(h)[[1]], "hidden")
 
   length(h) <- 3
-  expect_s3_class(h, "hidden")
+  expect_is(h, "hidden")
 })
 
 test_that("RHS cast when using subset assign", {

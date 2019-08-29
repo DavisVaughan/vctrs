@@ -72,7 +72,8 @@ new_vctr <- function(.data, ..., class = character()) {
   .data
 }
 
-old_class_env <- new.env(parent = baseenv())
+# at a minimum, methods::initialize() generic needs to be defined here
+old_class_env <- new.env(parent = ns_env("methods"))
 
 # Register an S4 class for vctrs_vctr objects that say that they
 # "contain" a vector object, allowing us to call `asS4()` on an

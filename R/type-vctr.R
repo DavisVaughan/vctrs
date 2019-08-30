@@ -64,22 +64,69 @@ new_vctr <- function(.data, ..., class = character()) {
 
   .data <- asS4(.data)
 
-  # take care of ensuring the new classes are also S4-able
-  # (this makes method dispatch work correctly)
-  # c("x", "vctrs_vctr") will S3 dispatch -> `.vctrs_vctr` method
-  rlang::env_unlock(old_class_env)
-  rlang::env_binding_unlock(old_class_env, ".requireCachedGenerics")
-  setOldClass(attrib$class, where = old_class_env)
+  set_old_class(attrib$class)
 
   .data
 }
 
-# initialized in the onload()
-old_class_env <- emptyenv()
+# Take care of ensuring the new classes are also S4-able
+# (this makes method dispatch work correctly)
+# c("x", "vctrs_vctr") will S3 dispatch -> `.vctrs_vctr` method
+
+# We have to be very careful not to try and register the same class signature
+# twice. That seems to break things (in particular, method dispatch no longer
+# works for subclasses of vctrs_list_of. The polynomial class in the vignette
+# broke because of this problem)
+
+# The correct place to "set" the old class into is the vctrs namespace env.
+# The information is registered into a `.S3MethodsClasses` table, which is
+# created the first time we call `setOldClass()`.
+
+# We only want to unlock/re-lock after the package has been completely loaded
+# (which is the point at which it is locked). Otherwise we might prematurely
+# re-lock the environment by a call to `new_vctr()`, which happens in the
+# testthat helpers and causes problems
+
+# because we are inheriting from "vector" we need
+# "Ops" as a "required cached generic". see:
+# methods:::.checkRequiredGenerics and
+# get(".NeedPrimitiveMethods", envir = .methodsNamespace)
+
+# Set in .onLoad()
+ns_vctrs <- NULL
+
+set_old_class <- function(class) {
+  if (length(class) == 0L) {
+    return()
+  }
+
+  class1 <- class[[1L]]
+  s3_table <- ns_vctrs$.S3MethodsClasses
+
+  # Don't try and register the class if it already exists in the table
+  if (!is.null(s3_table) && vec_in(class1, names(s3_table))) {
+    return()
+  }
+
+  lock <- FALSE
+  if (env_is_locked(ns_vctrs)) {
+    lock <- TRUE
+    env_unlock(ns_vctrs)
+  }
+
+  env_binding_unlock(ns_vctrs, ".requireCachedGenerics")
+
+  methods::setOldClass(class, where = ns_vctrs)
+
+  if (lock) {
+    env_lock(ns_vctrs)
+  }
+}
 
 # Register an S4 class for vctrs_vctr objects that say that they
 # "contain" a vector object, allowing us to call `asS4()` on an
 # S3 vctrs_vctr
+
 setClass(
   "vctrs_vctr",
   contains = "vector"
@@ -92,6 +139,8 @@ setOldClass(
   S4Class = "vctrs_vctr"
 )
 
+#' @importFrom methods show
+#' @export
 setMethod(
   "show",
   "vctrs_vctr",
@@ -100,6 +149,7 @@ setMethod(
   }
 )
 
+#' @export
 setMethod(
   "+",
   signature(e1 = "vctrs_vctr", e2 = "ANY"),
@@ -108,6 +158,7 @@ setMethod(
   }
 )
 
+#' @export
 setMethod(
   "+",
   signature(e1 = "ANY", e2 = "vctrs_vctr"),
@@ -115,6 +166,71 @@ setMethod(
     vec_arith("+", e1, e2)
   }
 )
+
+#' @export
+setMethod(
+  "+",
+  signature(e1 = "vctrs_vctr", e2 = "missing"),
+  function(e1, e2) {
+    vec_arith("+", e1, MISSING())
+  }
+)
+
+#' @export
+cbind.vctrs_vctr <- function(...) {
+  vec_cbind(...)
+}
+
+#' @importFrom methods cbind2
+#' @export
+setMethod(
+  "cbind2",
+  signature(x = "vctrs_vctr", y = "ANY"),
+  function(x, y, ...) {
+    vec_cbind(x, y, ...)
+  }
+)
+
+#' @export
+setMethod(
+  "cbind2",
+  signature(x = "ANY", y = "vctrs_vctr"),
+  function(x, y, ...) {
+    vec_cbind(x, y, ...)
+  }
+)
+
+#' @export
+rbind.vctrs_vctr <- function(...) {
+  vec_rbind(...)
+}
+
+#' @export
+setMethod(
+  "c",
+  signature(x = "vctrs_vctr"),
+  function(x, ...) {
+    vec_c(x, ...)
+  }
+)
+
+#' For S4 methods that require a documentation entry but only clutter the index.
+#'
+#' @usage NULL
+#' @format NULL
+#' @keywords internal
+hidden_aliases <- NULL
+
+#' @name hidden_aliases
+#' @aliases
+#'   +,ANY,vctrs_vctr-method
+#'   +,vctrs_vctr,ANY-method
+#'   +,vctrs_vctr,missing-method
+#'   c,vctrs_vctr-method
+#'   cbind2,ANY,vctrs_vctr-method
+#'   cbind2,vctrs_vctr,ANY-method
+#'   show,vctrs_vctr-method
+NULL
 
 validate_names <- function(.data) {
   nms <- names(.data)

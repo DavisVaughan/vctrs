@@ -29,7 +29,7 @@
   }
 
   ns <- ns_env("vctrs")
-  env_bind(ns, old_class_env = ns)
+  env_bind(ns, ns_vctrs = ns)
   env_bind(ns, vec_set_attributes = vec_set_attributes)
 
   .Call(vctrs_init, ns_env())

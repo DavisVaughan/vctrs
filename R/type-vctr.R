@@ -112,13 +112,13 @@ set_old_class <- function(class) {
   if (env_is_locked(ns_vctrs)) {
     lock <- TRUE
     env_unlock(ns_vctrs)
+    env_binding_unlock(ns_vctrs, ".requireCachedGenerics")
   }
-
-  env_binding_unlock(ns_vctrs, ".requireCachedGenerics")
 
   methods::setOldClass(class, where = ns_vctrs)
 
   if (lock) {
+    env_binding_lock(ns_vctrs, ".requireCachedGenerics")
     env_lock(ns_vctrs)
   }
 }

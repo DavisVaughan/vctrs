@@ -30,6 +30,7 @@ Imports:
     ellipsis (>= 0.2.0),
     digest,
     glue,
+    methods,
     rlang (>= 0.4.0),
     zeallot
 Suggests: 

@@ -21,7 +21,7 @@
 #' @keywords internal
 new_rcrd <- function(fields, ..., class = character()) {
   check_fields(fields)
-  structure(fields, ..., class = c(class, "vctrs_rcrd", "vctrs_vctr"))
+  new_vctr(fields, ..., class = c(class, "vctrs_rcrd"))
 }
 
 check_fields <- function(fields) {
@@ -52,7 +52,7 @@ check_fields <- function(fields) {
 
 #' @export
 vec_proxy.vctrs_rcrd <- function(x, ...) {
-  new_data_frame(unclass(x))
+  new_data_frame(vec_data(unclass(x)))
 }
 #' @export
 vec_restore.vctrs_rcrd <- function(x, to, ...) {

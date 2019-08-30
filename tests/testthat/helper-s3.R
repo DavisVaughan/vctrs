@@ -48,6 +48,16 @@ scoped_foobar_proxy <- function(frame = caller_env()) {
 }
 
 subclass <- function(x) {
+  new_class <- c("vctrs_foo", "vctrs_foobar", class(x))
+
+  if (inherits(x, "vctrs_vctr")) {
+    new_class <- setdiff(new_class, "vctrs_vctr")
+    attrib <- attributes(x)
+    attrib$class <- new_class
+    x <- exec(new_vctr, x, !!!attrib)
+    return(x)
+  }
+
   class(x) <- c("vctrs_foo", "vctrs_foobar", class(x))
   x
 }

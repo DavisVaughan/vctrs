@@ -56,7 +56,7 @@ test_that("vec_proxy() is a no-op with data vectors", {
 
 test_that("vec_proxy() transforms records to data frames", {
   for (x in records) {
-    expect_identical(vec_proxy(x), new_data_frame(unclass(x)))
+    expect_identical(vec_proxy(x), new_data_frame(vec_data(unclass(x))))
   }
 })
 

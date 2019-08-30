@@ -86,7 +86,7 @@ is_list_of <- function(x) {
 
 #' @export
 vec_proxy.vctrs_list_of <- function(x, ...) {
-  unclass(x)
+  vec_data(unclass(x))
 }
 
 # Formatting --------------------------------------------------------------

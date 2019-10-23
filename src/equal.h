@@ -34,12 +34,7 @@ int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
 
 #define EQUAL_APPLY(FOR, SETUP, CODE)                                                                           \
   do {                                                                                                          \
-    enum vctrs_type type = vec_proxy_typeof(_x);                                                                \
-    if (type != vec_proxy_typeof(_y) || vec_size(_x) != vec_size(_y)) {                                         \
-      Rf_errorcall(R_NilValue, "`x` and `y` must have same types and lengths");                                 \
-    }                                                                                                           \
-                                                                                                                \
-    switch (type) {                                                                                             \
+    switch (vec_proxy_typeof(_x)) {                                                                             \
     case vctrs_type_logical:   EQUAL_ITERATE(FOR, SETUP, CODE, int, LOGICAL_RO, lgl_equal_scalar); break;       \
     case vctrs_type_integer:   EQUAL_ITERATE(FOR, SETUP, CODE, int, INTEGER_RO, int_equal_scalar); break;       \
     case vctrs_type_double:    EQUAL_ITERATE(FOR, SETUP, CODE, double, REAL_RO, dbl_equal_scalar); break;       \

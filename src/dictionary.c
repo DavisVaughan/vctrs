@@ -1,6 +1,7 @@
 #include "vctrs.h"
 #include "dictionary.h"
 #include "utils.h"
+#include "equal.h"
 
 // Initialised at load time
 struct vctrs_arg args_needles;
@@ -66,6 +67,39 @@ static void dict_init_impl(dictionary* d, SEXP x, bool partial) {
 
 uint32_t dict_hash_with(dictionary* d, dictionary* x, R_len_t i) {
   uint32_t hash = x->hash[i];
+
+  SEXP _x = d->vec;
+  SEXP _y = x->vec;
+  bool _na_equal = true;
+  R_len_t _j = i;
+
+  EQUAL_APPLY(
+  for (uint32_t k = 0; k < d->size; ++k),
+    // SETUP
+
+    uint32_t probe = (hash + k * (k + 1) / 2) & (d->size - 1);
+    // Rprintf("Probe: %i\n", probe);
+
+    // If we circled back to start, dictionary is full
+    if (k > 1 && probe == hash) {
+      break;
+    }
+
+    // Check for unused slot
+    R_len_t _i = d->key[probe];
+    if (_i == DICT_EMPTY) {
+      return probe;
+    },
+
+    // CORE
+
+    // Check for same value as there might be a collision. If there is
+    // a collision, next iteration will find another spot using
+    // quadratic probing.
+    if (_equal) {
+      return probe;
+    }
+  );
 
   // Quadratic probing: will try every slot if d->size is power of 2
   // http://research.cs.vt.edu/AVresearch/hashing/quadratic.php
@@ -320,8 +354,18 @@ SEXP vctrs_group_rle(SEXP x) {
 
   int pos = 1;
 
-  for (int i = 1; i < n; ++i) {
-    if (equal_scalar(x, i - 1, x, i, true)) {
+  int _i;
+  bool _na_equal = true;
+  SEXP _x = x;
+  SEXP _y = x;
+
+  EQUAL_APPLY(
+  for(int _j = 1; _j < n; ++_j),
+    // SETUP
+    _i = _j - 1;,
+
+    // CORE
+    if (_equal) {
       ++(*p_l);
       continue;
     }
@@ -330,10 +374,10 @@ SEXP vctrs_group_rle(SEXP x) {
     *p_l = 1;
 
     // Check if we have seen this value before
-    int32_t hash = dict_hash_scalar(&d, i);
+    int32_t hash = dict_hash_scalar(&d, _i);
 
     if (d.key[hash] == DICT_EMPTY) {
-      dict_put(&d, hash, i);
+      dict_put(&d, hash, _i);
       p_map[hash] = pos;
       p_g[pos] = d.used;
     } else {
@@ -341,7 +385,7 @@ SEXP vctrs_group_rle(SEXP x) {
     }
 
     ++pos;
-  }
+  );
 
   g = PROTECT_N(Rf_lengthgets(g, pos), &nprot);
   l = PROTECT_N(Rf_lengthgets(l, pos), &nprot);

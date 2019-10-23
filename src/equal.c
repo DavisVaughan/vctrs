@@ -1,15 +1,6 @@
 #include <math.h>
 #include "vctrs.h"
-
-static int lgl_equal_scalar(const int* x, const int* y, bool na_equal);
-static int int_equal_scalar(const int* x, const int* y, bool na_equal);
-static int dbl_equal_scalar(const double* x, const double* y, bool na_equal);
-static int raw_equal_scalar(const Rbyte* x, const Rbyte* y, bool na_equal);
-static int cpl_equal_scalar(const Rcomplex* x, const Rcomplex* y, bool na_equal);
-static int chr_equal_scalar(const SEXP* x, const SEXP* y, bool na_equal);
-static int list_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-
+#include "equal.h"
 
 // If `x` is a data frame, it must have been recursively proxied
 // beforehand
@@ -35,65 +26,36 @@ int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
   vctrs_stop_unsupported_type(vec_typeof(x), "equal_scalar()");
 }
 
-
-#define EQUAL(CTYPE, CONST_DEREF, SCALAR_EQUAL)         \
-  do {                                                  \
-    const CTYPE* xp = CONST_DEREF(x);                   \
-    const CTYPE* yp = CONST_DEREF(y);                   \
-                                                        \
-    for (R_len_t i = 0; i < n; ++i, ++xp, ++yp) {       \
-      p[i] = SCALAR_EQUAL(xp, yp, na_equal);            \
-    }                                                   \
-  }                                                     \
-  while (0)
-
-#define EQUAL_BARRIER(SCALAR_EQUAL)                     \
-  do {                                                  \
-    for (R_len_t i = 0; i < n; ++i) {                   \
-      p[i] = SCALAR_EQUAL(x, i, y, i, na_equal);        \
-    }                                                   \
-  }                                                     \
-  while (0)
-
 // [[ register() ]]
 SEXP vctrs_equal(SEXP x, SEXP y, SEXP na_equal_) {
   x = PROTECT(vec_proxy_recursive(x, vctrs_proxy_equal));
   y = PROTECT(vec_proxy_recursive(y, vctrs_proxy_equal));
 
-  enum vctrs_type type = vec_proxy_typeof(x);
-  if (type != vec_proxy_typeof(y) || vec_size(x) != vec_size(y)) {
-    Rf_errorcall(R_NilValue, "`x` and `y` must have same types and lengths");
-  }
-
-  bool na_equal = Rf_asLogical(na_equal_);
+  bool _na_equal = Rf_asLogical(na_equal_);
 
   R_len_t n = vec_size(x);
   SEXP out = PROTECT(Rf_allocVector(LGLSXP, n));
   int32_t* p = LOGICAL(out);
 
-  switch (type) {
-  case vctrs_type_logical:   EQUAL(int, LOGICAL_RO, lgl_equal_scalar); break;
-  case vctrs_type_integer:   EQUAL(int, INTEGER_RO, int_equal_scalar); break;
-  case vctrs_type_double:    EQUAL(double, REAL_RO, dbl_equal_scalar); break;
-  case vctrs_type_raw:       EQUAL(Rbyte, RAW_RO, raw_equal_scalar); break;
-  case vctrs_type_complex:   EQUAL(Rcomplex, COMPLEX_RO, cpl_equal_scalar); break;
-  case vctrs_type_character: EQUAL(SEXP, STRING_PTR_RO, chr_equal_scalar); break;
-  case vctrs_type_list:      EQUAL_BARRIER(list_equal_scalar); break;
-  case vctrs_type_dataframe: EQUAL_BARRIER(df_equal_scalar); break;
-  case vctrs_type_scalar:    Rf_errorcall(R_NilValue, "Can't compare scalars with `vctrs_equal()`");
-  default:                   Rf_error("Unimplemented type in `vctrs_equal()`");
-  }
+  int _j;
+  SEXP _x = x;
+  SEXP _y = y;
+
+  EQUAL_APPLY(
+  for(R_len_t _i = 0; _i < n; ++_i),
+    // SETUP
+    _j = _i;,
+    // CORE
+    p[_i] = _equal;
+  );
 
   UNPROTECT(3);
   return out;
 }
 
-#undef EQUAL
-#undef EQUAL_BARRIER
-
 // Storing pointed values on the stack helps performance for the
 // `!na_equal` cases
-static int lgl_equal_scalar(const int* x, const int* y, bool na_equal) {
+int lgl_equal_scalar(const int* x, const int* y, bool na_equal) {
   const int xi = *x;
   const int yj = *y;
   if (na_equal) {
@@ -102,7 +64,7 @@ static int lgl_equal_scalar(const int* x, const int* y, bool na_equal) {
     return (xi == NA_LOGICAL || yj == NA_LOGICAL) ? NA_LOGICAL : xi == yj;
   }
 }
-static int int_equal_scalar(const int* x, const int* y, bool na_equal) {
+int int_equal_scalar(const int* x, const int* y, bool na_equal) {
   const int xi = *x;
   const int yj = *y;
   if (na_equal) {
@@ -111,11 +73,11 @@ static int int_equal_scalar(const int* x, const int* y, bool na_equal) {
     return (xi == NA_INTEGER || yj == NA_INTEGER) ? NA_LOGICAL : xi == yj;
   }
 }
-static int raw_equal_scalar(const Rbyte* x, const Rbyte* y, bool na_equal) {
+int raw_equal_scalar(const Rbyte* x, const Rbyte* y, bool na_equal) {
   // Raw vectors have no notion of missing value
   return *x == *y;
 }
-static int dbl_equal_scalar(const double* x, const double* y, bool na_equal) {
+int dbl_equal_scalar(const double* x, const double* y, bool na_equal) {
   const double xi = *x;
   const double yj = *y;
   if (na_equal) {
@@ -127,7 +89,7 @@ static int dbl_equal_scalar(const double* x, const double* y, bool na_equal) {
   }
   return xi == yj;
 }
-static int cpl_equal_scalar(const Rcomplex* x, const Rcomplex* y, bool na_equal) {
+int cpl_equal_scalar(const Rcomplex* x, const Rcomplex* y, bool na_equal) {
   int real_equal = dbl_equal_scalar(&x->r, &y->r, na_equal);
   int imag_equal = dbl_equal_scalar(&x->i, &y->i, na_equal);
   if (real_equal == NA_LOGICAL || imag_equal == NA_LOGICAL) {
@@ -159,7 +121,7 @@ static int chr_equal_scalar_impl(const SEXP x, const SEXP y) {
   return 0;
 }
 
-static int chr_equal_scalar(const SEXP* x, const SEXP* y, bool na_equal) {
+int chr_equal_scalar(const SEXP* x, const SEXP* y, bool na_equal) {
   const SEXP xi = *x;
   const SEXP yj = *y;
   if (na_equal) {
@@ -169,11 +131,11 @@ static int chr_equal_scalar(const SEXP* x, const SEXP* y, bool na_equal) {
   }
 }
 
-static int list_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+int list_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
   return equal_object(VECTOR_ELT(x, i), VECTOR_ELT(y, j), na_equal);
 }
 
-static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
   if (!is_data_frame(y)) {
     return false;
   }

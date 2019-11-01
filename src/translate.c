@@ -92,8 +92,8 @@ static bool obj_any_known_encoding(SEXP x, R_len_t size) {
 // For usage on list elements. They have unknown size, and might be scalars.
 static bool elt_any_known_encoding(SEXP x) {
   switch(TYPEOF(x)) {
-  case STRSXP: return chr_any_known_encoding(x, vec_size(x));
-  case VECSXP: return is_data_frame(x) ? df_any_known_encoding(x, vec_size(x)) : list_any_known_encoding(x, vec_size(x));
+  case STRSXP: return chr_any_known_encoding(x, Rf_length(x));
+  case VECSXP: return is_data_frame(x) ? df_any_known_encoding(x, vec_size(x)) : list_any_known_encoding(x, Rf_length(x));
   default: return false;
   }
 }
@@ -148,7 +148,7 @@ static bool df_attr_any_known_encoding(SEXP x, R_len_t size);
 
 static bool obj_attr_any_known_encoding(SEXP x, R_len_t size) {
   if (TYPEOF(x) != VECSXP) {
-    return attr_any_known_encoding(ATTRIB(x));
+    return attr_any_known_encoding(x);
   }
 
   if (is_data_frame(x)) {
@@ -160,21 +160,27 @@ static bool obj_attr_any_known_encoding(SEXP x, R_len_t size) {
 
 static bool elt_attr_any_known_encoding(SEXP x) {
   if (TYPEOF(x) != VECSXP) {
-    return attr_any_known_encoding(ATTRIB(x));
+    return attr_any_known_encoding(x);
   }
 
   if (is_data_frame(x)) {
     return df_attr_any_known_encoding(x, vec_size(x));
   }
 
-  return list_attr_any_known_encoding(x, vec_size(x));
+  return list_attr_any_known_encoding(x, Rf_length(x));
 }
 
 // It is not possible for the attribute list to have names that are non UTF-8,
 // as they are converted with `installTrChar()` on the way in.
 
 static bool attr_any_known_encoding(SEXP x) {
-  for (SEXP node = x; node != R_NilValue; node = CDR(node)) {
+  SEXP attrib = ATTRIB(x);
+
+  if (attrib == R_NilValue) {
+    return false;
+  }
+
+  for (SEXP node = attrib; node != R_NilValue; node = CDR(node)) {
     if (elt_any_known_encoding(CAR(node))) {
       return true;
     }
@@ -184,7 +190,7 @@ static bool attr_any_known_encoding(SEXP x) {
 }
 
 static bool list_attr_any_known_encoding(SEXP x, R_len_t size) {
-  if (attr_any_known_encoding(ATTRIB(x))) {
+  if (attr_any_known_encoding(x)) {
     return true;
   }
 
@@ -200,7 +206,7 @@ static bool list_attr_any_known_encoding(SEXP x, R_len_t size) {
 }
 
 static bool df_attr_any_known_encoding(SEXP x, R_len_t size) {
-  if (attr_any_known_encoding(ATTRIB(x))) {
+  if (attr_any_known_encoding(x)) {
     return true;
   }
 
@@ -234,8 +240,8 @@ static SEXP obj_translate_encoding(SEXP x, R_len_t size) {
 // For usage on list elements. They have unknown size, and might be scalars.
 static SEXP elt_translate_encoding(SEXP x) {
   switch (TYPEOF(x)) {
-  case STRSXP: return chr_translate_encoding(x, vec_size(x));
-  case VECSXP: return is_data_frame(x) ? df_translate_encoding(x, vec_size(x)) : list_translate_encoding(x, vec_size(x));
+  case STRSXP: return chr_translate_encoding(x, Rf_length(x));
+  case VECSXP: return is_data_frame(x) ? df_translate_encoding(x, vec_size(x)) : list_translate_encoding(x, Rf_length(x));
   default: return x;
   }
 }
@@ -299,13 +305,13 @@ static SEXP df_translate_encoding(SEXP x, R_len_t size) {
 
 // -----------------------------------------------------------------------------
 
-static SEXP atomic_attr_translate_encoding(SEXP x);
+static SEXP attr_translate_encoding(SEXP x);
 static SEXP list_attr_translate_encoding(SEXP x, R_len_t size);
 static SEXP df_attr_translate_encoding(SEXP x, R_len_t size);
 
 static SEXP obj_attr_translate_encoding(SEXP x, R_len_t size) {
   if (TYPEOF(x) != VECSXP) {
-    return atomic_attr_translate_encoding(x);
+    return attr_translate_encoding(x);
   }
 
   if (is_data_frame(x)) {
@@ -317,44 +323,45 @@ static SEXP obj_attr_translate_encoding(SEXP x, R_len_t size) {
 
 static SEXP elt_attr_translate_encoding(SEXP x) {
   if (TYPEOF(x) != VECSXP) {
-    return atomic_attr_translate_encoding(x);
+    return attr_translate_encoding(x);
   }
 
   if (is_data_frame(x)) {
     return df_attr_translate_encoding(x, vec_size(x));
   }
 
-  return list_attr_translate_encoding(x, vec_size(x));
+  return list_attr_translate_encoding(x, Rf_length(x));
 }
 
-static SEXP attr_translate_encoding(SEXP attrib) {
+static SEXP attr_translate_encoding(SEXP x) {
+  SEXP attrib = ATTRIB(x);
+
   if (attrib == R_NilValue) {
-    return attrib;
+    return x;
   }
 
+  x = PROTECT(r_maybe_duplicate(x));
+
   SEXP elt;
-  attrib = PROTECT(r_maybe_duplicate(attrib));
+  attrib = PROTECT(Rf_shallow_duplicate(attrib));
 
   for (SEXP node = attrib; node != R_NilValue; node = CDR(node)) {
     elt = CAR(node);
-    SET_ATTRIB(elt, attr_translate_encoding(ATTRIB(elt)));
-    SETCAR(node, elt_translate_encoding(elt));
+    elt = PROTECT(attr_translate_encoding(elt));
+    elt = PROTECT(elt_translate_encoding(elt));
+    SETCAR(node, elt);
+    UNPROTECT(2);
   }
 
-  UNPROTECT(1);
-  return attrib;
-}
+  SET_ATTRIB(x, attrib);
 
-static SEXP atomic_attr_translate_encoding(SEXP x) {
-  x = PROTECT(r_maybe_duplicate(x));
-  SET_ATTRIB(x, attr_translate_encoding(ATTRIB(x)));
-  UNPROTECT(1);
+  UNPROTECT(2);
   return x;
 }
 
 static SEXP list_attr_translate_encoding(SEXP x, R_len_t size) {
   x = PROTECT(r_maybe_duplicate(x));
-  SET_ATTRIB(x, attr_translate_encoding(ATTRIB(x)));
+  x = PROTECT(attr_translate_encoding(x));
 
   SEXP elt;
 
@@ -363,13 +370,13 @@ static SEXP list_attr_translate_encoding(SEXP x, R_len_t size) {
     SET_VECTOR_ELT(x, i, elt_attr_translate_encoding(elt));
   }
 
-  UNPROTECT(1);
+  UNPROTECT(2);
   return x;
 }
 
 static SEXP df_attr_translate_encoding(SEXP x, R_len_t size) {
   x = PROTECT(r_maybe_duplicate(x));
-  SET_ATTRIB(x, attr_translate_encoding(ATTRIB(x)));
+  x = PROTECT(attr_translate_encoding(x));
 
   SEXP col;
   int n_col = Rf_length(x);
@@ -379,7 +386,7 @@ static SEXP df_attr_translate_encoding(SEXP x, R_len_t size) {
     SET_VECTOR_ELT(x, i, obj_attr_translate_encoding(col, size));
   }
 
-  UNPROTECT(1);
+  UNPROTECT(2);
   return x;
 }
 
@@ -489,12 +496,26 @@ static SEXP df_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t
 // - Does not assume that `x` and `y` are the same size.
 // - Returns a list holding `x` and `y` translated to their common encoding.
 
+SEXP obj_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
+SEXP obj_attr_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
+
 // [[ include("vctrs.h") ]]
 SEXP obj_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
-  switch (vec_proxy_typeof(x)) {
-  case vctrs_type_character: return chr_maybe_translate_encoding2(x, x_size, y, y_size);
-  case vctrs_type_list: return list_maybe_translate_encoding2(x, x_size, y, y_size);
-  case vctrs_type_dataframe: return df_maybe_translate_encoding2(x, x_size, y, y_size);
+  SEXP out = PROTECT(obj_maybe_translate_encoding2_impl(x, x_size, y, y_size));
+
+  x = VECTOR_ELT(out, 0);
+  y = VECTOR_ELT(out, 1);
+
+  out = PROTECT(obj_attr_maybe_translate_encoding2_impl(x, x_size, y, y_size));
+
+  UNPROTECT(2);
+  return out;
+}
+
+SEXP obj_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
+  switch (TYPEOF(x)) {
+  case STRSXP: return chr_maybe_translate_encoding2(x, x_size, y, y_size);
+  case VECSXP: return is_data_frame(x) ? df_maybe_translate_encoding2(x, x_size, y, y_size) : list_maybe_translate_encoding2(x, x_size, y, y_size);
   default: return translate_none(x, y);
   }
 }
@@ -556,6 +577,85 @@ static SEXP df_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t
     y_elt = VECTOR_ELT(y, i);
 
     translated = PROTECT(obj_maybe_translate_encoding2(x_elt, x_size, y_elt, y_size));
+
+    SET_VECTOR_ELT(x, i, VECTOR_ELT(translated, 0));
+    SET_VECTOR_ELT(y, i, VECTOR_ELT(translated, 1));
+
+    UNPROTECT(1);
+  }
+
+  SET_VECTOR_ELT(out, 0, x);
+  SET_VECTOR_ELT(out, 1, y);
+
+  UNPROTECT(3);
+  return out;
+}
+
+// -----------------------------------------------------------------------------
+
+static SEXP attr_maybe_translate_encoding2(SEXP x, SEXP y);
+static SEXP list_attr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
+static SEXP df_attr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
+
+SEXP obj_attr_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
+  if (TYPEOF(x) != VECSXP) {
+    return attr_maybe_translate_encoding2(x, y);
+  }
+
+  if (is_data_frame(x)) {
+    return df_attr_maybe_translate_encoding2(x, x_size, y, y_size);
+  }
+
+  return list_attr_maybe_translate_encoding2(x, x_size, y, y_size);
+}
+
+static SEXP attr_maybe_translate_encoding2(SEXP x, SEXP y) {
+  SEXP out = PROTECT(Rf_allocVector(VECSXP, 2));
+
+  if (attr_any_known_encoding(x) || attr_any_known_encoding(y)) {
+    SET_VECTOR_ELT(out, 0, attr_translate_encoding(x));
+    SET_VECTOR_ELT(out, 1, attr_translate_encoding(y));
+  } else {
+    SET_VECTOR_ELT(out, 0, x);
+    SET_VECTOR_ELT(out, 1, y);
+  }
+
+  UNPROTECT(1);
+  return out;
+}
+
+static SEXP list_attr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
+  SEXP out = PROTECT(Rf_allocVector(VECSXP, 2));
+
+  if (list_attr_any_known_encoding(x, x_size) || list_attr_any_known_encoding(y, y_size)) {
+    SET_VECTOR_ELT(out, 0, list_attr_translate_encoding(x, x_size));
+    SET_VECTOR_ELT(out, 1, list_attr_translate_encoding(y, y_size));
+  } else {
+    SET_VECTOR_ELT(out, 0, x);
+    SET_VECTOR_ELT(out, 1, y);
+  }
+
+  UNPROTECT(1);
+  return out;
+}
+
+static SEXP df_attr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
+  SEXP x_elt;
+  SEXP y_elt;
+  SEXP translated;
+
+  x = PROTECT(r_maybe_duplicate(x));
+  y = PROTECT(r_maybe_duplicate(y));
+
+  SEXP out = PROTECT(Rf_allocVector(VECSXP, 2));
+
+  int n_col = Rf_length(x);
+
+  for (int i = 0; i < n_col; ++i) {
+    x_elt = VECTOR_ELT(x, i);
+    y_elt = VECTOR_ELT(y, i);
+
+    translated = PROTECT(obj_attr_maybe_translate_encoding2_impl(x_elt, x_size, y_elt, y_size));
 
     SET_VECTOR_ELT(x, i, VECTOR_ELT(translated, 0));
     SET_VECTOR_ELT(y, i, VECTOR_ELT(translated, 1));

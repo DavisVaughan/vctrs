@@ -92,7 +92,7 @@ static bool obj_any_known_encoding(SEXP x, R_len_t size) {
 // For usage on list elements. They have unknown size, and might be scalars.
 static bool elt_any_known_encoding(SEXP x) {
   switch(TYPEOF(x)) {
-  case STRSXP: return chr_any_known_encoding(x, Rf_length(x));
+  case STRSXP: return chr_any_known_encoding(x, vec_size(x));
   case VECSXP: return is_data_frame(x) ? df_any_known_encoding(x, vec_size(x)) : list_any_known_encoding(x, Rf_length(x));
   default: return false;
   }
@@ -240,7 +240,7 @@ static SEXP obj_translate_encoding(SEXP x, R_len_t size) {
 // For usage on list elements. They have unknown size, and might be scalars.
 static SEXP elt_translate_encoding(SEXP x) {
   switch (TYPEOF(x)) {
-  case STRSXP: return chr_translate_encoding(x, Rf_length(x));
+  case STRSXP: return chr_translate_encoding(x, vec_size(x));
   case VECSXP: return is_data_frame(x) ? df_translate_encoding(x, vec_size(x)) : list_translate_encoding(x, Rf_length(x));
   default: return x;
   }
@@ -491,13 +491,13 @@ static SEXP chr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_
 static SEXP list_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
 static SEXP df_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
 
+static SEXP obj_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
+static SEXP obj_attr_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
+
 // Notes:
 // - Assumes that `x` and `y` are the same type from calling `vec_cast()`.
 // - Does not assume that `x` and `y` are the same size.
 // - Returns a list holding `x` and `y` translated to their common encoding.
-
-SEXP obj_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
-SEXP obj_attr_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
 
 // [[ include("vctrs.h") ]]
 SEXP obj_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
@@ -512,7 +512,7 @@ SEXP obj_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_siz
   return out;
 }
 
-SEXP obj_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
+static SEXP obj_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
   switch (TYPEOF(x)) {
   case STRSXP: return chr_maybe_translate_encoding2(x, x_size, y, y_size);
   case VECSXP: return is_data_frame(x) ? df_maybe_translate_encoding2(x, x_size, y, y_size) : list_maybe_translate_encoding2(x, x_size, y, y_size);
@@ -576,7 +576,9 @@ static SEXP df_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t
     x_elt = VECTOR_ELT(x, i);
     y_elt = VECTOR_ELT(y, i);
 
-    translated = PROTECT(obj_maybe_translate_encoding2(x_elt, x_size, y_elt, y_size));
+    translated = PROTECT(
+      obj_maybe_translate_encoding2(x_elt, x_size, y_elt, y_size)
+    );
 
     SET_VECTOR_ELT(x, i, VECTOR_ELT(translated, 0));
     SET_VECTOR_ELT(y, i, VECTOR_ELT(translated, 1));
@@ -597,7 +599,7 @@ static SEXP attr_maybe_translate_encoding2(SEXP x, SEXP y);
 static SEXP list_attr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
 static SEXP df_attr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size);
 
-SEXP obj_attr_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
+static SEXP obj_attr_maybe_translate_encoding2_impl(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
   if (TYPEOF(x) != VECSXP) {
     return attr_maybe_translate_encoding2(x, y);
   }
@@ -655,7 +657,9 @@ static SEXP df_attr_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_
     x_elt = VECTOR_ELT(x, i);
     y_elt = VECTOR_ELT(y, i);
 
-    translated = PROTECT(obj_attr_maybe_translate_encoding2_impl(x_elt, x_size, y_elt, y_size));
+    translated = PROTECT(
+      obj_attr_maybe_translate_encoding2_impl(x_elt, x_size, y_elt, y_size)
+    );
 
     SET_VECTOR_ELT(x, i, VECTOR_ELT(translated, 0));
     SET_VECTOR_ELT(y, i, VECTOR_ELT(translated, 1));

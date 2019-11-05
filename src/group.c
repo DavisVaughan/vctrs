@@ -82,8 +82,10 @@ SEXP vctrs_group_rle(SEXP x) {
 
   int pos = 1;
 
+  enum vctrs_type type = vec_proxy_typeof(x);
+
   for (int i = 1; i < n; ++i) {
-    if (equal_scalar(x, i - 1, x, i, true)) {
+    if (equal_scalar(x, i - 1, x, i, true, type)) {
       ++(*p_l);
       continue;
     }

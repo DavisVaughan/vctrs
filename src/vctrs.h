@@ -1,3 +1,6 @@
+#ifndef VCTRS_H
+#define VCTRS_H
+
 #define R_NO_REMAP
 #include <R.h>
 #include <Rinternals.h>
@@ -257,7 +260,7 @@ bool equal_names(SEXP x, SEXP y);
  *
  * The behaviour is undefined if these conditions are not true.
  */
-int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, enum vctrs_type type);
 int compare_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
 
 uint32_t hash_object(SEXP x);
@@ -337,4 +340,6 @@ void stop_recycle_incompatible_size(R_len_t x_size, R_len_t size)
 # define COMPLEX_RO(x) ((const Rcomplex*) COMPLEX(x))
 # define STRING_PTR_RO(x) ((const SEXP*) STRING_PTR(x))
 # define RAW_RO(x) ((const Rbyte*) RAW(x))
+#endif
+
 #endif

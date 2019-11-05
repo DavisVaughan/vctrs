@@ -1,6 +1,7 @@
 
 #define DICT_EMPTY -1
 
+#include "vctrs.h"
 
 // The dictionary structure is a little peculiar since R has no notion of
 // a scalar, so the `key`s are indexes into vector `x`. This means we can
@@ -10,6 +11,7 @@
 
 struct dictionary {
   SEXP vec;
+  enum vctrs_type type;
   R_len_t* key;
   uint32_t* hash;
   uint32_t size;

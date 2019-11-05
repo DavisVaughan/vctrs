@@ -15,18 +15,14 @@ static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
 // beforehand
 //
 // [[ include("vctrs.h") ]]
-int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
-  switch (TYPEOF(x)) {
-  case LGLSXP: return lgl_equal_scalar(LOGICAL(x) + i, LOGICAL(y) + j, na_equal);
-  case INTSXP: return int_equal_scalar(INTEGER(x) + i, INTEGER(y) + j, na_equal);
-  case REALSXP: return dbl_equal_scalar(REAL(x) + i, REAL(y) + j, na_equal);
-  case STRSXP: return chr_equal_scalar(STRING_PTR(x) + i, STRING_PTR(y) + j, na_equal);
-  case RAWSXP: return raw_equal_scalar(RAW(x) + i, RAW(y) + j, na_equal);
-  case CPLXSXP: return cpl_equal_scalar(COMPLEX(x) + i, COMPLEX(y) + j, na_equal);
-  default: break;
-  }
-
-  switch (vec_proxy_typeof(x)) {
+int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, enum vctrs_type type) {
+  switch (type) {
+  case vctrs_type_logical: return lgl_equal_scalar(LOGICAL(x) + i, LOGICAL(y) + j, na_equal);
+  case vctrs_type_integer: return int_equal_scalar(INTEGER(x) + i, INTEGER(y) + j, na_equal);
+  case vctrs_type_double: return dbl_equal_scalar(REAL(x) + i, REAL(y) + j, na_equal);
+  case vctrs_type_character: return chr_equal_scalar(STRING_PTR(x) + i, STRING_PTR(y) + j, na_equal);
+  case vctrs_type_raw: return raw_equal_scalar(RAW(x) + i, RAW(y) + j, na_equal);
+  case vctrs_type_complex: return cpl_equal_scalar(COMPLEX(x) + i, COMPLEX(y) + j, na_equal);
   case vctrs_type_list: return list_equal_scalar(x, i, y, j, na_equal);
   case vctrs_type_dataframe: return df_equal_scalar(x, i, y, j, na_equal);
   default: break;
@@ -189,8 +185,10 @@ static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) 
     return false;
   }
 
+  SEXP col;
   for (int k = 0; k < p; ++k) {
-    int eq = equal_scalar(VECTOR_ELT(x, k), i, VECTOR_ELT(y, k), j, na_equal);
+    col = VECTOR_ELT(x, k);
+    int eq = equal_scalar(col, i, VECTOR_ELT(y, k), j, na_equal, vec_proxy_typeof(col));
 
     if (eq <= 0) {
       return eq;

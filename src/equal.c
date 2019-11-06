@@ -8,8 +8,7 @@ static int raw_equal_scalar(const Rbyte* x, const Rbyte* y, bool na_equal);
 static int cpl_equal_scalar(const Rcomplex* x, const Rcomplex* y, bool na_equal);
 static int chr_equal_scalar(const SEXP* x, const SEXP* y, bool na_equal);
 static int list_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, int n_col);
-
+static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, int n_col, enum vctrs_type* types);
 
 // If `x` is a data frame, it must have been recursively proxied
 // beforehand
@@ -31,7 +30,9 @@ int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, enum vctrs
       Rf_errorcall(R_NilValue, "`x` and `y` must have the same number of columns");
     }
 
-    return df_equal_scalar(x, i, y, j, na_equal, n_col);
+    enum vctrs_type* types = df_col_proxy_typeof(x, n_col);
+
+    return df_equal_scalar(x, i, y, j, na_equal, n_col, types);
   }
   default: break;
   }
@@ -67,8 +68,10 @@ int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, enum vctrs
       Rf_errorcall(R_NilValue, "`x` and `y` must have the same number of columns"); \
     }                                                                               \
                                                                                     \
+    enum vctrs_type* types = df_col_proxy_typeof(x, n_col);                         \
+                                                                                    \
     for (R_len_t i = 0; i < n; ++i) {                                               \
-      p[i] = SCALAR_EQUAL(x, i, y, i, na_equal, n_col);                             \
+      p[i] = SCALAR_EQUAL(x, i, y, i, na_equal, n_col, types);                      \
     }                                                                               \
   }                                                                                 \
   while (0)
@@ -192,7 +195,7 @@ static int list_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal
   return equal_object(VECTOR_ELT(x, i), VECTOR_ELT(y, j), na_equal);
 }
 
-static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, int n_col) {
+static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, int n_col, enum vctrs_type* types) {
   SEXP x_col;
   SEXP y_col;
 
@@ -200,7 +203,7 @@ static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, 
     x_col = VECTOR_ELT(x, k);
     y_col = VECTOR_ELT(y, k);
 
-    int eq = equal_scalar(x_col, i, y_col, j, na_equal, vec_proxy_typeof(x_col));
+    int eq = equal_scalar(x_col, i, y_col, j, na_equal, types[k]);
 
     if (eq <= 0) {
       return eq;
@@ -441,18 +444,20 @@ do {                                                    \
 }                                                       \
 while (0)
 
-#define DUPLICATE_ALL_DF(SCALAR_EQUAL)                  \
-do {                                                    \
-  int n_col = Rf_length(x);                             \
-                                                        \
-  for (R_len_t i = 1; i < n; ++i) {                     \
-    if (SCALAR_EQUAL(x, 0, x, i, true, n_col)) {        \
-      continue;                                         \
-    }                                                   \
-    *p = false;                                         \
-    break;                                              \
-  }                                                     \
-}                                                       \
+#define DUPLICATE_ALL_DF(SCALAR_EQUAL)                    \
+do {                                                      \
+  int n_col = Rf_length(x);                               \
+                                                          \
+  enum vctrs_type* types = df_col_proxy_typeof(x, n_col); \
+                                                          \
+  for (R_len_t i = 1; i < n; ++i) {                       \
+    if (SCALAR_EQUAL(x, 0, x, i, true, n_col, types)) {   \
+      continue;                                           \
+    }                                                     \
+    *p = false;                                           \
+    break;                                                \
+  }                                                       \
+}                                                         \
 while (0)
 
 // [[ register() ]]

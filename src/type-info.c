@@ -109,17 +109,6 @@ enum vctrs_type vec_proxy_typeof(SEXP x) {
   return vec_base_typeof(x, true);
 }
 
-// [[ include("vctrs.h") ]]
-enum vctrs_type* df_col_proxy_typeof(SEXP x, int n) {
-  enum vctrs_type* types = (enum vctrs_type*)R_alloc(n, sizeof(enum vctrs_type));
-
-  for (int i = 0; i < n; ++i) {
-    types[i] = vec_proxy_typeof(VECTOR_ELT(x, i));
-  }
-
-  return types;
-}
-
 
 // [[ include("vctrs.h") ]]
 bool vec_is_vector(SEXP x) {

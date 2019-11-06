@@ -73,6 +73,8 @@ SEXP vctrs_group_rle(SEXP x) {
   SEXP map = PROTECT_N(Rf_allocVector(INTSXP, d.size), &nprot);
   int* p_map = INTEGER(map);
 
+  enum vctrs_type type = vec_proxy_typeof(x);
+
   // Initialize first value
   int32_t hash = dict_hash_scalar(&d, 0);
   dict_put(&d, hash, 0);
@@ -83,7 +85,7 @@ SEXP vctrs_group_rle(SEXP x) {
   int pos = 1;
 
   for (int i = 1; i < n; ++i) {
-    if (equal_scalar(x, i - 1, x, i, true)) {
+    if (equal_scalar(x, i - 1, x, i, true, type)) {
       ++(*p_l);
       continue;
     }

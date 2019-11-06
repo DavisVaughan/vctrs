@@ -38,6 +38,7 @@ void dict_init_partial(dictionary* d, SEXP x) {
 
 static void dict_init_impl(dictionary* d, SEXP x, bool partial) {
   d->vec = x;
+  d->type = vec_proxy_typeof(x);
   d->used = 0;
 
   if (partial) {
@@ -89,7 +90,7 @@ uint32_t dict_hash_with(dictionary* d, dictionary* x, R_len_t i) {
     // Check for same value as there might be a collision. If there is
     // a collision, next iteration will find another spot using
     // quadratic probing.
-    if (equal_scalar(d->vec, idx, x->vec, i, true)) {
+    if (equal_scalar(d->vec, idx, x->vec, i, true, d->type)) {
       return probe;
     }
   }

@@ -201,7 +201,7 @@ enum vctrs_proxy_kind {
 SEXP vec_proxy(SEXP x);
 SEXP vec_proxy_equal(SEXP x);
 SEXP vec_proxy_recursive(SEXP x, enum vctrs_proxy_kind kind);
-SEXP vec_restore(SEXP x, SEXP to, SEXP i);
+SEXP vec_restore(SEXP x, SEXP to, R_len_t n);
 R_len_t vec_size(SEXP x);
 R_len_t vec_size_common(SEXP xs, R_len_t absent);
 SEXP vec_dim(SEXP x);
@@ -236,7 +236,7 @@ bool is_record(SEXP x);
 R_len_t df_size(SEXP x);
 R_len_t df_rownames_size(SEXP x);
 R_len_t df_raw_size(SEXP x);
-SEXP vctrs_df_restore(SEXP x, SEXP to, SEXP n);
+SEXP vec_df_restore(SEXP x, SEXP to, R_len_t n);
 SEXP df_restore_impl(SEXP x, SEXP to, R_len_t size);
 
 SEXP chr_assign(SEXP out, SEXP index, SEXP value, bool clone);

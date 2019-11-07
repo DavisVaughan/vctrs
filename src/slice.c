@@ -279,7 +279,7 @@ static SEXP slice_rownames(SEXP names, SEXP index) {
 SEXP vec_slice_impl(SEXP x, SEXP index) {
   int nprot = 0;
 
-  SEXP restore_size = PROTECT_N(r_int(vec_index_size(index)), &nprot);
+  R_len_t restore_size = vec_index_size(index);
 
   struct vctrs_proxy_info info = vec_proxy_info(x);
   PROTECT_PROXY_INFO(&info, &nprot);
@@ -646,8 +646,7 @@ SEXP vctrs_as_index(SEXP i, SEXP n, SEXP names, SEXP convert_negative) {
  */
 struct vctrs_chop_info {
   struct vctrs_proxy_info proxy_info;
-  SEXP restore_size;
-  int* p_restore_size;
+  R_len_t restore_size;
   SEXP index;
   int* p_index;
   bool has_indices;
@@ -657,10 +656,9 @@ struct vctrs_chop_info {
 
 #define PROTECT_CHOP_INFO(info, n) do {       \
   PROTECT_PROXY_INFO(&(info)->proxy_info, n); \
-  PROTECT((info)->restore_size);              \
   PROTECT((info)->index);                     \
   PROTECT((info)->out);                       \
-  *n += 3;                                    \
+  *n += 2;                                    \
 } while (0)                                   \
 
 static struct vctrs_chop_info init_chop_info(SEXP x, SEXP indices) {
@@ -671,8 +669,7 @@ static struct vctrs_chop_info init_chop_info(SEXP x, SEXP indices) {
   info.proxy_info = vec_proxy_info(x);
   PROTECT_PROXY_INFO(&info.proxy_info, &nprot);
 
-  info.restore_size = PROTECT_N(r_int(1), &nprot);
-  info.p_restore_size = INTEGER(info.restore_size);
+  info.restore_size = 1;
 
   info.index = PROTECT_N(r_int(0), &nprot);
   info.p_index = INTEGER(info.index);
@@ -788,7 +785,7 @@ static SEXP chop(SEXP x, SEXP indices, struct vctrs_chop_info info) {
   for (R_len_t i = 0; i < info.out_size; ++i) {
     if (info.has_indices) {
       info.index = VECTOR_ELT(indices, i);
-      *info.p_restore_size = vec_size(info.index);
+      info.restore_size = vec_size(info.index);
     } else {
       ++(*info.p_index);
     }
@@ -858,7 +855,7 @@ static SEXP chop_df(SEXP x, SEXP indices, struct vctrs_chop_info info) {
   // Restore each data frame
   for (int i = 0; i < info.out_size; ++i) {
     if (info.has_indices) {
-      *info.p_restore_size = vec_size(VECTOR_ELT(indices, i));
+      info.restore_size = vec_size(VECTOR_ELT(indices, i));
     }
 
     elt = VECTOR_ELT(info.out, i);
@@ -883,7 +880,7 @@ static SEXP chop_shaped(SEXP x, SEXP indices, struct vctrs_chop_info info) {
   for (R_len_t i = 0; i < info.out_size; ++i) {
     if (info.has_indices) {
       info.index = VECTOR_ELT(indices, i);
-      *info.p_restore_size = vec_size(info.index);
+      info.restore_size = vec_size(info.index);
     } else {
       ++(*info.p_index);
     }
@@ -932,7 +929,7 @@ static SEXP chop_fallback(SEXP x, SEXP indices, struct vctrs_chop_info info) {
   for (R_len_t i = 0; i < info.out_size; ++i) {
     if (info.has_indices) {
       info.index = VECTOR_ELT(indices, i);
-      *info.p_restore_size = vec_size(info.index);
+      info.restore_size = vec_size(info.index);
 
       // Update `i` binding with the new index value
       Rf_defineVar(syms_i, info.index, env);

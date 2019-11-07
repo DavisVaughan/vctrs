@@ -86,9 +86,17 @@ uint32_t dict_hash_with(dictionary* d, dictionary* x, R_len_t i) {
       return probe;
     }
 
-    // Check for same value as there might be a collision. If there is
-    // a collision, next iteration will find another spot using
-    // quadratic probing.
+    // Probes are the same, but this may be a probe collision. If the hash
+    // values are different, it definitely is and the next iteration will
+    // find a unique spot.
+    if (hash != d->hash[idx]) {
+      continue;
+    }
+
+    // Probes are the same, and hashes are the same. We do a final check
+    // for equality in case there was a hash collision, in which case
+    // the values are actually different and the next iteration will find
+    // another spot using quadratic probing.
     if (equal_scalar(d->vec, idx, x->vec, i, true)) {
       return probe;
     }

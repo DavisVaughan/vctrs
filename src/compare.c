@@ -140,7 +140,7 @@ static inline int df_compare_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool n
 
 // -----------------------------------------------------------------------------
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 int compare_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
   switch (TYPEOF(x)) {
   case LGLSXP: return lgl_compare_scalar(LOGICAL(x) + i, LOGICAL(y) + j, na_equal);
@@ -192,7 +192,7 @@ do {                                                    \
 }                                                       \
 while (0)
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_compare(SEXP x, SEXP y, SEXP na_equal_) {
   bool na_equal = Rf_asLogical(na_equal_);
 

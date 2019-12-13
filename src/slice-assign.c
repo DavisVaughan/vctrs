@@ -20,7 +20,8 @@ SEXP list_assign(SEXP x, SEXP index, SEXP value, bool clone);
 SEXP df_assign(SEXP x, SEXP index, SEXP value, bool clone);
 
 
-// [[ register(); include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ export(name = "vctrs_assign") ]]
 SEXP vec_assign(SEXP x, SEXP index, SEXP value) {
   if (x == R_NilValue) {
     return R_NilValue;
@@ -64,6 +65,7 @@ SEXP vec_assign(SEXP x, SEXP index, SEXP value) {
  *   own the relevant parts of the vector structure (data frame
  *   columns in particular).
  */
+// [[ callable() ]]
 SEXP vec_assign_impl(SEXP proxy, SEXP index, SEXP value, bool clone) {
   switch (vec_proxy_typeof(proxy)) {
   case vctrs_type_logical:   return lgl_assign(proxy, index, value, clone);

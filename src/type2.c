@@ -26,7 +26,7 @@ static SEXP vctrs_type2_dispatch(SEXP x,
 
 static SEXP df_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg);
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_type2(SEXP x, SEXP y,
                struct vctrs_arg* x_arg,
                struct vctrs_arg* y_arg,
@@ -168,7 +168,7 @@ SEXP df_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg) 
   return out;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_type2(SEXP x, SEXP y, SEXP x_arg, SEXP y_arg) {
   if (!r_is_string(x_arg)) {
     Rf_errorcall(R_NilValue, "`x_arg` must be a string");
@@ -184,7 +184,7 @@ SEXP vctrs_type2(SEXP x, SEXP y, SEXP x_arg, SEXP y_arg) {
   return vec_type2(x, y, &x_arg_, &y_arg_, &_left);
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_type2_df_df(SEXP x, SEXP y, SEXP x_arg, SEXP y_arg) {
   if (!r_is_string(x_arg)) {
     Rf_errorcall(R_NilValue, "`x_arg` must be a string");

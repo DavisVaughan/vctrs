@@ -14,7 +14,7 @@ static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, 
 // If `x` is a data frame, it must have been recursively proxied
 // beforehand
 //
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
   switch (TYPEOF(x)) {
   case LGLSXP: return lgl_equal_scalar(LOGICAL(x) + i, LOGICAL(y) + j, na_equal);
@@ -78,7 +78,7 @@ static SEXP df_equal(SEXP x, SEXP y, bool na_equal, R_len_t n_row);
   }                                                     \
   while (0)
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_equal(SEXP x, SEXP y, SEXP na_equal_) {
   x = PROTECT(vec_proxy_equal(x));
   y = PROTECT(vec_proxy_equal(y));
@@ -255,7 +255,7 @@ static int df_equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal, 
 
 static inline bool vec_equal_attrib(SEXP x, SEXP y);
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 bool equal_object(SEXP x, SEXP y) {
   SEXPTYPE type = TYPEOF(x);
 
@@ -368,7 +368,7 @@ bool equal_object(SEXP x, SEXP y) {
 #undef EQUAL_ALL
 #undef EQUAL_ALL_BARRIER
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_equal_object(SEXP x, SEXP y) {
   return Rf_ScalarLogical(equal_object(x, y));
 }
@@ -403,7 +403,7 @@ static inline bool vec_equal_attrib(SEXP x, SEXP y) {
 }
 
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 bool equal_names(SEXP x, SEXP y) {
   SEXP x_names = PROTECT(Rf_getAttrib(x, R_NamesSymbol));
   SEXP y_names = PROTECT(Rf_getAttrib(y, R_NamesSymbol));
@@ -612,7 +612,7 @@ do {                                                    \
 }                                                       \
 while (0)
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_duplicate_all(SEXP x) {
   x = PROTECT(vec_proxy_equal(x));
 
@@ -695,7 +695,7 @@ int equal_na(SEXP x, R_len_t i) {
   }                                                       \
   while (0)
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_equal_na(SEXP x) {
   R_len_t n = vec_size(x);
   SEXP out = PROTECT(Rf_allocVector(LGLSXP, n));

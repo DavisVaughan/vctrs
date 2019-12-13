@@ -118,7 +118,7 @@ uint32_t hash_object(SEXP x) {
   return hash;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_hash_object(SEXP x) {
   SEXP out = PROTECT(Rf_allocVector(RAWSXP, sizeof(uint32_t)));
   uint32_t hash = 0;
@@ -224,7 +224,7 @@ static void list_hash_fill(uint32_t* p, R_len_t size, SEXP x);
 static void df_hash_fill(uint32_t* p, R_len_t size, SEXP x);
 
 // Not compatible with hash_scalar
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 void hash_fill(uint32_t* p, R_len_t size, SEXP x) {
   if (has_dim(x)) {
     // The conversion to data frame is only a stopgap, in the long
@@ -304,7 +304,7 @@ static void df_hash_fill(uint32_t* p, R_len_t size, SEXP x) {
   }
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_hash(SEXP x) {
   x = PROTECT(vec_proxy_equal(x));
 

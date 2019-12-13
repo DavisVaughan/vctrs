@@ -1,7 +1,7 @@
 #include "vctrs.h"
 #include "utils.h"
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP new_list_of(SEXP x, SEXP ptype) {
   if (TYPEOF(x) != VECSXP) {
     Rf_errorcall(R_NilValue, "Internal error: `x` must be a list.");
@@ -19,7 +19,7 @@ SEXP new_list_of(SEXP x, SEXP ptype) {
   return x;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 void init_list_of(SEXP x, SEXP ptype) {
   Rf_setAttrib(x, R_ClassSymbol, classes_list_of);
   Rf_setAttrib(x, syms_ptype, ptype);

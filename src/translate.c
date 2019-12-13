@@ -273,7 +273,7 @@ static SEXP chr_maybe_translate_encoding(SEXP x, R_len_t size);
 static SEXP list_maybe_translate_encoding(SEXP x, R_len_t size);
 static SEXP df_maybe_translate_encoding(SEXP x, R_len_t size);
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP obj_maybe_translate_encoding(SEXP x, R_len_t size) {
   switch (TYPEOF(x)) {
   case STRSXP: {
@@ -329,7 +329,7 @@ static SEXP df_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t
 // - Does not assume that `x` and `y` are the same size.
 // - Returns a list holding `x` and `y` translated to their common encoding.
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP obj_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t y_size) {
   switch (TYPEOF(x)) {
   case STRSXP: {
@@ -417,7 +417,7 @@ static SEXP df_maybe_translate_encoding2(SEXP x, R_len_t x_size, SEXP y, R_len_t
 
 // -----------------------------------------------------------------------------
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_maybe_translate_encoding(SEXP x) {
   x = PROTECT(vec_proxy_equal(x));
 
@@ -427,7 +427,7 @@ SEXP vctrs_maybe_translate_encoding(SEXP x) {
   return out;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_maybe_translate_encoding2(SEXP x, SEXP y) {
   struct vctrs_arg args_x = new_wrapper_arg(NULL, "x");
   struct vctrs_arg args_y = new_wrapper_arg(NULL, "y");

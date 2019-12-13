@@ -6,7 +6,8 @@ R_len_t rcrd_size(SEXP x);
 // From slice.c
 SEXP vec_slice_impl(SEXP x, SEXP index);
 
-// [[ register(); include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ export(name = "vctrs_dim") ]]
 SEXP vec_dim(SEXP x) {
   SEXP dim = PROTECT(vec_bare_dim(x));
 
@@ -18,11 +19,11 @@ SEXP vec_dim(SEXP x) {
   return dim;
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 R_len_t vec_dim_n(SEXP x) {
   return Rf_length(vec_dim(x));
 }
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_dim_n(SEXP x) {
   return r_int(vec_dim_n(x));
 }
@@ -30,17 +31,18 @@ SEXP vctrs_dim_n(SEXP x) {
 // These versions return NULL and 0 for bare vectors. This is useful
 // to distinguish them from 1D arrays.
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_bare_dim(SEXP x) {
   return Rf_getAttrib(x, R_DimSymbol);
 }
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 R_len_t vec_bare_dim_n(SEXP x) {
   return Rf_length(vec_bare_dim(x));
 }
 
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ callable(name = "short_vec_size") ]]
 R_len_t vec_size(SEXP x) {
   int nprot = 0;
 
@@ -87,7 +89,7 @@ R_len_t vec_size(SEXP x) {
   UNPROTECT(nprot);
   return size;
 }
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_size(SEXP x) {
   return Rf_ScalarInteger(vec_size(x));
 }
@@ -143,7 +145,7 @@ R_len_t df_raw_size(SEXP x) {
   }
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_df_size(SEXP x) {
   return r_int(df_raw_size(x));
 }
@@ -162,7 +164,8 @@ bool has_dim(SEXP x) {
   return ATTRIB(x) != R_NilValue && Rf_getAttrib(x, R_DimSymbol) != R_NilValue;
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ callable() ]]
 SEXP vec_recycle(SEXP x, R_len_t size) {
   if (x == R_NilValue) {
     return R_NilValue;
@@ -185,7 +188,7 @@ SEXP vec_recycle(SEXP x, R_len_t size) {
   stop_recycle_incompatible_size(n_x, size);
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_recycle(SEXP x, SEXP size_obj) {
   if (x == R_NilValue || size_obj == R_NilValue) {
     return R_NilValue;
@@ -199,7 +202,7 @@ SEXP vctrs_recycle(SEXP x, SEXP size_obj) {
 }
 
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 R_len_t size_validate(SEXP size, const char* arg) {
   size = vec_cast(size, vctrs_shared_empty_int, args_empty, args_empty);
 

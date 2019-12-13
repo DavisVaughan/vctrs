@@ -6,7 +6,7 @@ static SEXP unspecified_attrib = NULL;
 SEXP vctrs_shared_empty_uns = NULL;
 
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_unspecified(R_len_t n) {
   SEXP out = PROTECT(Rf_allocVector(LGLSXP, n));
 
@@ -18,7 +18,7 @@ SEXP vec_unspecified(R_len_t n) {
   return out;
 }
 
-// [[ register ]]
+// [[ export() ]]
 SEXP vctrs_unspecified(SEXP n) {
   if (Rf_length(n) != 1) {
     Rf_errorcall(R_NilValue, "`n` must be a single number");
@@ -30,7 +30,7 @@ SEXP vctrs_unspecified(SEXP n) {
   return vec_unspecified(len);
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 bool vec_is_unspecified(SEXP x) {
   if (TYPEOF(x) != LGLSXP) {
     return false;
@@ -71,7 +71,7 @@ bool vec_is_unspecified(SEXP x) {
   return true;
 }
 
-// [[ register ]]
+// [[ export() ]]
 SEXP vctrs_is_unspecified(SEXP x) {
   return Rf_ScalarLogical(vec_is_unspecified(x));
 }

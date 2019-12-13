@@ -11,7 +11,8 @@ static SEXP vec_type_slice(SEXP x, SEXP empty);
 static SEXP lgl_type(SEXP x);
 static SEXP s3_type(SEXP x);
 
-// [[ include("vctrs.h"); register() ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ export(name = "vctrs_type") ]]
 SEXP vec_type(SEXP x) {
   switch (vec_typeof(x)) {
   case vctrs_type_scalar:    return x;
@@ -54,7 +55,8 @@ static SEXP s3_type(SEXP x) {
 }
 
 
-// [[ include("vctrs.h"); register() ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ export(name = "vctrs_type_finalise") ]]
 SEXP vec_type_finalise(SEXP x) {
   if (x == R_NilValue) {
     return x;
@@ -86,7 +88,7 @@ SEXP vec_type_finalise(SEXP x) {
 SEXP vctrs_type_common_impl(SEXP dots, SEXP ptype);
 static SEXP vctrs_type2_common(SEXP current, SEXP next, struct counters* counters);
 
-// [[ register(external = TRUE) ]]
+// [[ export_external(n = 1) ]]
 SEXP vctrs_type_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 

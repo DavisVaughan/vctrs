@@ -7,7 +7,7 @@ static SEXP as_df_row(SEXP x, enum name_repair_arg name_repair, bool quiet);
 static SEXP as_df_row_impl(SEXP x, enum name_repair_arg name_repair, bool quiet);
 enum name_repair_arg validate_bind_name_repair(SEXP name_repair, bool allow_minimal);
 
-// [[ register(external = TRUE) ]]
+// [[ export_external(n = 3) ]]
 SEXP vctrs_rbind(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 
@@ -182,7 +182,7 @@ static SEXP as_df_row_impl(SEXP x, enum name_repair_arg name_repair, bool quiet)
   return x;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_as_df_row(SEXP x, SEXP quiet) {
   return as_df_row(x, name_repair_unique, LOGICAL(quiet)[0]);
 }
@@ -191,7 +191,7 @@ static SEXP as_df_col(SEXP x, SEXP outer, bool* allow_pack);
 static SEXP vec_cbind(SEXP xs, SEXP ptype, SEXP size, enum name_repair_arg name_repair);
 static SEXP cbind_container_type(SEXP x);
 
-// [[ register(external = TRUE) ]]
+// [[ export_external(n = 3) ]]
 SEXP vctrs_cbind(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 
@@ -323,7 +323,7 @@ static SEXP cbind_container_type(SEXP x) {
 static SEXP shaped_as_df_col(SEXP x, SEXP outer);
 static SEXP vec_as_df_col(SEXP x, SEXP outer);
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_as_df_col(SEXP x, SEXP outer) {
   bool allow_pack;
   return as_df_col(x, r_chr_get(outer, 0), &allow_pack);

@@ -22,7 +22,7 @@ SEXP vec_as_universal_names(SEXP names, bool quiet);
 SEXP vec_validate_unique_names(SEXP names);
 
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_as_names(SEXP names, enum name_repair_arg type, bool quiet) {
   switch (type) {
   case name_repair_none: return names;
@@ -54,7 +54,8 @@ SEXP vec_validate_unique_names(SEXP names) {
 }
 
 
-// [[ register(); include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ export(name = "vctrs_names"); callable() ]]
 SEXP vec_names(SEXP x) {
   if (OBJECT(x) && Rf_inherits(x, "data.frame")) {
     return R_NilValue;
@@ -79,7 +80,7 @@ SEXP vec_names(SEXP x) {
   return out;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_as_minimal_names(SEXP names) {
   if (TYPEOF(names) != STRSXP) {
     Rf_errorcall(R_NilValue, "`names` must be a character vector");
@@ -112,7 +113,7 @@ SEXP vctrs_as_minimal_names(SEXP names) {
   return names;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_minimal_names(SEXP x) {
   SEXP names = PROTECT(vec_names(x));
 
@@ -137,7 +138,7 @@ static bool is_dotdotint(const char* name);
 static ptrdiff_t suffix_pos(const char* name);
 static bool needs_suffix(SEXP str);
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_as_unique_names(SEXP names, bool quiet) {
   if (is_unique_names(names) && !any_has_suffix(names)) {
     return names;
@@ -146,7 +147,7 @@ SEXP vec_as_unique_names(SEXP names, bool quiet) {
   }
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 bool is_unique_names(SEXP names) {
   if (TYPEOF(names) != STRSXP) {
     Rf_errorcall(R_NilValue, "`names` must be a character vector");
@@ -252,12 +253,14 @@ SEXP as_unique_names_impl(SEXP names, bool quiet) {
   return new_names;
 }
 
+// [[ export() ]]
 SEXP vctrs_as_unique_names(SEXP names, SEXP quiet) {
   SEXP out = PROTECT(vec_as_unique_names(names, LOGICAL(quiet)[0]));
   UNPROTECT(1);
   return out;
 }
 
+// [[ export() ]]
 SEXP vctrs_is_unique_names(SEXP names) {
   bool out = is_unique_names(names);
   return Rf_ScalarLogical(out);
@@ -357,19 +360,19 @@ static bool needs_suffix(SEXP str) {
 static SEXP names_iota(R_len_t n);
 static SEXP vec_unique_names_impl(SEXP names, R_len_t n, bool quiet);
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_unique_names(SEXP x, SEXP quiet) {
   return vec_unique_names(x, LOGICAL(quiet)[0]);
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP vec_unique_names(SEXP x, bool quiet) {
   SEXP names = PROTECT(vec_names(x));
   SEXP out = vec_unique_names_impl(names, vec_size(x), quiet);
   UNPROTECT(1);
   return out;
 }
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP vec_unique_colnames(SEXP x, bool quiet) {
   SEXP names = PROTECT(colnames(x));
   SEXP out = vec_unique_names_impl(names, Rf_ncols(x), quiet);
@@ -420,7 +423,7 @@ static void describe_repair(SEXP old_names, SEXP new_names) {
 static SEXP outer_names_cat(const char* outer, SEXP names);
 static SEXP outer_names_seq(const char* outer, R_len_t n);
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_outer_names(SEXP names, SEXP outer, SEXP n) {
   if (names != R_NilValue && TYPEOF(names) != STRSXP) {
     Rf_error("Internal error: `names` must be `NULL` or a string");
@@ -436,7 +439,7 @@ SEXP vctrs_outer_names(SEXP names, SEXP outer, SEXP n) {
   return outer_names(names, outer, r_int_get(n, 0));
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP outer_names(SEXP names, SEXP outer, R_len_t n) {
   if (outer == R_NilValue) {
     return names;
@@ -460,14 +463,14 @@ SEXP outer_names(SEXP names, SEXP outer, R_len_t n) {
   }
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_apply_name_spec(SEXP name_spec, SEXP outer, SEXP inner, SEXP n) {
   return apply_name_spec(name_spec, r_chr_get(outer, 0), inner, r_int_get(n, 0));
 }
 
 static SEXP glue_as_name_spec(SEXP spec);
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP apply_name_spec(SEXP name_spec, SEXP outer, SEXP inner, R_len_t n) {
   if (outer == R_NilValue) {
     return inner;
@@ -661,7 +664,8 @@ SEXP vec_set_rownames(SEXP x, SEXP names) {
 
 // FIXME: Do we need to get the vec_proxy() and only fall back if it doesn't
 // exist? See #526 and #531 for discussion and the related issue.
-// [[ include("utils.h"); register() ]]
+// not yet supported [[ include("utils.h") ]]
+// [[ export(name = "vctrs_set_names") ]]
 SEXP vec_set_names(SEXP x, SEXP names) {
   // Never on a data frame
   if (is_data_frame(x)) {
@@ -718,7 +722,7 @@ enum name_repair_arg validate_name_repair(SEXP arg) {
   Rf_errorcall(R_NilValue, "`.name_repair` can't be \"%s\". See `?vctrs::vec_as_names`.", CHAR(arg));
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 const char* name_repair_arg_as_c_string(enum name_repair_arg arg) {
   switch (arg) {
   case name_repair_none: return "none";

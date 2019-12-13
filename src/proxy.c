@@ -11,7 +11,8 @@ SEXP vec_proxy_method(SEXP x);
 SEXP vec_proxy_invoke(SEXP x, SEXP method);
 
 
-// [[ register(); include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ export(name = "vctrs_proxy") ]]
 SEXP vec_proxy(SEXP x) {
   int nprot = 0;
   struct vctrs_type_info info = vec_type_info(x);
@@ -28,7 +29,8 @@ SEXP vec_proxy(SEXP x) {
   return out;
 }
 
-// [[ register(); include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ export(name = "vctrs_proxy_equal") ]]
 SEXP vec_proxy_equal(SEXP x) {
   return vec_proxy_recursive(x, vctrs_proxy_equal);
 }
@@ -41,7 +43,7 @@ SEXP vec_proxy_equal_dispatch(SEXP x) {
   }
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_proxy_recursive(SEXP x, enum vctrs_proxy_kind kind) {
   switch (kind) {
   case vctrs_proxy_default: x = PROTECT(vec_proxy(x)); break;
@@ -65,7 +67,7 @@ SEXP vec_proxy_recursive(SEXP x, enum vctrs_proxy_kind kind) {
   return x;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_proxy_recursive(SEXP x, SEXP kind_) {
   enum vctrs_proxy_kind kind;
   if (kind_ == Rf_install("default")) {

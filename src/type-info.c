@@ -13,7 +13,7 @@ SEXP vec_proxy_invoke(SEXP x, SEXP method);
 
 static enum vctrs_type vec_base_typeof(SEXP x, bool proxied);
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 struct vctrs_type_info vec_type_info(SEXP x) {
   struct vctrs_type_info info;
 
@@ -28,7 +28,7 @@ struct vctrs_type_info vec_type_info(SEXP x) {
   return info;
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 struct vctrs_proxy_info vec_proxy_info(SEXP x) {
   struct vctrs_proxy_info info;
 
@@ -49,7 +49,7 @@ struct vctrs_proxy_info vec_proxy_info(SEXP x) {
   return info;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_type_info(SEXP x) {
   struct vctrs_type_info info = vec_type_info(x);
 
@@ -60,7 +60,7 @@ SEXP vctrs_type_info(SEXP x) {
   UNPROTECT(1);
   return out;
 }
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_proxy_info(SEXP x) {
   struct vctrs_proxy_info info = vec_proxy_info(x);
 
@@ -94,13 +94,14 @@ static enum vctrs_type vec_base_typeof(SEXP x, bool proxied) {
   }
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 enum vctrs_type vec_proxy_typeof(SEXP x) {
   return vec_base_typeof(x, true);
 }
 
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ callable(hidden = TRUE) ]]
 bool vec_is_vector(SEXP x) {
   if (x == R_NilValue) {
     return false;
@@ -109,12 +110,12 @@ bool vec_is_vector(SEXP x) {
   struct vctrs_proxy_info info = vec_proxy_info(x);
   return info.type != vctrs_type_scalar;
 }
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_is_vector(SEXP x) {
   return Rf_ScalarLogical(vec_is_vector(x));
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 enum vctrs_type vec_typeof(SEXP x) {
   if (!OBJECT(x)) {
     return vec_base_typeof(x, false);
@@ -130,7 +131,7 @@ enum vctrs_type vec_typeof(SEXP x) {
   return vctrs_type_s3;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_typeof(SEXP x, SEXP dispatch) {
   enum vctrs_type type;
   if (LOGICAL(dispatch)[0]) {

@@ -196,7 +196,7 @@ SEXP vctrs_match(SEXP needles, SEXP haystack);
 // Defined below
 static SEXP df_as_dataframe(SEXP x, SEXP to, struct vctrs_arg* x_arg, struct vctrs_arg* to_arg);
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_df_as_dataframe(SEXP x, SEXP to, SEXP x_arg_, SEXP to_arg_) {
   if (!r_is_string(x_arg_)) {
     Rf_errorcall(R_NilValue, "`x_arg` must be a string");
@@ -347,7 +347,7 @@ static SEXP vec_cast_switch(SEXP x, SEXP to, bool* lossy, struct vctrs_arg* x_ar
   return R_NilValue;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_cast(SEXP x, SEXP to, SEXP x_arg_, SEXP to_arg_) {
   if (!r_is_string(x_arg_)) {
     Rf_errorcall(R_NilValue, "`x_arg` must be a string");
@@ -362,7 +362,7 @@ SEXP vctrs_cast(SEXP x, SEXP to, SEXP x_arg_, SEXP to_arg_) {
   return vec_cast(x, to, &x_arg, &to_arg);
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_cast(SEXP x, SEXP to, struct vctrs_arg* x_arg, struct vctrs_arg* to_arg) {
   if (x == R_NilValue || to == R_NilValue) {
     return x;
@@ -388,7 +388,7 @@ SEXP vec_cast(SEXP x, SEXP to, struct vctrs_arg* x_arg, struct vctrs_arg* to_arg
   return out;
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_coercible_cast(SEXP x, SEXP to, struct vctrs_arg* x_arg, struct vctrs_arg* to_arg) {
   // Called for the side effect of generating an error if there is no
   // common type
@@ -398,7 +398,7 @@ SEXP vec_coercible_cast(SEXP x, SEXP to, struct vctrs_arg* x_arg, struct vctrs_a
   return vec_cast(x, to, x_arg, to_arg);
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_coercible_cast(SEXP x, SEXP to, SEXP x_arg_, SEXP to_arg_) {
   if (!r_is_string(x_arg_)) {
     Rf_errorcall(R_NilValue, "`x_arg` must be a string");
@@ -416,7 +416,7 @@ SEXP vctrs_coercible_cast(SEXP x, SEXP to, SEXP x_arg_, SEXP to_arg_) {
 
 SEXP vctrs_type_common_impl(SEXP dots, SEXP ptype);
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_cast_common(SEXP xs, SEXP to) {
   SEXP type = PROTECT(vctrs_type_common_impl(xs, to));
 
@@ -436,7 +436,7 @@ SEXP vec_cast_common(SEXP xs, SEXP to) {
   return out;
 }
 
-// [[ register(external = TRUE) ]]
+// [[ export_external(n = 1) ]]
 SEXP vctrs_cast_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 

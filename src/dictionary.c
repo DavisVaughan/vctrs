@@ -111,6 +111,7 @@ void dict_put(dictionary* d, uint32_t hash, R_len_t i) {
 // TODO: rename to match R function names
 // TODO: separate out into individual files
 
+// [[ export() ]]
 SEXP vctrs_unique_loc(SEXP x) {
   int nprot = 0;
 
@@ -141,12 +142,13 @@ SEXP vctrs_unique_loc(SEXP x) {
   return out;
 }
 
+// [[ export() ]]
 SEXP vctrs_duplicated_any(SEXP x) {
   bool out = duplicated_any(x);
   return Rf_ScalarLogical(out);
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 bool duplicated_any(SEXP x) {
   int nprot = 0;
 
@@ -176,6 +178,7 @@ bool duplicated_any(SEXP x) {
   return out;
 }
 
+// [[ export() ]]
 SEXP vctrs_n_distinct(SEXP x) {
   int nprot = 0;
 
@@ -199,6 +202,7 @@ SEXP vctrs_n_distinct(SEXP x) {
   return Rf_ScalarInteger(d.used);
 }
 
+// [[ export() ]]
 SEXP vctrs_id(SEXP x) {
   int nprot = 0;
 
@@ -227,7 +231,7 @@ SEXP vctrs_id(SEXP x) {
   return out;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_match(SEXP needles, SEXP haystack) {
   int nprot = 0;
   int _;
@@ -279,7 +283,7 @@ SEXP vctrs_match(SEXP needles, SEXP haystack) {
   return out;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_in(SEXP needles, SEXP haystack) {
   int nprot = 0;
 
@@ -329,6 +333,7 @@ SEXP vctrs_in(SEXP needles, SEXP haystack) {
   return out;
 }
 
+// [[ export() ]]
 SEXP vctrs_count(SEXP x) {
   int nprot = 0;
 
@@ -382,6 +387,7 @@ SEXP vctrs_count(SEXP x) {
   return out;
 }
 
+// [[ export() ]]
 SEXP vctrs_duplicated(SEXP x) {
   int nprot = 0;
 

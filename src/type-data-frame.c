@@ -2,7 +2,7 @@
 #include "utils.h"
 
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP new_data_frame(SEXP x, R_len_t n) {
   x = PROTECT(r_maybe_duplicate(x));
   init_data_frame(x, n);
@@ -11,11 +11,11 @@ SEXP new_data_frame(SEXP x, R_len_t n) {
   return x;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 bool is_compact_rownames(SEXP x) {
   return Rf_length(x) == 2 && INTEGER(x)[0] == NA_INTEGER;
 }
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 R_len_t compact_rownames_length(SEXP x) {
   return abs(INTEGER(x)[1]);
 }
@@ -23,12 +23,12 @@ R_len_t compact_rownames_length(SEXP x) {
 static void init_bare_data_frame(SEXP x, R_len_t n);
 static SEXP new_compact_rownames(R_len_t n);
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 void init_data_frame(SEXP x, R_len_t n) {
   Rf_setAttrib(x, R_ClassSymbol, classes_data_frame);
   init_bare_data_frame(x, n);
 }
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 void init_tibble(SEXP x, R_len_t n) {
   Rf_setAttrib(x, R_ClassSymbol, classes_tibble);
   init_bare_data_frame(x, n);
@@ -42,7 +42,7 @@ static void init_bare_data_frame(SEXP x, R_len_t n) {
   init_compact_rownames(x, n);
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 void init_compact_rownames(SEXP x, R_len_t n) {
   SEXP rn = PROTECT(new_compact_rownames(n));
   Rf_setAttrib(x, R_RowNamesSymbol, rn);
@@ -61,7 +61,7 @@ static SEXP new_compact_rownames(R_len_t n) {
   return out;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP get_rownames(SEXP x) {
   // Required, because getAttrib() already does the transformation to a vector,
   // and getAttrib0() is hidden

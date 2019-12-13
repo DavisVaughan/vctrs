@@ -1,7 +1,7 @@
 #include "vctrs.h"
 #include "utils.h"
 
-// [[ register() ]]
+// [[ export(name = "vctrs_split") ]]
 SEXP vec_split(SEXP x, SEXP by) {
   if (vec_size(x) != vec_size(by)) {
     Rf_errorcall(R_NilValue, "`x` and `by` must have the same size.");

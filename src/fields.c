@@ -81,12 +81,14 @@ int find_offset(SEXP x, SEXP index) {
 
 // Lists -------------------------------------------------------------------
 
+// [[ export() ]]
 SEXP vctrs_list_get(SEXP x, SEXP index) {
   int idx = find_offset(x, index);
 
   return VECTOR_ELT(x, idx);
 }
 
+// [[ export() ]]
 SEXP vctrs_list_set(SEXP x, SEXP index, SEXP value) {
   int idx = find_offset(x, index);
 
@@ -106,23 +108,27 @@ void check_rcrd(SEXP x) {
     Rf_errorcall(R_NilValue, "Corrupt rcrd: length 0");
 }
 
+// [[ export() ]]
 SEXP vctrs_fields(SEXP x) {
   check_rcrd(x);
 
   return Rf_getAttrib(x, R_NamesSymbol);
 }
 
+// [[ export() ]]
 SEXP vctrs_n_fields(SEXP x) {
   check_rcrd(x);
 
   return Rf_ScalarInteger(Rf_length(x));
 }
 
+// [[ export() ]]
 SEXP vctrs_field_get(SEXP x, SEXP index) {
   check_rcrd(x);
   return vctrs_list_get(x, index);
 }
 
+// [[ export() ]]
 SEXP vctrs_field_set(SEXP x, SEXP index, SEXP value) {
   check_rcrd(x);
 

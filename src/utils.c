@@ -140,7 +140,7 @@ static SEXP vctrs_eval_mask_n_impl(SEXP fn, SEXP* syms, SEXP* args, SEXP mask) {
 
 // An alternative to `attributes(x) <- attrib`, which makes
 // two copies on R < 3.6.0
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_set_attributes(SEXP x, SEXP attrib) {
   R_len_t n_attrib = Rf_length(attrib);
   int n_protect = 0;
@@ -286,7 +286,7 @@ SEXP s3_find_method(const char* generic, SEXP x) {
   return R_NilValue;
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 enum vctrs_dbl_class dbl_classify(double x) {
   if (!isnan(x)) {
     return vctrs_dbl_number;
@@ -308,6 +308,7 @@ SEXP compact_seq_attrib = NULL;
 // p[0] = Start value
 // p[1] = Sequence size. Always >= 1.
 // p[2] = Step size to increment/decrement `start` with
+// [[ callable(hidden = TRUE) ]]
 void init_compact_seq(int* p, R_len_t start, R_len_t size, bool increasing) {
   int step = increasing ? 1 : -1;
 
@@ -320,6 +321,7 @@ void init_compact_seq(int* p, R_len_t start, R_len_t size, bool increasing) {
 // The sequence is generally generated as `[start, start +/- size)`
 // If `size == 0` a 0-length sequence is generated
 // `start` is 0-based
+// [[ callable(hidden = TRUE) ]]
 SEXP compact_seq(R_len_t start, R_len_t size, bool increasing) {
   if (start < 0) {
     Rf_error("Internal error: `start` must not be negative in `compact_seq()`.");
@@ -434,7 +436,7 @@ R_len_t vec_index_size(SEXP x) {
 static SEXP syms_colnames = NULL;
 static SEXP fns_colnames = NULL;
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP colnames(SEXP x) {
   return vctrs_dispatch1(syms_colnames, fns_colnames,
                          syms_x, x);
@@ -731,12 +733,12 @@ SEXP r_new_function(SEXP formals, SEXP body, SEXP env) {
   return fn;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 SEXP r_protect(SEXP x) {
   return Rf_lang2(fns_quote, x);
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 bool r_is_bool(SEXP x) {
   return
     TYPEOF(x) == LGLSXP &&

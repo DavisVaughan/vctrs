@@ -11,7 +11,7 @@ static SEXP vec_c(SEXP xs, SEXP ptype, SEXP name_spec, enum name_repair_arg name
 static bool list_has_inner_names(SEXP xs);
 
 
-// [[ register(external = TRUE) ]]
+// [[ export_external(n = 3) ]]
 SEXP vctrs_c(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 

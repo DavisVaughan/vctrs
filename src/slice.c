@@ -319,6 +319,7 @@ static SEXP slice_rownames(SEXP names, SEXP index) {
   return names;
 }
 
+// [[ callable() ]]
 SEXP vec_slice_impl(SEXP x, SEXP index) {
   int nprot = 0;
 
@@ -412,7 +413,7 @@ SEXP vec_slice_impl(SEXP x, SEXP index) {
   }
 }
 
-// [[export]]
+// [[ export() ]]
 SEXP vctrs_slice(SEXP x, SEXP index) {
   vec_assert(x, args_empty);
 
@@ -427,7 +428,8 @@ SEXP vec_slice(SEXP x, SEXP index) {
   return vctrs_slice(x, index);
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ callable(name = "short_vec_init") ]]
 SEXP vec_init(SEXP x, R_len_t n) {
   struct vctrs_arg x_arg = new_wrapper_arg(NULL, "x");
   vec_assert(x, &x_arg);
@@ -440,14 +442,14 @@ SEXP vec_init(SEXP x, R_len_t n) {
   return out;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_init(SEXP x, SEXP n) {
   R_len_t n_ = r_int_get(n, 0);
   return vec_init(x, n_);
 }
 
 // Exported for testing
-// [[ register() ]]
+// [[ export(name = "vctrs_slice_seq") ]]
 SEXP vec_slice_seq(SEXP x, SEXP start, SEXP size, SEXP increasing) {
   R_len_t start_ = r_int_get(start, 0);
   R_len_t size_ = r_int_get(size, 0);
@@ -461,7 +463,7 @@ SEXP vec_slice_seq(SEXP x, SEXP start, SEXP size, SEXP increasing) {
 }
 
 // Exported for testing
-// [[ register() ]]
+// [[ export(name = "vctrs_slice_rep") ]]
 SEXP vec_slice_rep(SEXP x, SEXP i, SEXP n) {
   R_len_t i_ = r_int_get(i, 0);
   R_len_t n_ = r_int_get(n, 0);
@@ -684,6 +686,7 @@ SEXP vec_as_index_opts(SEXP i, R_len_t n, SEXP names,
   }
 }
 
+// [[ export() ]]
 SEXP vctrs_as_index(SEXP i, SEXP n, SEXP names, SEXP convert_negative) {
   if (!r_is_bool(convert_negative)) {
     Rf_error("Internal error: `convert_negative` must be a boolean");
@@ -769,7 +772,7 @@ static SEXP vec_chop_base(SEXP x, SEXP indices, struct vctrs_chop_info info);
 
 static SEXP vec_as_indices(SEXP indices, R_len_t n, SEXP names);
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_chop_seq(SEXP x, SEXP starts, SEXP sizes, SEXP increasings) {
   int* p_starts = INTEGER(starts);
   int* p_sizes = INTEGER(sizes);
@@ -790,7 +793,7 @@ SEXP vctrs_chop_seq(SEXP x, SEXP starts, SEXP sizes, SEXP increasings) {
   return out;
 }
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_chop(SEXP x, SEXP indices) {
   R_len_t n = vec_size(x);
   SEXP names = PROTECT(vec_names(x));
@@ -803,7 +806,8 @@ SEXP vctrs_chop(SEXP x, SEXP indices) {
   return out;
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
+// [[ callable() ]]
 SEXP vec_chop(SEXP x, SEXP indices) {
   SEXP out = PROTECT(vec_chop_impl(x, indices));
   init_list_of(out, vec_type(x));

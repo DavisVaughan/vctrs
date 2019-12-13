@@ -192,7 +192,7 @@ enum vctrs_type2 vec_typeof2_impl(enum vctrs_type type_x,
   never_reached("vec_typeof2_impl()");
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 enum vctrs_type2 vec_typeof2(SEXP x, SEXP y) {
   int _;
   return vec_typeof2_impl(vec_typeof(x), vec_typeof(y), &_);
@@ -281,6 +281,7 @@ const char* vctrs_type2_as_str(enum vctrs_type2 type) {
   never_reached("vctrs_type2_as_str");
 }
 
+// [[ export() ]]
 SEXP vctrs_typeof2(SEXP x, SEXP y) {
   enum vctrs_type2 type = vec_typeof2(x, y);
   return Rf_mkString(vctrs_type2_as_str(type));

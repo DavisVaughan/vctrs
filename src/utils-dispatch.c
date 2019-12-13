@@ -8,12 +8,12 @@ static enum vctrs_class_type class_type_impl(SEXP class);
 static const char* class_type_as_str(enum vctrs_class_type type);
 
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_class_type(SEXP x) {
   return Rf_mkString(class_type_as_str(class_type(x)));
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 bool is_data_frame(SEXP x) {
   enum vctrs_class_type type = class_type(x);
   return
@@ -22,7 +22,7 @@ bool is_data_frame(SEXP x) {
     type == vctrs_class_data_frame;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 bool is_native_df(SEXP x) {
   enum vctrs_class_type type = class_type(x);
   return
@@ -30,17 +30,17 @@ bool is_native_df(SEXP x) {
     type == vctrs_class_bare_tibble;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 bool is_bare_data_frame(SEXP x) {
   return class_type(x) == vctrs_class_bare_data_frame;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 bool is_bare_tibble(SEXP x) {
   return class_type(x) == vctrs_class_bare_tibble;
 }
 
-// [[ include("utils.h") ]]
+// not yet supported [[ include("utils.h") ]]
 bool is_record(SEXP x) {
   enum vctrs_class_type type = class_type(x);
   return
@@ -109,7 +109,7 @@ static const char* class_type_as_str(enum vctrs_class_type type) {
 }
 
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 bool vec_is_partial(SEXP x) {
   return x == R_NilValue || Rf_inherits(x, "vctrs_partial");
 }

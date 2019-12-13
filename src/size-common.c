@@ -2,7 +2,7 @@
 #include "utils.h"
 
 
-// [[ register(external = TRUE) ]]
+// [[ export_external(n = 2) ]]
 SEXP vctrs_size_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 
@@ -38,7 +38,7 @@ SEXP vctrs_size_common(SEXP call, SEXP op, SEXP args, SEXP env) {
 
 static SEXP vctrs_size2_common(SEXP x, SEXP y, struct counters* counters);
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 R_len_t vec_size_common(SEXP xs, R_len_t absent) {
   SEXP common = PROTECT(reduce(R_NilValue, args_empty, xs, &vctrs_size2_common));
   R_len_t out;
@@ -79,7 +79,7 @@ static SEXP vctrs_size2_common(SEXP x, SEXP y, struct counters* counters) {
   stop_incompatible_size(x, y, nx, ny, counters->curr_arg, counters->next_arg);
 }
 
-// [[ register(external = TRUE) ]]
+// [[ export_external(n = 1) ]]
 SEXP vctrs_recycle_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 
@@ -101,7 +101,7 @@ SEXP vctrs_recycle_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   return out;
 }
 
-// [[ include("vctrs.h") ]]
+// not yet supported [[ include("vctrs.h") ]]
 SEXP vec_recycle_common(SEXP xs, R_len_t size) {
   if (size < 0) {
     return xs;

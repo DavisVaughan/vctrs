@@ -2,7 +2,7 @@
 #include "utils.h"
 #include "dictionary.h"
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_group_id(SEXP x) {
   int nprot = 0;
 
@@ -44,7 +44,7 @@ SEXP vctrs_group_id(SEXP x) {
 
 static SEXP new_group_rle(SEXP g, SEXP l, R_len_t n);
 
-// [[ register() ]]
+// [[ export() ]]
 SEXP vctrs_group_rle(SEXP x) {
   int nprot = 0;
 
@@ -136,7 +136,8 @@ static SEXP new_group_rle(SEXP g, SEXP l, R_len_t n) {
 
 // -----------------------------------------------------------------------------
 
-// [[ include("vctrs.h"); register() ]]
+// not yet supported [[ include("vctrs.h")]]
+// [[ export(name = "vctrs_group_pos") ]]
 SEXP vec_group_pos(SEXP x) {
   int nprot = 0;
 

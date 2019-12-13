@@ -16,6 +16,7 @@ SEXP altrep_rle_Make(SEXP input) {
 
 #else
 
+// [[ export(name = "vctrs_rle") ]]
 SEXP altrep_rle_Make(SEXP input) {
 
   SEXP res = R_new_altrep(altrep_rle_class, input, R_NilValue);
@@ -159,6 +160,7 @@ const void* altrep_rle_Dataptr_or_null(SEXP vec) {
 }
 
 // -------- initialize the altrep class with the methods above
+// [[ init() ]]
 void vctrs_init_altrep_rle(DllInfo* dll) {
   altrep_rle_class = R_make_altstring_class("altrep_rle", "vctrs", dll);
 

@@ -7,6 +7,7 @@ static SEXP fns_vec_restore_dispatch = NULL;
 
 
 // Copy attributes except names and dim. This duplicates `x` if needed.
+// [[ export(name = "vctrs_restore_default") ]]
 SEXP vec_restore_default(SEXP x, SEXP to) {
   SEXP attrib = ATTRIB(to);
 
@@ -90,6 +91,7 @@ SEXP vec_restore_default(SEXP x, SEXP to) {
   return x;
 }
 
+// [[ export() ]]
 SEXP vctrs_df_restore(SEXP x, SEXP to, SEXP n) {
   if (TYPEOF(x) != VECSXP) {
     Rf_errorcall(R_NilValue, "Internal error: Attempt to restore data frame from a %s.",
@@ -120,6 +122,7 @@ SEXP df_restore_impl(SEXP x, SEXP to, R_len_t size) {
 
 static SEXP vec_restore_dispatch(SEXP x, SEXP to, SEXP n);
 
+// [[ export(name = "vctrs_restore") ]]
 SEXP vec_restore(SEXP x, SEXP to, SEXP n) {
   switch (class_type(to)) {
   default: return vec_restore_dispatch(x, to, n);

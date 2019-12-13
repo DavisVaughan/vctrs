@@ -88,7 +88,7 @@ SEXP vec_type_finalise(SEXP x) {
 SEXP vctrs_type_common_impl(SEXP dots, SEXP ptype);
 static SEXP vctrs_type2_common(SEXP current, SEXP next, struct counters* counters);
 
-// [[ export_external(n = 1) ]]
+// [[ export_external2(n = 1) ]]
 SEXP vctrs_type_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 

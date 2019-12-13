@@ -436,7 +436,7 @@ SEXP vec_cast_common(SEXP xs, SEXP to) {
   return out;
 }
 
-// [[ export_external(n = 1) ]]
+// [[ export_external2(n = 1) ]]
 SEXP vctrs_cast_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 

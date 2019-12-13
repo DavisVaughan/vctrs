@@ -2,7 +2,7 @@
 #include "utils.h"
 
 
-// [[ export_external(n = 2) ]]
+// [[ export_external2(n = 2) ]]
 SEXP vctrs_size_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 
@@ -79,7 +79,7 @@ static SEXP vctrs_size2_common(SEXP x, SEXP y, struct counters* counters) {
   stop_incompatible_size(x, y, nx, ny, counters->curr_arg, counters->next_arg);
 }
 
-// [[ export_external(n = 1) ]]
+// [[ export_external2(n = 1) ]]
 SEXP vctrs_recycle_common(SEXP call, SEXP op, SEXP args, SEXP env) {
   args = CDR(args);
 

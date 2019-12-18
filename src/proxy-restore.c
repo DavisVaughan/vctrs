@@ -122,7 +122,7 @@ SEXP df_restore_impl(SEXP x, SEXP to, R_len_t size) {
 
 static SEXP vec_restore_dispatch(SEXP x, SEXP to, SEXP n);
 
-// [[ export(name = "vctrs_restore") ]]
+// [[ export(name = "vctrs_restore"); callable() ]]
 SEXP vec_restore(SEXP x, SEXP to, SEXP n) {
   switch (class_type(to)) {
   default: return vec_restore_dispatch(x, to, n);

@@ -347,7 +347,7 @@ static SEXP vec_cast_switch(SEXP x, SEXP to, bool* lossy, struct vctrs_arg* x_ar
   return R_NilValue;
 }
 
-// [[ export() ]]
+// [[ export(); callable(hidden = TRUE) ]]
 SEXP vctrs_cast(SEXP x, SEXP to, SEXP x_arg_, SEXP to_arg_) {
   if (!r_is_string(x_arg_)) {
     Rf_errorcall(R_NilValue, "`x_arg` must be a string");

@@ -429,7 +429,7 @@ SEXP vec_slice(SEXP x, SEXP index) {
 }
 
 // not yet supported [[ include("vctrs.h") ]]
-// [[ callable(name = "short_vec_init") ]]
+// [[ callable(name = "short_vec_init", hidden = TRUE) ]]
 SEXP vec_init(SEXP x, R_len_t n) {
   struct vctrs_arg x_arg = new_wrapper_arg(NULL, "x");
   vec_assert(x, &x_arg);

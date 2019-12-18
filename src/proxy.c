@@ -12,7 +12,7 @@ SEXP vec_proxy_invoke(SEXP x, SEXP method);
 
 
 // not yet supported [[ include("vctrs.h") ]]
-// [[ export(name = "vctrs_proxy") ]]
+// [[ export(name = "vctrs_proxy"); callable() ]]
 SEXP vec_proxy(SEXP x) {
   int nprot = 0;
   struct vctrs_type_info info = vec_type_info(x);

@@ -665,7 +665,7 @@ SEXP vec_set_rownames(SEXP x, SEXP names) {
 // FIXME: Do we need to get the vec_proxy() and only fall back if it doesn't
 // exist? See #526 and #531 for discussion and the related issue.
 // not yet supported [[ include("utils.h") ]]
-// [[ export(name = "vctrs_set_names") ]]
+// [[ export(name = "vctrs_set_names"); callable() ]]
 SEXP vec_set_names(SEXP x, SEXP names) {
   // Never on a data frame
   if (is_data_frame(x)) {

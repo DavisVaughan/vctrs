@@ -42,7 +42,7 @@ R_len_t vec_bare_dim_n(SEXP x) {
 
 
 // not yet supported [[ include("vctrs.h") ]]
-// [[ callable(name = "short_vec_size") ]]
+// [[ callable(name = "short_vec_size", hidden = TRUE) ]]
 R_len_t vec_size(SEXP x) {
   int nprot = 0;
 
@@ -165,7 +165,7 @@ bool has_dim(SEXP x) {
 }
 
 // not yet supported [[ include("vctrs.h") ]]
-// [[ callable() ]]
+// [[ callable(name = "short_vec_recycle", hidden = TRUE) ]]
 SEXP vec_recycle(SEXP x, R_len_t size) {
   if (x == R_NilValue) {
     return R_NilValue;

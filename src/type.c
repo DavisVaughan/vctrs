@@ -9,6 +9,8 @@ static SEXP fns_vec_type_finalise_dispatch = NULL;
 
 static SEXP vec_type_slice(SEXP x, SEXP empty);
 static SEXP lgl_type(SEXP x);
+static SEXP fct_type(SEXP x);
+static SEXP ord_type(SEXP x);
 static SEXP s3_type(SEXP x);
 
 // [[ include("vctrs.h"); register() ]]
@@ -21,6 +23,8 @@ SEXP vec_type(SEXP x) {
   case vctrs_type_double:    return vec_type_slice(x, vctrs_shared_empty_dbl);
   case vctrs_type_complex:   return vec_type_slice(x, vctrs_shared_empty_cpl);
   case vctrs_type_character: return vec_type_slice(x, vctrs_shared_empty_chr);
+  case vctrs_type_factor:    return fct_type(x);
+  case vctrs_type_ordered:   return ord_type(x);
   case vctrs_type_raw:       return vec_type_slice(x, vctrs_shared_empty_raw);
   case vctrs_type_list:      return vec_type_slice(x, vctrs_shared_empty_list);
   case vctrs_type_dataframe: return df_map(x, &vec_type);
@@ -42,6 +46,40 @@ static SEXP lgl_type(SEXP x) {
     return vctrs_shared_empty_uns;
   } else {
     return vec_type_slice(x, vctrs_shared_empty_lgl);
+  }
+}
+static SEXP fct_type(SEXP x) {
+  SEXP attrib = ATTRIB(x);
+  R_len_t size = Rf_length(attrib);
+
+  bool missing_levels = Rf_getAttrib(x, R_LevelsSymbol) == R_NilValue;
+
+  if (missing_levels) {
+    Rf_errorcall(R_NilValue, "Encountered corrupt factor without levels");
+  }
+
+  if (size == 2) {
+    return vctrs_shared_empty_fct;
+  } else {
+    // Slicing preserves attributes
+    return vec_slice(x, R_NilValue);
+  }
+}
+static SEXP ord_type(SEXP x) {
+  SEXP attrib = ATTRIB(x);
+  R_len_t size = Rf_length(attrib);
+
+  bool missing_levels = Rf_getAttrib(x, R_LevelsSymbol) == R_NilValue;
+
+  if (missing_levels) {
+    Rf_errorcall(R_NilValue, "Encountered corrupt ordered factor without levels");
+  }
+
+  if (size == 2) {
+    return vctrs_shared_empty_ord;
+  } else {
+    // Slicing preserves attributes
+    return vec_slice(x, R_NilValue);
   }
 }
 static SEXP s3_type(SEXP x) {

@@ -23,6 +23,8 @@ SEXP strings_vctrs_list_of = NULL;
 SEXP strings_list = NULL;
 
 SEXP classes_data_frame = NULL;
+SEXP classes_factor = NULL;
+SEXP classes_ordered = NULL;
 SEXP classes_tibble = NULL;
 SEXP classes_list_of = NULL;
 SEXP classes_vctrs_group_rle = NULL;
@@ -1008,6 +1010,8 @@ SEXP vctrs_shared_empty_int = NULL;
 SEXP vctrs_shared_empty_dbl = NULL;
 SEXP vctrs_shared_empty_cpl = NULL;
 SEXP vctrs_shared_empty_chr = NULL;
+SEXP vctrs_shared_empty_fct = NULL;
+SEXP vctrs_shared_empty_ord = NULL;
 SEXP vctrs_shared_empty_raw = NULL;
 SEXP vctrs_shared_empty_list = NULL;
 SEXP vctrs_shared_true = NULL;
@@ -1148,6 +1152,15 @@ void vctrs_init_utils(SEXP ns) {
   strings_data_frame = Rf_mkChar("data.frame");
   SET_STRING_ELT(classes_data_frame, 0, strings_data_frame);
 
+  classes_factor = Rf_allocVector(STRSXP, 1);
+  R_PreserveObject(classes_factor);
+  SET_STRING_ELT(classes_factor, 0, strings_factor);
+
+  classes_ordered = Rf_allocVector(STRSXP, 2);
+  R_PreserveObject(classes_ordered);
+  SET_STRING_ELT(classes_ordered, 0, strings_ordered);
+  SET_STRING_ELT(classes_ordered, 1, strings_factor);
+
 
   chrs_subset = Rf_mkString("subset");
   R_PreserveObject(chrs_subset);
@@ -1225,6 +1238,18 @@ void vctrs_init_utils(SEXP ns) {
   vctrs_shared_empty_chr = Rf_allocVector(STRSXP, 0);
   R_PreserveObject(vctrs_shared_empty_chr);
   MARK_NOT_MUTABLE(vctrs_shared_empty_chr);
+
+  vctrs_shared_empty_fct = Rf_allocVector(INTSXP, 0);
+  R_PreserveObject(vctrs_shared_empty_fct);
+  Rf_setAttrib(vctrs_shared_empty_fct, R_LevelsSymbol, vctrs_shared_empty_chr);
+  Rf_setAttrib(vctrs_shared_empty_fct, R_ClassSymbol, classes_factor);
+  MARK_NOT_MUTABLE(vctrs_shared_empty_fct);
+
+  vctrs_shared_empty_ord = Rf_allocVector(INTSXP, 0);
+  R_PreserveObject(vctrs_shared_empty_ord);
+  Rf_setAttrib(vctrs_shared_empty_ord, R_LevelsSymbol, vctrs_shared_empty_chr);
+  Rf_setAttrib(vctrs_shared_empty_ord, R_ClassSymbol, classes_ordered);
+  MARK_NOT_MUTABLE(vctrs_shared_empty_ord);
 
   vctrs_shared_empty_raw = Rf_allocVector(RAWSXP, 0);
   R_PreserveObject(vctrs_shared_empty_raw);

@@ -179,6 +179,8 @@ extern SEXP vctrs_shared_empty_int;
 extern SEXP vctrs_shared_empty_dbl;
 extern SEXP vctrs_shared_empty_cpl;
 extern SEXP vctrs_shared_empty_chr;
+extern SEXP vctrs_shared_empty_fct;
+extern SEXP vctrs_shared_empty_ord;
 extern SEXP vctrs_shared_empty_raw;
 extern SEXP vctrs_shared_empty_list;
 extern SEXP vctrs_shared_empty_uns;

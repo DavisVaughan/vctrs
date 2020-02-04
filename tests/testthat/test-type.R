@@ -7,6 +7,34 @@ test_that("vec_ptype() is a no-op for non-vectors", {
   expect_identical(vec_ptype(partial_frame(x = 1)), partial_frame(x = 1))
 })
 
+test_that("vec_ptype() retains attributes on bare factors", {
+  skip("until native factor slicing is implemented")
+
+  # fallback `[.factor` doesn't preserve attrib
+  x <- structure(factor("x"), foo = "bar")
+  expect <- structure(factor(levels = "x"), foo = "bar")
+
+  expect_identical(vec_ptype(x), expect)
+})
+
+test_that("vec_ptype() retains attributes on bare ordered factors", {
+  skip("until native ordered factor slicing is implemented")
+
+  # fallback `[.factor` doesn't preserve attrib
+  x <- structure(factor("x", ordered = TRUE), foo = "bar")
+  expect <- structure(factor(levels = "x", ordered = TRUE), foo = "bar")
+
+  expect_identical(vec_ptype(x), expect)
+})
+
+test_that("vec_ptype() fails on corrupt factors / ordered factors", {
+  x <- structure(1L, class = "factor")
+  y <- structure(1L, class = c("ordered", "factor"))
+
+  expect_error(vec_ptype(x), "corrupt factor without levels")
+  expect_error(vec_ptype(y), "corrupt ordered factor without levels")
+})
+
 test_that(".ptype argument overrides others", {
   expect_equal(vec_ptype_common(.ptype = 1:10), numeric())
 })

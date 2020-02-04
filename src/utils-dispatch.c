@@ -84,12 +84,18 @@ static enum vctrs_class_type class_type_impl(SEXP class) {
   SEXP butlast = *p++;
   SEXP last = *p++;
 
-  if (butlast == strings_posixlt) {
-    if (last == strings_posixt) return vctrs_class_posixlt;
-  } else if (butlast == strings_vctrs_rcrd) {
-    if (last == strings_vctrs_vctr) return vctrs_class_rcrd;
-  } else if (last == strings_data_frame) {
+  if (last == strings_data_frame) {
     return vctrs_class_data_frame;
+  } else if (last == strings_posixt && butlast == strings_posixlt) {
+    return vctrs_class_posixlt;
+  } else if (last == strings_vctrs_vctr && butlast == strings_vctrs_rcrd) {
+    return vctrs_class_rcrd;
+  } else if (last == strings_factor) {
+    if (butlast == strings_ordered) {
+      return vctrs_class_ordered;
+    } else {
+      return vctrs_class_factor;
+    }
   }
 
   return vctrs_class_unknown;
@@ -102,6 +108,8 @@ static const char* class_type_as_str(enum vctrs_class_type type) {
   case vctrs_class_bare_tibble: return "bare_tibble";
   case vctrs_class_rcrd: return "rcrd";
   case vctrs_class_posixlt: return "posixlt";
+  case vctrs_class_factor: return "factor";
+  case vctrs_class_ordered: return "ordered";
   case vctrs_class_unknown: return "unknown";
   case vctrs_class_none: return "none";
   }

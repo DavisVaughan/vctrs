@@ -18,6 +18,8 @@ enum vctrs_class_type {
   vctrs_class_bare_tibble,
   vctrs_class_rcrd,
   vctrs_class_posixlt,
+  vctrs_class_factor,
+  vctrs_class_ordered,
   vctrs_class_unknown,
   vctrs_class_none
 };
@@ -249,6 +251,8 @@ extern SEXP strings_data_frame;
 extern SEXP strings_vctrs_rcrd;
 extern SEXP strings_posixlt;
 extern SEXP strings_posixt;
+extern SEXP strings_factor;
+extern SEXP strings_ordered;
 extern SEXP strings_vctrs_vctr;
 extern SEXP strings_none;
 extern SEXP strings_minimal;

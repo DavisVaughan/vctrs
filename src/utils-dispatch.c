@@ -3,7 +3,6 @@
 
 
 // Defined below
-enum vctrs_class_type class_type(SEXP x);
 static enum vctrs_class_type class_type_impl(SEXP class);
 static const char* class_type_as_str(enum vctrs_class_type type);
 

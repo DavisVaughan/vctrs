@@ -123,11 +123,17 @@ enum vctrs_type vec_typeof(SEXP x) {
     return vec_base_typeof(x, false);
   }
 
-  // Bare data frames are treated as a base atomic type. Subclasses of
-  // data frames are treated as S3 to give them a chance to be proxied
-  // or implement their own methods for cast, type2, etc.
-  if (is_bare_data_frame(x)) {
+  enum vctrs_class_type type = class_type(x);
+
+  // Bare data frames, factors, and ordered objects are treated as base atomic
+  // types. Subclasses of these are treated as S3 to give them a chance to be
+  // proxied or implement their own methods for cast, type2, etc.
+  if (type == vctrs_class_bare_data_frame) {
     return vctrs_type_dataframe;
+  } else if (type == vctrs_class_bare_factor) {
+    return vctrs_type_factor;
+  } else if (type == vctrs_class_bare_ordered) {
+    return vctrs_type_ordered;
   }
 
   return vctrs_type_s3;
@@ -160,6 +166,8 @@ const char* vec_type_as_str(enum vctrs_type type) {
   case vctrs_type_double:    return "double";
   case vctrs_type_complex:   return "complex";
   case vctrs_type_character: return "character";
+  case vctrs_type_factor:    return "factor";
+  case vctrs_type_ordered:   return "ordered";
   case vctrs_type_raw:       return "raw";
   case vctrs_type_list:      return "list";
   case vctrs_type_dataframe: return "dataframe";

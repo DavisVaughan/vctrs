@@ -20,6 +20,8 @@ enum vctrs_type {
   vctrs_type_double,
   vctrs_type_complex,
   vctrs_type_character,
+  vctrs_type_factor,
+  vctrs_type_ordered,
   vctrs_type_raw,
   vctrs_type_list,
   vctrs_type_dataframe,

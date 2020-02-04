@@ -159,6 +159,14 @@ test_that("data frames are always classified as such even when dispatch is off",
   expect_identical(vec_typeof_bare(mtcars), "dataframe")
 })
 
+test_that("bare factors/ordered are classified as such when dispatch is off", {
+  expect_identical(vec_typeof_bare(new_factor()), "factor")
+  expect_identical(vec_typeof_bare(new_ordered()), "ordered")
+
+  expect_identical(vec_typeof_bare(subclass(new_factor())), "s3")
+  expect_identical(vec_typeof_bare(subclass(new_ordered())), "s3")
+})
+
 test_that("assertion is not applied on proxy", {
   local_methods(
     vec_proxy.vctrs_foobar = unclass,

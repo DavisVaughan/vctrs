@@ -110,10 +110,6 @@ SEXP vec_type2(SEXP x, SEXP y,
 }
 
 
-// From dictionary.c
-SEXP vctrs_match(SEXP needles, SEXP haystack);
-SEXP vctrs_unique_loc(SEXP x);
-
 // vec_unique(vec_c(x, y))
 static SEXP chr_set_union(SEXP x, SEXP y) {
   R_xlen_t x_size = vec_size(x);
@@ -137,11 +133,9 @@ static SEXP chr_set_union(SEXP x, SEXP y) {
     p_xy[i] = p_y[j];
   }
 
-  // vec_unique()
-  SEXP index = PROTECT(vctrs_unique_loc(xy));
-  SEXP out = PROTECT(vec_slice(xy, index));
+  SEXP out = vec_unique(xy);
 
-  UNPROTECT(3);
+  UNPROTECT(1);
   return out;
 }
 
@@ -194,6 +188,9 @@ static SEXP ord_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg*
   UNPROTECT(1);
   return out;
 }
+
+// From dictionary.c
+SEXP vctrs_match(SEXP needles, SEXP haystack);
 
 SEXP df_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg) {
   SEXP x_names = PROTECT(r_names(x));

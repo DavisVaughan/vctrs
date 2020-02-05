@@ -24,6 +24,8 @@ static SEXP vctrs_type2_dispatch(SEXP x,
 }
 
 
+static SEXP fct_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg);
+static SEXP ord_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg);
 static SEXP df_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg);
 
 // [[ include("vctrs.h") ]]
@@ -78,8 +80,20 @@ SEXP vec_type2(SEXP x, SEXP y,
   case vctrs_type2_double_double:
     return vctrs_shared_empty_dbl;
 
+  // TODO - Does the ordering here mean the hierarchy should have
+  // double -> complex -> factor -> ordered -> character -> raw
+  // rather than the current hierarchy of:
+  // double -> complex -> character -> factor -> ordered -> raw
+  case vctrs_type2_character_factor:
+  case vctrs_type2_character_ordered:
   case vctrs_type2_character_character:
     return vctrs_shared_empty_chr;
+
+  case vctrs_type2_factor_factor:
+    return fct_type2(x, y, x_arg, y_arg);
+
+  case vctrs_type2_ordered_ordered:
+    return ord_type2(x, y, x_arg, y_arg);
 
   case vctrs_type2_raw_raw:
     return vctrs_shared_empty_raw;
@@ -98,6 +112,88 @@ SEXP vec_type2(SEXP x, SEXP y,
 
 // From dictionary.c
 SEXP vctrs_match(SEXP needles, SEXP haystack);
+SEXP vctrs_unique_loc(SEXP x);
+
+// vec_unique(vec_c(x, y))
+static SEXP chr_set_union(SEXP x, SEXP y) {
+  R_xlen_t x_size = vec_size(x);
+  R_xlen_t y_size = vec_size(y);
+
+  R_xlen_t size = x_size + y_size;
+
+  SEXP xy = PROTECT(Rf_allocVector(STRSXP, size));
+  SEXP* p_xy = STRING_PTR(xy);
+
+  const SEXP* p_x = STRING_PTR_RO(x);
+  const SEXP* p_y = STRING_PTR_RO(y);
+
+  R_xlen_t i = 0;
+
+  for (R_xlen_t j = 0; j < x_size; ++j, ++i) {
+    p_xy[i] = p_x[j];
+  }
+
+  for (R_xlen_t j = 0; j < y_size; ++j, ++i) {
+    p_xy[i] = p_y[j];
+  }
+
+  // vec_unique()
+  SEXP index = PROTECT(vctrs_unique_loc(xy));
+  SEXP out = PROTECT(vec_slice(xy, index));
+
+  UNPROTECT(3);
+  return out;
+}
+
+static SEXP fct_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg) {
+  SEXP x_levels = Rf_getAttrib(x, R_LevelsSymbol);
+  SEXP y_levels = Rf_getAttrib(y, R_LevelsSymbol);
+
+  if (TYPEOF(x_levels) != STRSXP) {
+    stop_corrupt_factor_levels(x, x_arg);
+  }
+
+  if (TYPEOF(y_levels) != STRSXP) {
+    stop_corrupt_factor_levels(y, y_arg);
+  }
+
+  // Quick early exit for identical levels pointing to the same SEXP
+  if (x_levels == y_levels) {
+    return new_empty_factor(x_levels);
+  }
+
+  SEXP levels = PROTECT(chr_set_union(x_levels, y_levels));
+
+  SEXP out = new_empty_factor(levels);
+
+  UNPROTECT(1);
+  return out;
+}
+
+static SEXP ord_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg) {
+  SEXP x_levels = Rf_getAttrib(x, R_LevelsSymbol);
+  SEXP y_levels = Rf_getAttrib(y, R_LevelsSymbol);
+
+  if (TYPEOF(x_levels) != STRSXP) {
+    stop_corrupt_ordered_levels(x, x_arg);
+  }
+
+  if (TYPEOF(y_levels) != STRSXP) {
+    stop_corrupt_ordered_levels(y, y_arg);
+  }
+
+  // Quick early exit for identical levels pointing to the same SEXP
+  if (x_levels == y_levels) {
+    return new_empty_ordered(x_levels);
+  }
+
+  SEXP levels = PROTECT(chr_set_union(x_levels, y_levels));
+
+  SEXP out = new_empty_ordered(levels);
+
+  UNPROTECT(1);
+  return out;
+}
 
 SEXP df_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg) {
   SEXP x_names = PROTECT(r_names(x));

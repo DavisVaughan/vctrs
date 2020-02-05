@@ -320,6 +320,26 @@ SEXP s3_find_method(const char* generic, SEXP x) {
   return R_NilValue;
 }
 
+// [[ include("utils.h") ]]
+SEXP new_empty_factor(SEXP levels) {
+  SEXP out = PROTECT(Rf_duplicate(vctrs_shared_empty_fct));
+
+  Rf_setAttrib(out, R_LevelsSymbol, levels);
+
+  UNPROTECT(1);
+  return out;
+}
+
+// [[ include("utils.h") ]]
+SEXP new_empty_ordered(SEXP levels) {
+  SEXP out = PROTECT(Rf_duplicate(vctrs_shared_empty_ord));
+
+  Rf_setAttrib(out, R_LevelsSymbol, levels);
+
+  UNPROTECT(1);
+  return out;
+}
+
 // [[ include("vctrs.h") ]]
 enum vctrs_dbl_class dbl_classify(double x) {
   if (!isnan(x)) {

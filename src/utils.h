@@ -114,6 +114,9 @@ SEXP df_container_type(SEXP x);
 SEXP df_poke(SEXP x, R_len_t i, SEXP value);
 SEXP df_poke_at(SEXP x, SEXP name, SEXP value);
 
+SEXP new_empty_factor(SEXP levels);
+SEXP new_empty_ordered(SEXP levels);
+
 void init_compact_seq(int* p, R_len_t start, R_len_t size, bool increasing);
 SEXP compact_seq(R_len_t start, R_len_t size, bool increasing);
 bool is_compact_seq(SEXP x);

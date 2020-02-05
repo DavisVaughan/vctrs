@@ -52,14 +52,14 @@ static SEXP fct_type(SEXP x) {
   SEXP attrib = ATTRIB(x);
   R_len_t size = Rf_length(attrib);
 
-  bool missing_levels = Rf_getAttrib(x, R_LevelsSymbol) == R_NilValue;
+  SEXP levels = Rf_getAttrib(x, R_LevelsSymbol);
 
-  if (missing_levels) {
+  if (levels == R_NilValue) {
     Rf_errorcall(R_NilValue, "Encountered corrupt factor without levels");
   }
 
   if (size == 2) {
-    return vctrs_shared_empty_fct;
+    return new_empty_factor(levels);
   } else {
     // Slicing preserves attributes
     return vec_slice(x, R_NilValue);
@@ -69,14 +69,14 @@ static SEXP ord_type(SEXP x) {
   SEXP attrib = ATTRIB(x);
   R_len_t size = Rf_length(attrib);
 
-  bool missing_levels = Rf_getAttrib(x, R_LevelsSymbol) == R_NilValue;
+  SEXP levels = Rf_getAttrib(x, R_LevelsSymbol);
 
-  if (missing_levels) {
+  if (levels == R_NilValue) {
     Rf_errorcall(R_NilValue, "Encountered corrupt ordered factor without levels");
   }
 
   if (size == 2) {
-    return vctrs_shared_empty_ord;
+    return new_empty_ordered(levels);
   } else {
     // Slicing preserves attributes
     return vec_slice(x, R_NilValue);

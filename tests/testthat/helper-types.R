@@ -11,6 +11,20 @@ base_empty_types <- list(
   dataframe = data.frame()
 )
 
+base_with_s3_empty_types <- list(
+  null = NULL,
+  logical = lgl(),
+  integer = int(),
+  double = dbl(),
+  complex = cpl(),
+  character = chr(),
+  factor = new_factor(),
+  ordered = new_ordered(),
+  raw = bytes(),
+  list = list(),
+  dataframe = data.frame()
+)
+
 proxied_empty_types <- list(
   double = new_hidden(),
   # Don't call tibble here to avoid catch-22, because tibble now uses vctrs

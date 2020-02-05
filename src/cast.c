@@ -189,6 +189,57 @@ static SEXP int_as_double(SEXP x, bool* lossy) {
   return out;
 }
 
+static void new_factor(SEXP x, SEXP levels) {
+  if (TYPEOF(x) != INTSXP) {
+    Rf_errorcall(R_NilValue, "Internal error: Only integers can be made into factors");
+  }
+
+  Rf_setAttrib(x, R_LevelsSymbol, levels);
+  Rf_setAttrib(x, R_ClassSymbol, classes_factor);
+}
+
+static SEXP chr_as_factor(SEXP x, SEXP to, struct vctrs_arg* x_arg,
+                          struct vctrs_arg* to_arg, bool* lossy) {
+
+  SEXP to_levels = Rf_getAttrib(to, R_LevelsSymbol);
+
+  if (TYPEOF(to_levels) != STRSXP) {
+    stop_corrupt_factor_levels(to, to_arg);
+  }
+
+  R_len_t size_levels = vec_size(to_levels);
+
+  if (size_levels == 0) {
+
+  }
+
+  return x;
+}
+
+static SEXP fct_as_factor(SEXP x, SEXP to, struct vctrs_arg* x_arg,
+                          struct vctrs_arg* to_arg, bool* lossy) {
+  return x;
+}
+
+static SEXP chr_as_ordered(SEXP x, SEXP to, struct vctrs_arg* x_arg,
+                           struct vctrs_arg* to_arg, bool* lossy) {
+  SEXP out = PROTECT(chr_as_factor(x, to, x_arg, to_arg, lossy));
+
+  if (*lossy) {
+    return R_NilValue;
+  }
+
+  // It should always be new, so this is safe
+  Rf_setAttrib(out, R_ClassSymbol, classes_ordered);
+
+  UNPROTECT(1);
+  return out;
+}
+
+static SEXP ord_as_ordered(SEXP x, SEXP to, struct vctrs_arg* x_arg,
+                           struct vctrs_arg* to_arg, bool* lossy) {
+  return x;
+}
 
 // From dictionary.c
 SEXP vctrs_match(SEXP needles, SEXP haystack);
@@ -324,6 +375,8 @@ static SEXP vec_cast_switch(SEXP x, SEXP to, bool* lossy, struct vctrs_arg* x_ar
     case vctrs_type_logical:
     case vctrs_type_integer:
     case vctrs_type_double:
+    case vctrs_type_factor:
+    case vctrs_type_ordered:
       return Rf_coerceVector(x, STRSXP);
     case vctrs_type_character:
       return x;
@@ -331,6 +384,26 @@ static SEXP vec_cast_switch(SEXP x, SEXP to, bool* lossy, struct vctrs_arg* x_ar
       break;
     }
     break;
+
+  case vctrs_type_factor:
+    switch (vec_typeof(x)) {
+    case vctrs_type_character:
+      return chr_as_factor(x, to, x_arg, to_arg, lossy);
+    case vctrs_type_factor:
+      return fct_as_factor(x, to, x_arg, to_arg, lossy);
+    default:
+      break;
+    }
+
+  case vctrs_type_ordered:
+    switch (vec_typeof(x)) {
+    case vctrs_type_character:
+      return chr_as_ordered(x, to, x_arg, to_arg, lossy);
+    case vctrs_type_ordered:
+      return ord_as_ordered(x, to, x_arg, to_arg, lossy);
+    default:
+      break;
+    }
 
   case vctrs_type_dataframe:
     switch (vec_typeof(x)) {

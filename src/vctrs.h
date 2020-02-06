@@ -296,6 +296,13 @@ SEXP vec_type2_extension(SEXP x, SEXP y,
                          struct vctrs_arg* y_arg,
                          int* left);
 
+SEXP vec_cast_switch_extension(SEXP x, SEXP to,
+                               enum vctrs_type x_type,
+                               enum vctrs_type to_type,
+                               bool* lossy,
+                               struct vctrs_arg* x_arg,
+                               struct vctrs_arg* to_arg);
+
 bool is_data_frame(SEXP x);
 bool is_record(SEXP x);
 

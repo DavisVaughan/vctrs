@@ -111,13 +111,8 @@ static SEXP ord_as_character(SEXP x, struct vctrs_arg* x_arg) {
 
 static void new_factor(SEXP x, SEXP levels);
 
-// Better strategy:
-// - Take unique values of `x` with vec_unique()
-// - Check if all of them are in `levels` with a `vec_match()`
-// - We have to allow NA values in `x`, so loop over `vec_match()` results and
-//   check for any `NA` matches. If we find an `NA` match, check if the actual
-//   x value is `NA`. If it is, we are ok, if not error lossy.
-// - The `vec_match()` results are the integer `out` that becomes the factor
+SEXP vctrs_match(SEXP needles, SEXP haystack);
+
 static SEXP chr_as_factor(SEXP x, SEXP to, bool* lossy, struct vctrs_arg* to_arg) {
   SEXP levels = Rf_getAttrib(to, R_LevelsSymbol);
 
@@ -125,46 +120,24 @@ static SEXP chr_as_factor(SEXP x, SEXP to, bool* lossy, struct vctrs_arg* to_arg
     stop_corrupt_factor_levels(to, to_arg);
   }
 
-  // TODO Worry about encodings?
+  SEXP out = PROTECT(vctrs_match(x, levels));
+  const int* p_out = INTEGER(out);
 
-  // TODO - What happens when length(to_levels) == 0? vec_cast.factor.character
-  // creates a factor from x's unique values, is this really what we want?
-
-  const SEXP* p_levels = STRING_PTR_RO(levels);
-  R_xlen_t levels_size = Rf_xlength(levels);
-
+  R_len_t size = vec_size(x);
   const SEXP* p_x = STRING_PTR_RO(x);
-  R_xlen_t x_size = Rf_xlength(x);
 
-  SEXP out = PROTECT(Rf_allocVector(INTSXP, x_size));
-  int* p_out = INTEGER(out);
-
-  for (R_xlen_t i = 0; i < x_size; ++i) {
-    bool novel = true;
-    const SEXP x_elt = p_x[i];
-
-    if (x_elt == NA_STRING) {
-      p_out[i] = NA_INTEGER;
+  // - Check for `NA` match values that are actually no-matches
+  // - `NA` values in `x` are allowed
+  for (R_len_t i = 0; i < size; ++i) {
+    if (p_out[i] != NA_INTEGER) {
       continue;
     }
 
-    for (R_xlen_t j = 0; j < levels_size; ++j) {
-      const SEXP levels_elt = p_levels[j];
-
-      if (x_elt == levels_elt) {
-        p_out[i] = j + 1;
-        novel = false;
-        break;
-      }
+    if (p_x[i] == NA_STRING) {
+      continue;
     }
 
-    if (novel) {
-      *lossy = true;
-      break;
-    }
-  }
-
-  if (*lossy) {
+    *lossy = true;
     UNPROTECT(1);
     return R_NilValue;
   }

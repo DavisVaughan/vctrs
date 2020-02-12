@@ -1,4 +1,4 @@
 partial_frame<
   x: integer {partial}
-  y: double
+  y: double {partial}
 >

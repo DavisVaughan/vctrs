@@ -1,10 +1,16 @@
 context("test-partial-frame")
 
 test_that("has ok print method", {
-  pf <- vec_ptype2(partial_frame(x = 1L), data.frame(y = 2))
+  pf <- partial_frame(x = 1L, y = 2)
   expect_known_output(
     print(pf),
     test_path("test-partial-frame-print.txt")
+  )
+
+  learned <- vec_ptype2(pf, data.frame(z = 2))
+  expect_known_output(
+    print(learned),
+    test_path("test-partial-frame-learned.txt")
   )
 
   expect_equal(vec_ptype_abbr(pf), "prtl")

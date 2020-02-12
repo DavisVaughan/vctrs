@@ -37,11 +37,14 @@ test_that("order of levels comes from data", {
 })
 
 test_that("partial levels added to end if not in data", {
-  pfctr <- partial_factor("y")
-  fctr <- factor(levels = "x")
+  pfctr <- partial_factor("z")
+  fctr1 <- factor(levels = "x")
+  fctr2 <- factor(levels = "y")
 
-  expect_equal(levels(vec_ptype_common(pfctr, fctr)), c("x", "y"))
-  expect_equal(levels(vec_ptype_common(fctr, pfctr)), c("x", "y"))
+  expect_equal(levels(vec_ptype_common(pfctr, fctr1, fctr2)), c("x", "y", "z"))
+  expect_equal(levels(vec_ptype_common(fctr1, fctr2, pfctr)), c("x", "y", "z"))
+  expect_equal(levels(vec_ptype_common(fctr1, pfctr, fctr2)), c("x", "y", "z"))
+  expect_equal(levels(vec_ptype_common(fctr1, fctr2, .ptype = pfctr)), c("x", "y", "z"))
 })
 
 test_that("can assert partial factors based on level presence", {

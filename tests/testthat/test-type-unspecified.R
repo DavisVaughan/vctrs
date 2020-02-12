@@ -2,7 +2,6 @@ context("test-type-unspecified")
 
 test_that("unknown type is idempotent", {
   types <- list(
-    unspecified(),
     logical(),
     integer(),
     double(),
@@ -21,6 +20,18 @@ test_that("unknown type is idempotent", {
 
   rhs <- map(types, vec_ptype2, y = unspecified())
   expect_equal(types, rhs)
+})
+
+test_that("vec_ptype2() of multiple unspecified() is finalised", {
+  expect <- logical()
+
+  expect_identical(vec_ptype_common(unspecified(1), unspecified(1)), expect)
+  expect_identical(vec_ptype_common(NA, NA), expect)
+  expect_identical(vec_ptype_common(NA, unspecified(1)), expect)
+
+  expect_identical(vec_ptype2(unspecified(1), unspecified(1)), expect)
+  expect_identical(vec_ptype2(NA, NA), expect)
+  expect_identical(vec_ptype2(NA, unspecified(1)), expect)
 })
 
 test_that("subsetting works", {
@@ -45,6 +56,9 @@ test_that("can finalise data frame containing unspecified columns", {
   expect_identical(finalised$y, lgl())
 
   common <- vec_ptype_common(df, df)
+  expect_identical(common$y, lgl())
+
+  common <- vec_ptype2(df, df)
   expect_identical(common$y, lgl())
 })
 

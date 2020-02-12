@@ -61,6 +61,12 @@ vec_ptype_abbr.vctrs_partial_frame <- function(x, ...) {
   "prtl"
 }
 
+# `vec_ptype2()` methods return new partial frames, which is important when
+# reducing with `vec_ptype_common()` (partial columns are consistently added to
+# the end). However, the C level `vec_type2()` will always call
+# `vec_ptype_finalise()` before returning, so the common type is always a
+# finalised type (here, a data frame).
+
 #' @method vec_ptype2 vctrs_partial_frame
 #' @export
 vec_ptype2.vctrs_partial_frame <- function(x, y, ...) {

@@ -75,6 +75,12 @@ vec_ptype_abbr.vctrs_partial_factor <- function(x, ...) {
   "prtl_fctr"
 }
 
+# `vec_ptype2()` methods return new partial factors, which is important when
+# reducing with `vec_ptype_common()` (partial levels are consistently added to
+# the end). However, the C level `vec_type2()` will always call
+# `vec_ptype_finalise()` before returning, so the common type is always a
+# finalised type (here, a factor).
+
 #' @method vec_ptype2 vctrs_partial_factor
 #' @export
 vec_ptype2.vctrs_partial_factor <- function(x, y, ...) {

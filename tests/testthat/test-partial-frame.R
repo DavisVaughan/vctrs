@@ -25,10 +25,14 @@ test_that("order of variables comes from data", {
 })
 
 test_that("partial variables added to end if not in data", {
-  pf <- partial_frame(y = 1)
-  df <- data.frame(x = 1)
-  expect_named(vec_ptype_common(pf, df), c("x", "y"))
-  expect_named(vec_ptype_common(df, pf), c("x", "y"))
+  pf <- partial_frame(z = 1)
+  df1 <- data.frame(x = 1)
+  df2 <- data.frame(y = 1)
+
+  expect_named(vec_ptype_common(pf, df1, df2), c("x", "y", "z"))
+  expect_named(vec_ptype_common(df1, df2, pf), c("x", "y", "z"))
+  expect_named(vec_ptype_common(df1, pf, df2), c("x", "y", "z"))
+  expect_named(vec_ptype_common(df1, df2, .ptype = pf), c("x", "y", "z"))
 })
 
 test_that("can assert partial frames based on column presence", {

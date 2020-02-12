@@ -4,10 +4,10 @@
 static SEXP df_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg);
 
 // [[ include("vctrs.h") ]]
-SEXP vec_type2(SEXP x, SEXP y,
-               struct vctrs_arg* x_arg,
-               struct vctrs_arg* y_arg,
-               int* left) {
+SEXP vec_type2_impl(SEXP x, SEXP y,
+                    struct vctrs_arg* x_arg,
+                    struct vctrs_arg* y_arg,
+                    int* left) {
   if (x == R_NilValue) {
     if (!vec_is_partial(y)) {
       vec_assert(y, y_arg);
@@ -74,6 +74,20 @@ SEXP vec_type2(SEXP x, SEXP y,
   default:
     return vec_ptype2_dispatch_s3(x, y, x_arg, y_arg);
   }
+}
+
+// [[ include("vctrs.h") ]]
+SEXP vec_type2(SEXP x, SEXP y,
+               struct vctrs_arg* x_arg,
+               struct vctrs_arg* y_arg,
+               int* left) {
+  SEXP out = PROTECT(vec_type2_impl(x, y, x_arg, y_arg, left));
+
+  // Finalise unspecified, and partial types
+  out = vec_type_finalise(out);
+
+  UNPROTECT(1);
+  return out;
 }
 
 SEXP df_type2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg) {

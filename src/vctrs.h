@@ -334,6 +334,12 @@ SEXP vec_c(SEXP xs,
            SEXP name_spec,
            const struct name_repair_opts* name_repair);
 
+SEXP vec_type2_impl(SEXP x,
+                    SEXP y,
+                    struct vctrs_arg* x_arg,
+                    struct vctrs_arg* y_arg,
+                    int* left);
+
 SEXP vec_type2(SEXP x,
                SEXP y,
                struct vctrs_arg* x_arg,

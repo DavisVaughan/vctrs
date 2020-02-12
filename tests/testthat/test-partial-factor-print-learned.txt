@@ -1,3 +1,2 @@
-partial_factor<
-  df698
->
+factor(0)
+Levels: z

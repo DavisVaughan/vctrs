@@ -1,13 +1,13 @@
 context("test-partial-factor")
 
 test_that("has ok print method", {
-  partial <- partial_factor("x")
+  partial <- partial_factor(c("x", "y"))
   expect_known_output(
     print(partial),
     test_path("test-partial-factor-print-partial.txt")
   )
 
-  both <- vec_ptype2(partial, factor("y"))
+  both <- vec_ptype2(partial, factor("z"))
   expect_known_output(
     print(both),
     test_path("test-partial-factor-print-both.txt")
@@ -19,7 +19,7 @@ test_that("has ok print method", {
     test_path("test-partial-factor-print-empty.txt")
   )
 
-  learned <- vec_ptype2(empty, factor("y"))
+  learned <- vec_ptype2(empty, factor("z"))
   expect_known_output(
     print(learned),
     test_path("test-partial-factor-print-learned.txt")

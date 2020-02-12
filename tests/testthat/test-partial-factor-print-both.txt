@@ -1,4 +1,2 @@
-partial_factor<
-  5a425 {partial}
-  df698
->
+factor(0)
+Levels: z x y

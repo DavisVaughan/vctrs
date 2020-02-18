@@ -403,6 +403,8 @@ SEXP vec_cast_dispatch(SEXP x,
 SEXP df_ptype2(SEXP x, SEXP y, struct vctrs_arg* x_arg, struct vctrs_arg* y_arg);
 SEXP df_as_dataframe(SEXP x, SEXP to, struct vctrs_arg* x_arg, struct vctrs_arg* to_arg);
 
+SEXP as_df_row(SEXP x, struct name_repair_opts* name_repair);
+
 bool is_data_frame(SEXP x);
 bool is_record(SEXP x);
 

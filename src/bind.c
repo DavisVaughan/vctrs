@@ -4,7 +4,6 @@
 
 
 static SEXP vec_rbind(SEXP xs, SEXP ptype, SEXP id, struct name_repair_opts* name_repair);
-static SEXP as_df_row(SEXP x, struct name_repair_opts* name_repair);
 static SEXP as_df_row_impl(SEXP x, struct name_repair_opts* name_repair);
 struct name_repair_opts validate_bind_name_repair(SEXP name_repair, bool allow_minimal);
 
@@ -181,7 +180,7 @@ static SEXP vec_rbind(SEXP xs, SEXP ptype, SEXP names_to, struct name_repair_opt
   return out;
 }
 
-static SEXP as_df_row(SEXP x, struct name_repair_opts* name_repair) {
+SEXP as_df_row(SEXP x, struct name_repair_opts* name_repair) {
   if (vec_is_unspecified(x) && r_names(x) == R_NilValue) {
     return x;
   } else {

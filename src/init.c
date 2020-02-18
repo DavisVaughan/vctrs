@@ -89,6 +89,7 @@ extern SEXP vctrs_as_names(SEXP, SEXP, SEXP);
 extern SEXP vctrs_is_partial(SEXP);
 extern SEXP vctrs_new_data_frame(SEXP, SEXP, SEXP, SEXP);
 extern SEXP vctrs_new_bare_data_frame(SEXP, SEXP);
+extern SEXP vec_lengthen(SEXP, SEXP);
 
 // Very experimental
 // Available in the API header
@@ -197,6 +198,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_is_partial",                 (DL_FUNC) &vctrs_is_partial, 1},
   {"vctrs_new_data_frame",             (DL_FUNC) &vctrs_new_data_frame, 4},
   {"vctrs_new_bare_data_frame",        (DL_FUNC) &vctrs_new_bare_data_frame, 2},
+  {"vctrs_lengthen",                   (DL_FUNC) &vec_lengthen, 2},
   {NULL, NULL, 0}
 };
 

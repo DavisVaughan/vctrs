@@ -1166,6 +1166,7 @@ SEXP syms_y = NULL;
 SEXP syms_to = NULL;
 SEXP syms_dots = NULL;
 SEXP syms_bracket = NULL;
+SEXP syms_bracket2 = NULL;
 SEXP syms_arg = NULL;
 SEXP syms_x_arg = NULL;
 SEXP syms_y_arg = NULL;
@@ -1188,6 +1189,7 @@ SEXP syms_repair = NULL;
 SEXP syms_tzone = NULL;
 
 SEXP fns_bracket = NULL;
+SEXP fns_bracket2 = NULL;
 SEXP fns_quote = NULL;
 SEXP fns_names = NULL;
 
@@ -1416,6 +1418,7 @@ void vctrs_init_utils(SEXP ns) {
   syms_to = Rf_install("to");
   syms_dots = Rf_install("...");
   syms_bracket = Rf_install("[");
+  syms_bracket2 = Rf_install("[[");
   syms_arg = Rf_install("arg");
   syms_x_arg = Rf_install("x_arg");
   syms_y_arg = Rf_install("y_arg");
@@ -1438,6 +1441,7 @@ void vctrs_init_utils(SEXP ns) {
   syms_tzone = Rf_install("tzone");
 
   fns_bracket = Rf_findVar(syms_bracket, R_BaseEnv);
+  fns_bracket2 = Rf_findVar(syms_bracket2, R_BaseEnv);
   fns_quote = Rf_findVar(Rf_install("quote"), R_BaseEnv);
   fns_names = Rf_findVar(Rf_install("names"), R_BaseEnv);
 

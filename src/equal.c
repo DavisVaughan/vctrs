@@ -47,13 +47,13 @@ int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
 // -----------------------------------------------------------------------------
 
 static inline int lgl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int int_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int dbl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int raw_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int cpl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int chr_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int list_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
-static int df_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static inline int int_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static inline int dbl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static inline int raw_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static inline int cpl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static inline int chr_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static inline int list_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static inline int df_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
 
 vctrs_equal_scalar_fn_t get_equal_scalar_fn(SEXP x) {
   switch (TYPEOF(x)) {

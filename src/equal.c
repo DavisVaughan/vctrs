@@ -1,5 +1,6 @@
 #include <math.h>
 #include "vctrs.h"
+#include "equal.h"
 
 static int lgl_equal_scalar(const int* x, const int* y, bool na_equal);
 static int int_equal_scalar(const int* x, const int* y, bool na_equal);
@@ -41,6 +42,75 @@ int equal_scalar(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
   }
 
   vctrs_stop_unsupported_type(vec_typeof(x), "equal_scalar()");
+}
+
+// -----------------------------------------------------------------------------
+
+static inline int lgl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static int int_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static int dbl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static int raw_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static int cpl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static int chr_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static int list_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+static int df_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal);
+
+vctrs_equal_scalar_fn_t get_equal_scalar_fn(SEXP x) {
+  switch (TYPEOF(x)) {
+  case LGLSXP:  return lgl_equal_scalar_fn;
+  case INTSXP:  return int_equal_scalar_fn;
+  case REALSXP: return dbl_equal_scalar_fn;
+  case STRSXP:  return chr_equal_scalar_fn;
+  case RAWSXP:  return raw_equal_scalar_fn;
+  case CPLXSXP: return cpl_equal_scalar_fn;
+  default: break;
+  }
+
+  switch (vec_proxy_typeof(x)) {
+  case vctrs_type_list:      return list_equal_scalar_fn;
+  case vctrs_type_dataframe: return df_equal_scalar_fn;
+  default: break;
+  }
+
+  vctrs_stop_unsupported_type(vec_typeof(x), "get_equal_scalar_fn()");
+}
+
+static inline int lgl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  return lgl_equal_scalar(LOGICAL(x) + i, LOGICAL(y) + j, na_equal);
+}
+
+static inline int int_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  return int_equal_scalar(INTEGER(x) + i, INTEGER(y) + j, na_equal);
+}
+
+static inline int dbl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  return dbl_equal_scalar(REAL(x) + i, REAL(y) + j, na_equal);
+}
+
+static inline int raw_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  return raw_equal_scalar(RAW(x) + i, RAW(y) + j, na_equal);
+}
+
+static inline int cpl_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  return cpl_equal_scalar(COMPLEX(x) + i, COMPLEX(y) + j, na_equal);
+}
+
+static inline int chr_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  return chr_equal_scalar(STRING_PTR(x) + i, STRING_PTR(y) + j, na_equal);
+}
+
+static inline int list_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  return list_equal_scalar(x, i, y, j, na_equal);
+}
+
+static inline int df_equal_scalar_fn(SEXP x, R_len_t i, SEXP y, R_len_t j, bool na_equal) {
+  int n_col = Rf_length(x);
+
+  if (n_col != Rf_length(y)) {
+    Rf_errorcall(R_NilValue, "`x` and `y` must have the same number of columns");
+  }
+
+  return df_equal_scalar(x, i, y, j, na_equal, n_col);
 }
 
 // -----------------------------------------------------------------------------

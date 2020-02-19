@@ -1,3 +1,4 @@
+#include "equal.h"
 
 #define DICT_EMPTY -1
 
@@ -10,6 +11,7 @@
 
 struct dictionary {
   SEXP vec;
+  vctrs_equal_scalar_fn_t equal_fn;
   R_len_t* key;
   uint32_t* hash;
   uint32_t size;

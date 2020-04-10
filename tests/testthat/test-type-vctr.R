@@ -253,27 +253,38 @@ test_that("can not provide invalid names", {
 })
 
 test_that("can use [ and [[ with names", {
-  local_methods(
-    vec_ptype2.vctrs_vctr.double = function(...) dbl(),
-    vec_ptype2.double.vctrs_vctr = function(...) dbl()
-  )
-  x <- new_vctr(c(a = 1, b = 2))
+  new_dbl <- function(x) {
+    new_vctr(x, class = "vctrs_dbl", inherit_base_type = FALSE)
+  }
 
-  expect_equal(x["b"], new_vctr(c(b = 2)))
-  expect_equal(x[["b"]], new_vctr(2)) # [[ drops names
+  local_methods(
+    vec_cast.vctrs_dbl = function(x, to, ...) UseMethod("vec_cast.vctrs_dbl"),
+    vec_cast.vctrs_dbl.double = function(x, to, ...) new_dbl(x)
+  )
+
+  x <- new_dbl(c(a = 1, b = 2))
+
+  expect_equal(x["b"], new_dbl(c(b = 2)))
+  expect_equal(x[["b"]], new_dbl(2)) # [[ drops names
 
   x[["c"]] <- 3
-  expect_equal(x[["c"]], new_vctr(3))
+  expect_equal(x[["c"]], new_dbl(3))
   x["d"] <- 4
-  expect_equal(x[["d"]], new_vctr(4))
+  expect_equal(x[["d"]], new_dbl(4))
 })
 
 test_that("can use [ and [[ with names - list vctr", {
+  new_lst <- function(x) {
+    new_vctr(x, class = "vctrs_lst", inherit_base_type = FALSE)
+  }
+
   local_methods(
-    vec_ptype2.vctrs_vctr = function(...) list(),
-    vec_ptype2.list.vctrs_vctr = function(...) list()
+    vec_cast.vctrs_lst = function(x, to, ...) UseMethod("vec_cast.vctrs_lst"),
+    vec_cast.vctrs_lst.double = function(x, to, ...) new_lst(list(x)),
+    vec_cast.vctrs_lst.list = function(x, to, ...) new_lst(x)
   )
-  y <- new_vctr(list(a = 1, b = 2))
+
+  y <- new_lst(list(a = 1, b = 2))
   y[["c"]] <- 3
   expect_equal(y[["c"]], 3)
   y["d"] <- list(4)
@@ -281,12 +292,17 @@ test_that("can use [ and [[ with names - list vctr", {
 })
 
 test_that("can use [[<- to replace n-dimensional elements", {
+  new_mtrx <- function(x, dim) {
+    new_vctr(x, dim = dim, class = "vctrs_mtrx", inherit_base_type = FALSE)
+  }
+
   local_methods(
     vec_restore.vctrs_mtrx = function(x, to, ...) x,
-    vec_ptype2.double.vctrs_mtrx = function(...) dbl(),
-    vec_ptype2.vctrs_mtrx = function(...) dbl()
+    vec_cast.vctrs_mtrx = function(x, to, ...) UseMethod("vec_cast.vctrs_mtrx"),
+    vec_cast.vctrs_mtrx.double = function(x, to, ...) x
   )
-  x <- new_vctr(rep(1, times = 4), dim = c(2, 2), class = "vctrs_mtrx")
+
+  x <- new_mtrx(rep(1, times = 4), dim = c(2, 2))
   x[[2, 2]] <- 4
   expect_equal(x[[2, 2]], 4)
 })

@@ -159,10 +159,6 @@ vec_default_cast <- function(x, to, x_arg = "", to_arg = "") {
     return(vec_cast_to_asis(x, to, x_arg = x_arg, to_arg = to_arg))
   }
 
-  if (inherits(to, "vctrs_vctr") && !inherits(to, "vctrs_rcrd")) {
-    return(vctr_cast(x, to, x_arg = x_arg, to_arg = to_arg))
-  }
-
   if (is_same_type(x, to)) {
     return(x)
   }

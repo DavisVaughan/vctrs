@@ -4,13 +4,55 @@
     <loc>https://vctrs.r-lib.org/index.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/reference/dims.html</loc>
+    <loc>https://vctrs.r-lib.org/reference/as-is.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/df_ptype2.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/faq-error-incompatible-attributes.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/faq-warning-convert-inputs.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/fields.html</loc>
   </url>
   <url>
+    <loc>https://vctrs.r-lib.org/reference/howto-faq-coercion-data-frame.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/howto-faq-coercion.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/int64.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/internal-faq-ptype2-identity.html</loc>
+  </url>
+  <url>
     <loc>https://vctrs.r-lib.org/reference/list_of.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/maybe_lossy_cast.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/name_spec.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/new_data_frame.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/new_date.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/new_factor.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/new_list_of.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/new_partial.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/new_rcrd.html</loc>
@@ -19,16 +61,58 @@
     <loc>https://vctrs.r-lib.org/reference/new_vctr.html</loc>
   </url>
   <url>
+    <loc>https://vctrs.r-lib.org/reference/obj_print.html</loc>
+  </url>
+  <url>
     <loc>https://vctrs.r-lib.org/reference/op-empty-default.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/reference/unknown.html</loc>
+    <loc>https://vctrs.r-lib.org/reference/partial_factor.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/partial_frame.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/s3_register.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/table.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/theory-faq-coercion.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/unspecified.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vctrs-conditions.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vctrs-package.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec-rep.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_arith.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_as_index.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_as_location.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_as_names.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_as_names_legacy.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_as_subscript.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_assert.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vec_bind.html</loc>
@@ -40,7 +124,13 @@
     <loc>https://vctrs.r-lib.org/reference/vec_cast.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/reference/vec_coerce.html</loc>
+    <loc>https://vctrs.r-lib.org/reference/vec_cbind_frame_ptype.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_chop.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_compare.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vec_count.html</loc>
@@ -49,10 +139,25 @@
     <loc>https://vctrs.r-lib.org/reference/vec_data.html</loc>
   </url>
   <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_default_ptype2.html</loc>
+  </url>
+  <url>
     <loc>https://vctrs.r-lib.org/reference/vec_duplicate.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/reference/vec_grp.html</loc>
+    <loc>https://vctrs.r-lib.org/reference/vec_empty.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_equal.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_group.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_init.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_is_list.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vec_list_cast.html</loc>
@@ -61,13 +166,25 @@
     <loc>https://vctrs.r-lib.org/reference/vec_match.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/reference/vec_method_register.html</loc>
+    <loc>https://vctrs.r-lib.org/reference/vec_math.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_order.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vec_proxy.html</loc>
   </url>
   <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_proxy_compare.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_proxy_equal.html</loc>
+  </url>
+  <url>
     <loc>https://vctrs.r-lib.org/reference/vec_ptype.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_ptype2.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vec_ptype_full.html</loc>
@@ -76,21 +193,36 @@
     <loc>https://vctrs.r-lib.org/reference/vec_recycle.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/reference/vec_shape.html</loc>
+    <loc>https://vctrs.r-lib.org/reference/vec_repeat.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/reference/vec_type2.html</loc>
+    <loc>https://vctrs.r-lib.org/reference/vec_seq_along.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_size.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_slice.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_split.html</loc>
+  </url>
+  <url>
+    <loc>https://vctrs.r-lib.org/reference/vec_type.html</loc>
   </url>
   <url>
     <loc>https://vctrs.r-lib.org/reference/vec_unique.html</loc>
   </url>
   <url>
+    <loc>https://vctrs.r-lib.org/articles/pillar.html</loc>
+  </url>
+  <url>
     <loc>https://vctrs.r-lib.org/articles/s3-vector.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/articles/theory.html</loc>
+    <loc>https://vctrs.r-lib.org/articles/stability.html</loc>
   </url>
   <url>
-    <loc>https://vctrs.r-lib.org/articles/vctrs-vs-base.html</loc>
+    <loc>https://vctrs.r-lib.org/articles/type-size.html</loc>
   </url>
 </urlset>

@@ -331,6 +331,19 @@ provide your own method if your attributes require special care
 your own method, bear in mind that many R users add attributes to track
 additional metadata that is important to them, so you should preserve any
 attributes that don't require special handling for your class.</p>
+    <h2 class="hasAnchor" id="dependencies"><a class="anchor" href="#dependencies"></a>Dependencies</h2>
+
+    
+
+<ul>
+<li><p><code>x</code> must be a vector in the vctrs sense (see <code><a href='vec_assert.html'>vec_is()</a></code>)</p></li>
+<li><p>By default the underlying data is returned as is (identity proxy)</p></li>
+</ul>
+
+<p>All vector classes have a proxy, even those who don't implement any
+vctrs methods. The exception is S3 lists that don't inherit from
+<code>"list"</code> explicitly. These might have to implement an identity
+proxy for compatibility with vctrs (see discussion above).</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

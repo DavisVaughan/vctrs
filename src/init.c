@@ -118,6 +118,7 @@ extern SEXP vctrs_ptype2_opts(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP vctrs_s3_find_method(SEXP, SEXP, SEXP);
 extern SEXP vctrs_implements_ptype2(SEXP);
 extern SEXP vctrs_int_radix_sort(SEXP);
+extern SEXP vctrs_radix_order(SEXP);
 
 
 // Maturing
@@ -253,6 +254,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_s3_find_method",             (DL_FUNC) &vctrs_s3_find_method, 3},
   {"vctrs_implements_ptype2",          (DL_FUNC) &vctrs_implements_ptype2, 1},
   {"vctrs_int_radix_sort",             (DL_FUNC) &vctrs_int_radix_sort, 1},
+  {"vctrs_radix_order",                (DL_FUNC) &vctrs_radix_order, 1},
   {NULL, NULL, 0}
 };
 

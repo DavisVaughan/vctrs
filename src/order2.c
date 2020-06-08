@@ -151,8 +151,32 @@ static void int_radix_order_impl(int* p_x,
                                  int* p_o,
                                  int* p_o_aux,
                                  uint8_t* p_bytes,
+                                 bool* p_skips,
                                  const R_xlen_t size,
                                  const uint8_t pass) {
+  const uint8_t next_pass = pass + 1;
+
+  // Can skip when all bytes are the same along all groups
+  // (not just along this chunk)
+  if (p_skips[pass]) {
+    if (next_pass == 4) {
+      return;
+    }
+
+    int_radix_order_impl(
+      p_x,
+      p_x_aux,
+      p_o,
+      p_o_aux,
+      p_bytes,
+      p_skips,
+      size,
+      next_pass
+    );
+
+    return;
+  }
+
   R_xlen_t p_counts[UINT8_MAX_SIZE] = { 0 };
 
   int_radix_order_pass(
@@ -166,7 +190,6 @@ static void int_radix_order_impl(int* p_x,
     pass
   );
 
-  const uint8_t next_pass = pass + 1;
   R_xlen_t last_cumulative_count = 0;
 
   for (uint16_t i = 0; i < UINT8_MAX_SIZE; ++i) {
@@ -206,6 +229,7 @@ static void int_radix_order_impl(int* p_x,
       p_o,
       p_o_aux,
       p_bytes,
+      p_skips,
       group_size,
       next_pass
     );
@@ -239,11 +263,33 @@ static void int_radix_order(SEXP x,
   // Correct the order once up front
   // - Adjusts based on decreasing / na_last
   // - Adjusts based on previous column's partial ordering in `p_o`
-  // - TODO: Shouldn't have to do this on forward radix sort for data frames
+  // - TODO: Shouldn't have to do this reorder with forward radix sort for data frames
+  // - Also pre-computes pass `skips` where all bytes are identical
   for (R_xlen_t i = 0; i < size; ++i) {
     const int loc = p_o[i];
-    const int elt = p_x[loc - 1];
-    p_x_adjusted[i] = int_adjust(elt, direction, na_last);
+    int elt = p_x[loc - 1];
+    p_x_adjusted[i] = int_adjust(elt, direction, na_last);;
+  }
+
+  uint32_t elt_mapped = map_from_int32_to_uint32(p_x_adjusted[0]);
+  bool p_skips[4] = { true };
+  uint8_t p_reference[4];
+
+  // Initialize
+  // Pass 0->3 aligns with MSB->LSB
+  p_reference[0] = extract_byte(elt_mapped, 24);
+  p_reference[1] = extract_byte(elt_mapped, 16);
+  p_reference[2] = extract_byte(elt_mapped, 8);
+  p_reference[3] = extract_byte(elt_mapped, 0);
+
+  for (R_xlen_t i = 1; i < size; ++i) {
+    const int elt = p_x_adjusted[i];
+    elt_mapped = map_from_int32_to_uint32(elt);
+
+    p_skips[0] = p_skips[0] && p_reference[0] == extract_byte(elt_mapped, 24);
+    p_skips[1] = p_skips[1] && p_reference[1] == extract_byte(elt_mapped, 16);
+    p_skips[2] = p_skips[2] && p_reference[2] == extract_byte(elt_mapped, 8);
+    p_skips[3] = p_skips[3] && p_reference[3] == extract_byte(elt_mapped, 0);
   }
 
   const uint8_t pass = 0;
@@ -254,6 +300,7 @@ static void int_radix_order(SEXP x,
     p_o,
     p_o_aux,
     p_bytes,
+    p_skips,
     size,
     pass
   );
@@ -427,22 +474,29 @@ static SEXP vec_radix_order(SEXP x, SEXP decreasing, bool na_last) {
     Rf_errorcall(R_NilValue, "`decreasing` must not contain missing values.");
   }
 
+  SEXP o = PROTECT(Rf_allocVector(INTSXP, size));
+  int* p_o = INTEGER(o);
+
+  // Initialize `out` with sequential 1-based ordering
+  for (R_xlen_t i = 0, j = 1; i < size; ++i, ++j) {
+    p_o[i] = j;
+  }
+
+  // Early exits
+  // Important for some later assumptions that we have at least 1 element
+  if (size == 1 || size == 0) {
+    UNPROTECT(1);
+    return o;
+  }
+
   // This is sometimes bigger than it needs to be, but will only
   // be much bigger than required if `x` is filled with numbers that are
   // incredibly spread out.
   SEXP x_adjusted = PROTECT(Rf_allocVector(INTSXP, size));
   SEXP x_aux = PROTECT(Rf_allocVector(INTSXP, size));
 
-  SEXP o = PROTECT(Rf_allocVector(INTSXP, size));
-  int* p_o = INTEGER(o);
-
   SEXP o_aux = PROTECT(Rf_allocVector(INTSXP, size));
   int* p_o_aux = INTEGER(o_aux);
-
-  // Initialize `out` with sequential 1-based ordering
-  for (R_xlen_t i = 0, j = 1; i < size; ++i, ++j) {
-    p_o[i] = j;
-  }
 
   uint8_t* p_bytes = (uint8_t*) R_alloc(size, sizeof(uint8_t));
 

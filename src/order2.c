@@ -19,6 +19,183 @@ static inline int int_adjust(int x, int direction, bool na_last) {
 
 // -----------------------------------------------------------------------------
 
+#define INT_RANGE_LIMIT 100000
+
+// Computes the inclusive range - i.e. the number of values between `[min, max]`
+// including min and max.
+static void int_range(const int* p_x, R_xlen_t size, int* p_x_min, uint32_t* p_range) {
+  uint32_t range = UINT32_MAX;
+
+  int x_min = NA_INTEGER;
+  int x_max = NA_INTEGER;
+
+  R_xlen_t i = 0;
+
+  // Find first non-NA value
+  while (i < size) {
+    const int elt = p_x[i];
+
+    if (elt == NA_INTEGER) {
+      ++i;
+      continue;
+    }
+
+    x_min = elt;
+    x_max = elt;
+    range = 0;
+    ++i;
+
+    break;
+  }
+
+  // All NAs - Return max range to signal that we don't use counting sort
+  if (x_min == NA_INTEGER) {
+    *p_x_min = x_min;
+    *p_range = range;
+    return;
+  }
+
+  // Find min and max
+  for (; i < size; ++i) {
+    const int elt = p_x[i];
+
+    if (elt == NA_INTEGER) {
+      continue;
+    }
+
+    if (elt > x_max) {
+      x_max = elt;
+      continue;
+    }
+
+    if (elt < x_min) {
+      x_min = elt;
+      continue;
+    }
+  }
+
+  // Max possible range is from `c(.Machine$integer.max, -.Machine$integer.max)`
+  // which is exactly the max of a `uint32_t`. But we need to go up to `int64_t`
+  // to avoid intermediate overflow.
+  range = (uint32_t) ((int64_t) x_max - (int64_t) x_min + 1);
+
+  *p_x_min = x_min;
+  *p_range = range;
+}
+
+// `p_x` is unadjusted here
+static void int_counting_sort(const int* p_x,
+                              SEXP x_adjusted,
+                              int* p_o,
+                              int* p_o_aux,
+                              R_xlen_t size,
+                              int x_min,
+                              uint32_t range,
+                              bool decreasing,
+                              bool na_last) {
+  // Update with partial ordering in `p_o` from previous column
+  // TODO: Won't have to do with forward radix in df columns
+  int* p_x_adjusted = INTEGER(x_adjusted);
+
+  for (R_xlen_t i = 0; i < size; ++i) {
+    const int loc = p_o[i];
+    p_x_adjusted[i] = p_x[loc - 1];
+  }
+
+  // Needs to be static so:
+  // - We only allocate it once (counts are reset to 0 at end)
+  // - Allocating as static allows us to allocate an array this large
+  // - + 1 to make room for `NA` bucket
+  static R_xlen_t p_counts[INT_RANGE_LIMIT + 1] = { 0 };
+
+  // `NA` values get counted in the last used bucket
+  uint32_t na_bucket = range;
+  R_xlen_t na_count = 0;
+
+  // Sanity check
+  if (range > INT_RANGE_LIMIT) {
+    Rf_errorcall(R_NilValue, "Internal error: `range > INT_RANGE_LIMIT`.");
+  }
+
+  // Histogram pass
+  for (R_xlen_t i = 0; i < size; ++i) {
+    const int elt = p_x_adjusted[i];
+
+    if (elt == NA_INTEGER) {
+      ++na_count;
+    } else {
+      const uint32_t bucket = elt - x_min;
+      ++p_counts[bucket];
+    }
+  }
+
+  // Add `NA` counts once at the end
+  p_counts[na_bucket] = na_count;
+
+  R_xlen_t cumulative = 0;
+
+  // Handle decreasing/increasing by altering the order in which
+  // counts are accumulated
+  const int direction = decreasing ? -1 : 1;
+  R_xlen_t j = decreasing ? range - 1 : 0;
+
+  // `na_last = false` pushes NA counts to the front
+  if (!na_last) {
+    p_counts[na_bucket] = cumulative;
+    cumulative += na_count;
+  }
+
+  // Accumulate counts, skip zeros
+  for (R_xlen_t i = 0; i < range; ++i) {
+    R_xlen_t count = p_counts[j];
+
+    if (count == 0) {
+      j += direction;
+      continue;
+    }
+
+    // Insert current cumulative value, then increment
+    p_counts[j] = cumulative;
+    cumulative += count;
+
+    j += direction;
+  }
+
+  // `na_last = true` pushes NA counts to the back
+  if (na_last) {
+    p_counts[na_bucket] = cumulative;
+    cumulative += na_count;
+  }
+
+  for (R_xlen_t i = 0; i < size; ++i) {
+    const int elt = p_x_adjusted[i];
+
+    uint32_t bucket;
+
+    if (elt == NA_INTEGER) {
+      bucket = na_bucket;
+    } else {
+      bucket = elt - x_min;
+    }
+
+    const R_xlen_t loc = p_counts[bucket]++;
+
+    p_o_aux[loc] = p_o[i];
+  }
+
+  // Copy back over
+  // TODO: Do we have to do this with forward pass df cols?
+  for (R_xlen_t i = 0; i < size; ++i) {
+    p_o[i] = p_o_aux[i];
+  }
+
+  // Reset counts for next column.
+  // Only reset what we might have touched.
+  memset(p_counts, 0, (range + 1) * sizeof(R_xlen_t));
+}
+
+// -----------------------------------------------------------------------------
+
 // A bit ad hoc
 #define INT_INSERTION_SIZE 256
 
@@ -220,7 +397,7 @@ static void int_radix_order_impl(int* p_x,
 
 // -----------------------------------------------------------------------------
 
-static void int_radix_order(SEXP x,
+static void int_radix_order(const int* p_x,
                             SEXP x_adjusted,
                             SEXP x_aux,
                             int* p_o,
@@ -230,8 +407,6 @@ static void int_radix_order(SEXP x,
                             bool na_last,
                             R_xlen_t size) {
   const int direction = decreasing ? -1 : 1;
-
-  const int* p_x = INTEGER_RO(x);
 
   int* p_x_adjusted = INTEGER(x_adjusted);
   int* p_x_aux = INTEGER(x_aux);
@@ -258,6 +433,32 @@ static void int_radix_order(SEXP x,
     pass
   );
 }
+
+// -----------------------------------------------------------------------------
+
+static void int_order(SEXP x,
+                      SEXP x_adjusted,
+                      SEXP x_aux,
+                      int* p_o,
+                      int* p_o_aux,
+                      uint8_t* p_bytes,
+                      bool decreasing,
+                      bool na_last,
+                      R_xlen_t size) {
+  const int* p_x = INTEGER_RO(x);
+
+  uint32_t range;
+  int x_min;
+
+  int_range(p_x, size, &x_min, &range);
+
+  if (range < INT_RANGE_LIMIT) {
+    int_counting_sort(p_x, x_adjusted, p_o, p_o_aux, size, x_min, range, decreasing, na_last);
+  } else {
+    int_radix_order(p_x, x_adjusted, x_aux, p_o, p_o_aux, p_bytes, decreasing, na_last, size);
+  }
+}
+
 
 // -----------------------------------------------------------------------------
 
@@ -370,7 +571,7 @@ static void vec_col_radix_order_switch(SEXP x,
                                        R_xlen_t size) {
   switch (vec_proxy_typeof(x)) {
   case vctrs_type_integer: {
-    int_radix_order(x, x_adjusted, x_aux, p_o, p_o_aux, p_bytes, decreasing, na_last, size);
+    int_order(x, x_adjusted, x_aux, p_o, p_o_aux, p_bytes, decreasing, na_last, size);
     break;
   }
   case vctrs_type_dataframe: {
@@ -489,7 +690,7 @@ static void vec_radix_order_switch(SEXP x,
 
   switch (type) {
   case vctrs_type_integer: {
-    int_radix_order(x, x_adjusted, x_aux, p_o, p_o_aux, p_bytes, c_decreasing, na_last, size);
+    int_order(x, x_adjusted, x_aux, p_o, p_o_aux, p_bytes, c_decreasing, na_last, size);
     break;
   }
   default: {

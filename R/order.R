@@ -1,3 +1,7 @@
-# vec_radix_order <- function(x, na_last = TRUE, decreasing = FALSE) {
-#   .Call(vctrs_radix_order, x, na_last, decreasing)
-# }
+vec_order2 <- function(x, decreasing = FALSE, na_last = TRUE) {
+  .Call(vctrs_order, x, decreasing, na_last, FALSE)
+}
+
+vec_order_groups <- function(x, decreasing = FALSE, na_last = TRUE) {
+  .Call(vctrs_order, x, decreasing, na_last, TRUE)
+}

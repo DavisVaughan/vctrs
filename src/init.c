@@ -117,8 +117,7 @@ extern SEXP vctrs_datetime_validate(SEXP);
 extern SEXP vctrs_ptype2_opts(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP vctrs_s3_find_method(SEXP, SEXP, SEXP);
 extern SEXP vctrs_implements_ptype2(SEXP);
-extern SEXP vctrs_radix_order(SEXP, SEXP, SEXP);
-extern SEXP vctrs_radix_order_old(SEXP, SEXP, SEXP);
+extern SEXP vctrs_order(SEXP, SEXP, SEXP, SEXP);
 
 
 // Maturing
@@ -253,8 +252,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_ptype2_opts",                (DL_FUNC) &vctrs_ptype2_opts, 5},
   {"vctrs_s3_find_method",             (DL_FUNC) &vctrs_s3_find_method, 3},
   {"vctrs_implements_ptype2",          (DL_FUNC) &vctrs_implements_ptype2, 1},
-  {"vctrs_radix_order",                (DL_FUNC) &vctrs_radix_order, 3},
-  {"vctrs_radix_order_old",            (DL_FUNC) &vctrs_radix_order_old, 3},
+  {"vctrs_order",                      (DL_FUNC) &vctrs_order, 4},
   {NULL, NULL, 0}
 };
 

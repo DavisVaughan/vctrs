@@ -28,6 +28,7 @@ static struct group_infos new_group_infos(struct group_info** p_p_group_info,
                                           bool requested,
                                           bool ignore);
 static inline struct group_info* groups_current(struct group_infos* p_group_infos);
+static inline R_xlen_t groups_count(struct group_infos* p_group_infos);
 static void groups_swap(struct group_infos* p_group_infos);
 static void groups_size_push(struct group_infos* p_group_infos, R_xlen_t size);
 
@@ -1461,30 +1462,16 @@ static inline uint8_t dbl_extract_uint64_byte(uint64_t x, uint8_t shift) {
 
 // -----------------------------------------------------------------------------
 
-static void col_order_switch(void* p_x,
-                             void* p_x_aux,
-                             int* p_o,
-                             int* p_o_aux,
-                             uint8_t* p_bytes,
-                             struct group_infos* p_group_infos,
-                             bool decreasing,
-                             bool na_last,
-                             R_xlen_t size,
-                             const enum vctrs_type type);
-
-
-#define DF_ORDER_EXTRACT_CHUNK(CONST_DEREF, CTYPE) do {          \
-  const CTYPE* p_col = CONST_DEREF(col);                         \
-  CTYPE* p_x_slice_col = (CTYPE*) p_x_slice;                     \
-                                                                 \
-  /* Extract the next group chunk and place in */                \
-  /* sequential order for cache friendliness */                  \
-  for (R_xlen_t j = 0; j < group_size; ++j) {                    \
-    const int loc = p_o_col[j] - 1;                              \
-    p_x_slice_col[j] = p_col[loc];                               \
-  }                                                              \
-} while (0)
-
+static void df_col_order(SEXP col,
+                         void* p_x_slice,
+                         void* p_x_aux,
+                         int* p_o,
+                         int* p_o_aux,
+                         uint8_t* p_bytes,
+                         struct group_infos* p_group_infos,
+                         bool decreasing,
+                         bool na_last,
+                         R_xlen_t size);
 
 /*
  * `df_order()` is the main user of `p_group_infos`. It uses the grouping
@@ -1543,6 +1530,11 @@ static void df_order(SEXP x,
     size
   );
 
+  // If there were no ties, we are completely done
+  if (groups_count(p_group_infos) == size) {
+    return;
+  }
+
   // Iterate over remaining columns by group chunk
   for (R_xlen_t i = 1; i < n_cols; ++i) {
     col = VECTOR_ELT(x, i);
@@ -1551,84 +1543,130 @@ static void df_order(SEXP x,
       col_decreasing = p_decreasing[i];
     }
 
-    // Reset pointer between columns since we increment them as
-    // we iterate through the groups
-    int* p_o_col = p_o;
-
-    // Get the number of group chunks from previous column group info
-    struct group_info* p_group_info_pre = groups_current(p_group_infos);
-    R_xlen_t n_groups = p_group_info_pre->n_groups;
-
-    // If there were no ties, we are completely done
-    if (n_groups == size) {
-      break;
-    }
-
     // Turn off group tracking if we are on the last column and the
     // user didn't request group information
     if (i == n_cols - 1 && !p_group_infos->requested) {
       p_group_infos->ignore = true;
     }
 
-    // Swap to other group info to prepare for this column
-    groups_swap(p_group_infos);
+    df_col_order(
+      col,
+      p_x_slice,
+      p_x_aux,
+      p_o,
+      p_o_aux,
+      p_bytes,
+      p_group_infos,
+      col_decreasing,
+      na_last,
+      size
+    );
 
-    const enum vctrs_type type = vec_proxy_typeof(col);
-
-    // Iterate over this column's group chunks
-    for (R_xlen_t group = 0; group < n_groups; ++group) {
-      R_xlen_t group_size = p_group_info_pre->p_data[group];
-
-      // Fast handling of simplest case
-      if (group_size == 1) {
-        ++p_o_col;
-        groups_size_push(p_group_infos, 1);
-        continue;
-      }
-
-      // Extract current chunk and place into `x_slice` in sequential order
-      switch (type) {
-      case vctrs_type_integer: DF_ORDER_EXTRACT_CHUNK(INTEGER_RO, int); break;
-      case vctrs_type_logical: DF_ORDER_EXTRACT_CHUNK(LOGICAL_RO, int); break;
-      case vctrs_type_double: DF_ORDER_EXTRACT_CHUNK(REAL_RO, double); break;
-      default: Rf_errorcall(R_NilValue, "Unknown data frame column type in `vec_order()`.");
-      }
-
-      col_order_switch(
-        p_x_slice,
-        p_x_aux,
-        p_o_col,
-        p_o_aux,
-        p_bytes,
-        p_group_infos,
-        col_decreasing,
-        na_last,
-        group_size,
-        type
-      );
-
-      p_o_col += group_size;
+    // If there were no ties, we are completely done
+    if (groups_count(p_group_infos) == size) {
+      break;
     }
   }
 }
 
-#undef DF_ORDER_EXTRACT_CHUNK
+// -----------------------------------------------------------------------------
+
+static void df_col_order_switch(void* p_x,
+                                void* p_x_aux,
+                                int* p_o,
+                                int* p_o_aux,
+                                uint8_t* p_bytes,
+                                struct group_infos* p_group_infos,
+                                bool decreasing,
+                                bool na_last,
+                                R_xlen_t size,
+                                const enum vctrs_type type);
+
+
+#define DF_COL_ORDER_EXTRACT_CHUNK(CONST_DEREF, CTYPE) do { \
+  const CTYPE* p_col = CONST_DEREF(col);                    \
+  CTYPE* p_x_slice_col = (CTYPE*) p_x_slice;                \
+                                                            \
+  /* Extract the next group chunk and place in */           \
+  /* sequential order for cache friendliness */             \
+  for (R_xlen_t j = 0; j < group_size; ++j) {               \
+    const int loc = p_o[j] - 1;                             \
+    p_x_slice_col[j] = p_col[loc];                          \
+  }                                                         \
+} while (0)
+
+
+static void df_col_order(SEXP col,
+                         void* p_x_slice,
+                         void* p_x_aux,
+                         int* p_o,
+                         int* p_o_aux,
+                         uint8_t* p_bytes,
+                         struct group_infos* p_group_infos,
+                         bool decreasing,
+                         bool na_last,
+                         R_xlen_t size) {
+  struct group_info* p_group_info_previous = groups_current(p_group_infos);
+  R_xlen_t n_groups = p_group_info_previous->n_groups;
+
+  // Swap to other group info to prepare for this column
+  groups_swap(p_group_infos);
+
+  const enum vctrs_type type = vec_proxy_typeof(col);
+
+  // Iterate over this column's group chunks
+  for (R_xlen_t group = 0; group < n_groups; ++group) {
+    R_xlen_t group_size = p_group_info_previous->p_data[group];
+
+    // Fast handling of simplest case
+    if (group_size == 1) {
+      ++p_o;
+      groups_size_push(p_group_infos, 1);
+      continue;
+    }
+
+    // Extract current chunk and place into `x_slice` in sequential order
+    switch (type) {
+    case vctrs_type_integer: DF_COL_ORDER_EXTRACT_CHUNK(INTEGER_RO, int); break;
+    case vctrs_type_logical: DF_COL_ORDER_EXTRACT_CHUNK(LOGICAL_RO, int); break;
+    case vctrs_type_double: DF_COL_ORDER_EXTRACT_CHUNK(REAL_RO, double); break;
+    default: Rf_errorcall(R_NilValue, "Unknown data frame column type in `vec_order()`.");
+    }
+
+    df_col_order_switch(
+      p_x_slice,
+      p_x_aux,
+      p_o,
+      p_o_aux,
+      p_bytes,
+      p_group_infos,
+      decreasing,
+      na_last,
+      group_size,
+      type
+    );
+
+    p_o += group_size;
+  }
+}
+
+#undef DF_COL_ORDER_EXTRACT_CHUNK
 
 // -----------------------------------------------------------------------------
 
 // Like `vec_order_switch()`, but specifically for columns of a data
 // frame where `decreasing` is known and is scalar.
 // Assumes `p_x` holds the current group chunk.
-static void col_order_switch(void* p_x,
-                             void* p_x_aux,
-                             int* p_o,
-                             int* p_o_aux,
-                             uint8_t* p_bytes,
-                             struct group_infos* p_group_infos,
-                             bool decreasing,
-                             bool na_last,
-                             R_xlen_t size,
-                             const enum vctrs_type type) {
+static void df_col_order_switch(void* p_x,
+                                void* p_x_aux,
+                                int* p_o,
+                                int* p_o_aux,
+                                uint8_t* p_bytes,
+                                struct group_infos* p_group_infos,
+                                bool decreasing,
+                                bool na_last,
+                                R_xlen_t size,
+                                const enum vctrs_type type) {
   switch (type) {
   case vctrs_type_integer: {
     int_order(p_x, p_x_aux, p_o, p_o_aux, p_bytes, p_group_infos, decreasing, na_last, size);
@@ -1720,6 +1758,13 @@ static struct group_infos new_group_infos(struct group_info** p_p_group_info,
  */
 static inline struct group_info* groups_current(struct group_infos* p_group_infos) {
   return p_group_infos->p_p_group_info[p_group_infos->current];
+}
+
+/*
+ * Count the number of groups used in the current group info.
+ */
+static inline R_xlen_t groups_count(struct group_infos* p_group_infos) {
+  return groups_current(p_group_infos)->n_groups;
 }
 
 /*

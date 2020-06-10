@@ -89,7 +89,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">vctrs</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.3.0.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.3.1.9000</span>
       </span>
     </div>
 
@@ -157,13 +157,28 @@
 <h1 class="page-header" data-toc-text="development version">
 <a href="#vctrs-development-version" class="anchor"></a>vctrs (development version)<small> Unreleased </small>
 </h1>
+</div>
+    <div id="vctrs-031" class="section level1">
+<h1 class="page-header" data-toc-text="0.3.1">
+<a href="#vctrs-031" class="anchor"></a>vctrs 0.3.1<small> 2020-06-05 </small>
+</h1>
 <ul>
+<li><p><code><a href="../reference/vec_slice.html">vec_slice()</a></code> no longer restores attributes of foreign objects for which a <code><a href="https://rdrr.io/r/base/Extract.html">[</a></code> method exist. This fixes an issue with <code>ts</code> objects which were previously incorrectly restored.</p></li>
 <li><p>The <code><a href="https://rdrr.io/r/base/list.html">as.list()</a></code> method for <code>vctrs_rcrd</code> objects has been removed in favor of directly using the method for <code>vctrs_vctr</code>, which calls <code><a href="../reference/vec_chop.html">vec_chop()</a></code>.</p></li>
 <li><p><code><a href="../reference/vec_c.html">vec_c()</a></code> and <code><a href="../reference/vec_bind.html">vec_rbind()</a></code> now fall back to <code><a href="https://rdrr.io/r/base/c.html">base::c()</a></code> if the inputs have a common class hierarchy for which a <code><a href="https://rdrr.io/r/base/c.html">c()</a></code> method is implemented but no self-to-self <code><a href="../reference/vec_ptype2.html">vec_ptype2()</a></code> method is implemented.</p></li>
 <li><p><code><a href="../reference/vec_bind.html">vec_rbind()</a></code> now internally calls <code><a href="../reference/vec_proxy.html">vec_proxy()</a></code> and <code><a href="../reference/vec_proxy.html">vec_restore()</a></code> on the data frame common type that is used to create the output (<a href='https://github.com/r-lib/vctrs/issues/1109'>#1109</a>).</p></li>
+<li><p><code><a href="../reference/vec_as_location.html">vec_as_location2("0")</a></code> now works correctly (<a href='https://github.com/r-lib/vctrs/issues/1131'>#1131</a>).</p></li>
 <li><p><code>?reference-faq-compatibility</code> is a new reference guide on vctrs primitives. It includes an overview of the fallbacks to base R generics implemented in vctrs for compatibility with existing classes.</p></li>
 <li><p>The documentation of vctrs functions now includes a Dependencies section to reference which other vctrs operations are called from that function. By following the dependencies links recursively, you will find the vctrs primitives on which an operation relies.</p></li>
 </ul>
+<div id="cran-results" class="section level2">
+<h2 class="hasAnchor">
+<a href="#cran-results" class="anchor"></a>CRAN results</h2>
+<ul>
+<li>Fixed type declaration mismatches revealed by LTO build.</li>
+<li>Fixed r-devel issue with new <code>c.factor()</code> method.</li>
+</ul>
+</div>
 </div>
     <div id="vctrs-030" class="section level1">
 <h1 class="page-header" data-toc-text="0.3.0">
@@ -317,9 +332,9 @@ vec_ptype2.foo.bar &lt;- function(x, y, ...) new_foo()</code></pre>
 <li><p>Coercion and recycling errors are now more consistent.</p></li>
 </ul>
 </div>
-<div id="cran-results" class="section level2">
+<div id="cran-results-1" class="section level2">
 <h2 class="hasAnchor">
-<a href="#cran-results" class="anchor"></a>CRAN results</h2>
+<a href="#cran-results-1" class="anchor"></a>CRAN results</h2>
 <ul>
 <li><p>Fixed clang-UBSAN error “nan is outside the range of representable values of type ‘int’” (<a href='https://github.com/r-lib/vctrs/issues/902'>#902</a>).</p></li>
 <li><p>Fixed compilation of stability vignette following the date conversion changes on R-devel.</p></li>

@@ -4,8 +4,8 @@
 * `vec_order()` and `vec_sort()` now use a native ordering algorithm. It
   produces the same results as before except in the case of character vectors,
   which are now ordered in the C-locale. Additionally, the `direction`
-  argument is now vectorized for data frame input so columns can be ordered
-  with varying directions.
+  and `na_value` arguments are now vectorized for data frame input so columns
+  can be ordered with varying directions and treatments of missing values.
   
 * New `vec_proxy_order()` that provides an ordering proxy for use in
   `vec_order()` and `vec_sort()`. The default method falls through to

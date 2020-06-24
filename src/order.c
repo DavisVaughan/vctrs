@@ -247,6 +247,16 @@ static void vec_order_switch(SEXP x,
                              R_xlen_t size,
                              const enum vctrs_type type);
 
+static SEXP vec_order_unique_loc_impl(SEXP x,
+                                      struct lazy_order* p_lazy_o,
+                                      struct lazy_vec* p_lazy_x_chunk,
+                                      struct lazy_vec* p_lazy_x_aux,
+                                      struct lazy_vec* p_lazy_o_aux,
+                                      struct lazy_vec* p_lazy_bytes,
+                                      struct lazy_vec* p_lazy_counts,
+                                      struct group_infos* p_group_infos,
+                                      struct truelength_info* p_truelength_info);
+
 /*
  * Returns an integer vector of the ordering unless `locations` is true. In
  * that case it returns a data frame with two columns. The first is the
@@ -359,7 +369,7 @@ static SEXP vec_order_impl(SEXP x, SEXP decreasing, SEXP na_last, bool locations
 
   // Return ordered location info rather than ordering
   if (locations) {
-    SEXP out = vec_order_loc_impl(
+    SEXP out = vec_order_unique_loc_impl(
       x,
       p_lazy_o,
       p_lazy_x_chunk,
@@ -394,6 +404,86 @@ static void vec_order_base_switch(SEXP x,
                                   bool na_last,
                                   R_xlen_t size,
                                   const enum vctrs_type type);
+
+
+static SEXP vec_order_unique_loc_impl(SEXP x,
+                                      struct lazy_order* p_lazy_o,
+                                      struct lazy_vec* p_lazy_x_chunk,
+                                      struct lazy_vec* p_lazy_x_aux,
+                                      struct lazy_vec* p_lazy_o_aux,
+                                      struct lazy_vec* p_lazy_bytes,
+                                      struct lazy_vec* p_lazy_counts,
+                                      struct group_infos* p_group_infos,
+                                      struct truelength_info* p_truelength_info) {
+  int n_prot = 0;
+  int* p_n_prot = &n_prot;
+
+  // Original ordering of `x`
+  int* p_o = p_lazy_o->p_o;
+
+  struct group_info* p_group_info = groups_current(p_group_infos);
+
+  int* p_group_sizes = p_group_info->p_data;
+  R_xlen_t n_groups = p_group_info->n_groups;
+
+  int start = 0;
+
+  // This is sneaky!
+  // Extract ordering of unique keys and overwrite `p_group_sizes` with them
+  // since it is an integer vector and we won't need it anymore
+  for (R_xlen_t i = 0; i < n_groups; ++i) {
+    const int group_size = p_group_sizes[i];
+    p_group_sizes[i] = p_o[start];
+    start += group_size;
+  }
+
+  // Reset ordering where we plan to use it
+  for (R_xlen_t i = 0; i < n_groups; ++i) {
+    p_o[i] = i + 1;
+  }
+
+  // Turn off group tracking
+  // - We don't need it now, we just want the ordering
+  // - It would overwrite the `p_group_sizes` data
+  p_group_infos->ignore = true;
+
+  // Default ordering
+  const bool decreasing = false;
+  const bool na_last = true;
+
+  // Compute order of unique key locations
+  vec_order_base_switch(
+    p_group_info->data,
+    p_lazy_o,
+    p_lazy_x_chunk,
+    p_lazy_x_aux,
+    p_lazy_o_aux,
+    p_lazy_bytes,
+    p_lazy_counts,
+    p_group_infos,
+    p_truelength_info,
+    decreasing,
+    na_last,
+    n_groups,
+    vctrs_type_integer
+  );
+
+  // New ordering that orders the ordering of unique `x` keys
+  int* p_key_o = p_lazy_o->p_o;
+
+  // Final ordering of uniques based on first appearance
+  SEXP out = PROTECT_N(Rf_allocVector(INTSXP, n_groups), p_n_prot);
+  int* p_out = INTEGER(out);
+
+  // Reorder ordering by first appearance
+  for (R_xlen_t i = 0; i < n_groups; ++i) {
+    const int loc = p_key_o[i] - 1;
+    p_out[i] = p_group_sizes[loc];
+  }
+
+  UNPROTECT(n_prot);
+  return out;
+}
 
 static SEXP vec_order_loc_impl(SEXP x,
                                struct lazy_order* p_lazy_o,

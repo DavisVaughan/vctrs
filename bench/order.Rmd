@@ -1,0 +1,455 @@
+---
+title: "Order performance"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#> ")
+```
+
+Investigation of `vec_order()` performance compared with `base::order()` using various data types and distributions of data (total size, number of groups, etc).
+
+Also investigates performance of `vec_order()` vs current implementation of `vec_unique()`, which is based on hashing and a dictionary. It might be worth switching to use the sort based approach of `vec_order()`.
+
+## Setup
+
+```{r}
+library(vctrs)
+library(rlang)
+library(stringr)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+# Wrapper around `order()` that is also meaningful for data frames and
+# always chooses radix ordering
+base_order <- function(x, na.last = TRUE, decreasing = FALSE) {
+  if (is.data.frame(x)) {
+    x <- unname(x)
+  } else {
+    x <- list(x)
+  }
+
+  args <- list(na.last = na.last, decreasing = decreasing, method = "radix")
+
+  args <- c(x, args)
+
+  exec("order", !!!args)
+}
+```
+
+```{r}
+# Generate `size` random words of varying string sizes
+new_dictionary <- function(size, min_length, max_length) {
+  lengths <- rlang::seq2(min_length, max_length)
+
+  stringi::stri_rand_strings(
+    size,
+    sample(lengths, size = size, replace = TRUE)
+  )
+}
+```
+
+```{r}
+# Work around bench_expr bug where vectorized attribute isn't being sliced
+# https://github.com/r-lib/bench/pull/90
+
+filter_bench <- function(.data, ...) {
+  out <- dplyr::mutate(.data, rn = row_number()) %>%
+    dplyr::filter(...)
+  
+  # patch up bench_expr
+  which <- out$rn
+  desc <- attr(.data$expression, "description")
+  attr(out$expression, "description") <- desc[which]
+  
+  out$rn <- NULL
+  
+  out
+}
+```
+
+## Integers
+
+The performance of integer sorting is generally the same as `order()`. The one exception is with nearly sorted integer vectors, where `order()` does better for some unknown reason. See the "Nearly sorted sequence" section.
+
+### Test 1
+
+- Varying total size (small)
+- Varying group size
+
+```{r}
+set.seed(123)
+
+size <- 10 ^ (1:4)
+n_groups <- 10 ^ (1:6)
+
+df <- bench::press(
+  size = size,
+  n_groups = n_groups,
+  {
+    x <- sample(n_groups, size, replace = TRUE)
+    bench::mark(vec_order(x), base_order(x), iterations = 50)
+  }
+)
+```
+
+We seem to have a small edge when ordering very small vectors, but this practically won't make too much of a difference.
+
+```{r}
+autoplot(df) +
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle("Integers (small size)")
+```
+
+### Test 2
+
+- Varying total size (large)
+- Varying number of groups
+
+```{r}
+set.seed(123)
+
+size <- 10 ^ (5:7)
+n_groups <- 10 ^ (1:6)
+
+df <- bench::press(
+  size = size,
+  n_groups = n_groups,
+  {
+    x <- sample(n_groups, size, replace = TRUE)
+    bench::mark(vec_order(x), base_order(x), iterations = 10)
+  }
+)
+```
+
+Performance seems to be generally about the same no matter the size or number of groups.
+
+```{r}
+autoplot(df) + 
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle("Integers (large size)")
+```
+
+Zoom into few groups, large size case
+
+```{r}
+df %>%
+  filter_bench(n_groups == 10, size == 1e7) %>%
+  autoplot()
+```
+
+Zoom into many groups, large size case
+
+```{r}
+df %>%
+  filter_bench(n_groups == 1e6, size == 1e7) %>%
+  autoplot()
+```
+
+### Test 3
+
+Investigating the performance of switching from the counting sort to the radix sort. This happens at `INT_COUNTING_ORDER_RANGE_BOUNDARY` which is 100,000.
+
+```{r}
+set.seed(123)
+
+n_groups <- c(80000, 90000, 99999, 100001, 110000, 120000)
+size <- 1e7
+
+df <- bench::press(
+  n_groups = n_groups,
+  {
+    x <- sample(n_groups, size, replace = TRUE)
+    bench::mark(vec_order(x), base_order(x), iterations = 20)
+  }
+)
+```
+
+There is a definite jump in performance when initially moving to the counting sort. Perhaps this boundary isn't optimal, but it seems to scale well after the boundary.
+
+```{r}
+autoplot(df) +
+  facet_wrap(~ n_groups, ncol = 1, labeller = label_both)
+```
+
+## Doubles
+
+Double performance is overall similar to integers when compared with `order()`. It is generally slower than ordering integers because a maximum of 8 passes are required to order a double (8 bytes vs 4 bytes in integers).
+
+### Test 1
+
+- Varying total size (small)
+- Varying group size
+
+```{r}
+set.seed(123)
+
+size <- 10 ^ (1:4)
+n_groups <- 10 ^ (1:6)
+
+df <- bench::press(
+  size = size,
+  n_groups = n_groups,
+  {
+    x <- sample(n_groups, size, replace = TRUE) + 0
+    bench::mark(vec_order(x), base_order(x), iterations = 50)
+  }
+)
+```
+
+Performance is about the same.
+
+```{r}
+autoplot(df) +
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle("Doubles (small size)")
+```
+
+### Test 2
+
+- Varying total size (large)
+- Varying number of groups
+
+```{r}
+set.seed(123)
+
+size <- 10 ^ (5:7)
+n_groups <- 10 ^ (1:6)
+
+df <- bench::press(
+  size = size,
+  n_groups = n_groups,
+  {
+    x <- sample(n_groups, size, replace = TRUE) + 0
+    
+    bench::mark(
+      vec_order(x),
+      base_order(x),
+      iterations = 10
+    )
+  }
+)
+```
+
+I imagine the increase in gc's for large sizes comes from the fact that `vec_order()` uses `Rf_allocVector()` to generate its working memory, and `base_order()` uses `malloc()`, which won't trigger a gc.
+
+```{r}
+autoplot(df) + 
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle("Doubles (large size)")
+```
+
+## Characters
+
+I expect to be slightly slower with character vectors, as base R has access to macros for `TRUELENGTH()` and `LEVELS()` (used to determine encoding), but we have to call their function equivalents.
+
+There is also an additional component here, the maximum string length. The longest string in the vector determines how many "passes" are required in the radix sort. Longer strings mean more passes which generally takes more time. However, keep in mind that we only radix sort the unique strings, so this often doesn't hurt us that much (like in dplyr where we group on a character column with just a few groups).
+
+### Test 1
+
+- Varying total size (small)
+- Varying group size
+- String length of 5-20 characters
+
+```{r}
+set.seed(123)
+
+size <- 10 ^ (1:4)
+n_groups <- 10 ^ (1:6)
+
+df <- bench::press(
+  size = size,
+  n_groups = n_groups,
+  {
+    dict <- new_dictionary(n_groups, min_length = 5, max_length = 20)
+    x <- sample(dict, size, replace = TRUE)
+    bench::mark(vec_order(x), base_order(x), iterations = 50)
+  }
+)
+```
+
+```{r}
+autoplot(df) +
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle("Characters (small size)")
+```
+
+As expected, for small ish sizes we are somewhat slower. This difference seems to go away as you increase the number of groups.
+
+```{r}
+df %>%
+  mutate(expression = as.character(expression)) %>%
+  filter_bench(size == 10000)
+```
+
+### Test 2
+
+- Varying total size (large)
+- Varying number of groups
+- String length of 5-20 characters
+
+```{r}
+set.seed(123)
+
+size <- 10 ^ (5:7)
+n_groups <- 10 ^ (1:6)
+
+df <- bench::press(
+  size = size,
+  n_groups = n_groups,
+  {
+    dict <- new_dictionary(n_groups, min_length = 5, max_length = 20)
+    x <- sample(dict, size, replace = TRUE)
+    bench::mark(vec_order(x), base_order(x), iterations = 10)
+  }
+)
+```
+
+Generally about the same once the size gets larger
+
+```{r}
+autoplot(df) + 
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle("Characters (large size)")
+```
+
+Zoom into the size 1e7 row
+
+As the number of unique strings increases, we have to radix order more strings. This generally takes more time.
+
+```{r}
+df %>%
+  filter_bench(size == 1e7) %>%
+  select(-size) %>%
+  autoplot("boxplot") +
+  facet_wrap(~ n_groups, labeller = label_both, ncol = 1) +
+  ggtitle("Characters, fixed size of 1e7")
+```
+
+### Test 3
+
+Very large set of completely random strings
+
+```{r}
+set.seed(123)
+
+n_groups <- 1e7
+
+x <- new_dictionary(n_groups, min_length = 5, max_length = 20)
+
+bench::mark(vec_order(x), base_order(x), iterations = 10)
+```
+
+### Test 4
+
+What is the effect of string size on total time? 
+
+- Longer strings generally means more passes are required (one pass per character)
+- It is related to number of groups (i.e. number of unique strings) in two ways:
+  - Only unique strings are sorted
+  - As soon as it can tell all strings apart it stops
+
+```{r}
+set.seed(123)
+
+size <- 1e6
+
+n_groups <- 10 ^ (1:6)
+string_size <- c(10, 20, 40, 60, 80, 100)
+
+df <- bench::press(
+  string_size = string_size,
+  n_groups = n_groups,
+  {
+    dict <- new_dictionary(
+      n_groups, 
+      min_length = string_size, 
+      max_length = string_size
+    )
+    
+    x <- sample(dict, size, replace = TRUE)
+    
+    bench::mark(
+      vec_order(x),
+      base_order(x),
+      iterations = 10
+    )
+  }
+)
+```
+
+```{r}
+autoplot(df) + 
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle(
+    "Characters - Varying string size",
+    subtitle = "More informative to look down the columns"
+  )
+```
+
+Look at only `n_groups = 1e6`
+We somehow often manage to do better here
+
+```{r}
+df %>%
+  filter_bench(n_groups == 1e6) %>%
+  autoplot() + 
+  guides(x = guide_axis(n.dodge = 2)) +
+  ggtitle("Characters - Varying string size, all unique strings")
+```
+
+## Completely sorted sequences
+
+Both base and vctrs use a fast check for sortedness up front. For the very specific case of integer vectors with default options, base has an even faster sortedness check that beats us, but I'm not too worried about it.
+
+```{r}
+x <- 1:1e7 + 0L
+
+# Base is faster
+bench::mark(
+  vec_order(x), 
+  base_order(x),
+  iterations = 50
+)
+
+# But tweak some options...
+bench::mark(
+  vec_order(x, direction = "desc", na_value = "smallest"), 
+  base_order(x, decreasing = TRUE, na.last = FALSE),
+  iterations = 50
+)
+```
+
+## Nearly sorted sequence
+
+Nearly sorted integer vectors is one case where base does better than we do for some reason. I can't seem to figure out why.
+
+```{r}
+x <- c(1:1e7, 1:20) + 0L
+
+bench::mark(
+  vec_order(x), 
+  base_order(x),
+  iterations = 10
+)
+```
+
+The performance difference goes away (for the most part) with doubles
+
+```{r}
+x <- c(1:1e7, 1:20) + 0
+
+bench::mark(
+  vec_order(x), 
+  base_order(x),
+  iterations = 10
+)
+```
+
+## Multiple columns
+
+## Compare with vec_unique

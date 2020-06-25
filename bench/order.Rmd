@@ -7,6 +7,10 @@ editor_options:
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#> ")
+knitr::opts_chunk$set(fig.width = 10)
+
+# prevent press() noise and autoplot() noise
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 ```
 
 Investigation of `vec_order()` performance compared with `base::order()` using various data types and distributions of data (total size, number of groups, etc).
@@ -72,6 +76,12 @@ filter_bench <- function(.data, ...) {
 }
 ```
 
+```{r}
+autoplot_shaped <- function(df) {
+  autoplot(df, mapping = aes(shape = as.character(expression)))
+}
+```
+
 ## Integers
 
 The performance of integer sorting is generally the same as `order()`. The one exception is with nearly sorted integer vectors, where `order()` does better for some unknown reason. See the "Nearly sorted sequence" section.
@@ -100,7 +110,7 @@ df <- bench::press(
 We seem to have a small edge when ordering very small vectors, but this practically won't make too much of a difference.
 
 ```{r}
-autoplot(df) +
+autoplot_shaped(df) +
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Integers (small size)")
 ```
@@ -129,7 +139,7 @@ df <- bench::press(
 Performance seems to be generally about the same no matter the size or number of groups.
 
 ```{r}
-autoplot(df) + 
+autoplot_shaped(df) + 
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Integers (large size)")
 ```
@@ -139,7 +149,7 @@ Zoom into few groups, large size case
 ```{r}
 df %>%
   filter_bench(n_groups == 10, size == 1e7) %>%
-  autoplot()
+  autoplot_shaped()
 ```
 
 Zoom into many groups, large size case
@@ -147,7 +157,7 @@ Zoom into many groups, large size case
 ```{r}
 df %>%
   filter_bench(n_groups == 1e6, size == 1e7) %>%
-  autoplot()
+  autoplot_shaped()
 ```
 
 ### Test 3
@@ -172,7 +182,7 @@ df <- bench::press(
 There is a definite jump in performance when initially moving to the counting sort. Perhaps this boundary isn't optimal, but it seems to scale well after the boundary.
 
 ```{r}
-autoplot(df) +
+autoplot_shaped(df) +
   facet_wrap(~ n_groups, ncol = 1, labeller = label_both)
 ```
 
@@ -204,7 +214,7 @@ df <- bench::press(
 Performance is about the same.
 
 ```{r}
-autoplot(df) +
+autoplot_shaped(df) +
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Doubles (small size)")
 ```
@@ -238,7 +248,7 @@ df <- bench::press(
 I imagine the increase in gc's for large sizes comes from the fact that `vec_order()` uses `Rf_allocVector()` to generate its working memory, and `base_order()` uses `malloc()`, which won't trigger a gc.
 
 ```{r}
-autoplot(df) + 
+autoplot_shaped(df) + 
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Doubles (large size)")
 ```
@@ -273,7 +283,7 @@ df <- bench::press(
 ```
 
 ```{r}
-autoplot(df) +
+autoplot_shaped(df) +
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Characters (small size)")
 ```
@@ -312,7 +322,7 @@ df <- bench::press(
 Generally about the same once the size gets larger
 
 ```{r}
-autoplot(df) + 
+autoplot_shaped(df) + 
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Characters (large size)")
 ```
@@ -375,7 +385,7 @@ df <- bench::press(
 The string size doesn't seem to add _too_ much more time.
 
 ```{r}
-autoplot(df) + 
+autoplot_shaped(df) + 
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle(
     "Characters - Varying string size",
@@ -391,7 +401,7 @@ We also seem to consistently do better than `order()` when most of the strings a
 df %>%
   filter_bench(n_groups == 1e6) %>% 
   select(-n_groups) %>%
-  autoplot() + 
+  autoplot_shaped() + 
   facet_wrap(~ string_size, ncol = 1, labeller = label_both) +
   ggtitle("Characters - Varying string size, all unique strings")
 ```
@@ -604,7 +614,7 @@ df <- bench::press(
 Performance is about the same for small sizes
 
 ```{r}
-autoplot(df) +
+autoplot_shaped(df) +
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Integers (small size)")
 ```
@@ -634,7 +644,7 @@ df <- bench::press(
 As the total size increases, `vec_order()` starts to do much better.
 
 ```{r}
-autoplot(df) + 
+autoplot_shaped(df) + 
   guides(x = guide_axis(n.dodge = 2)) +
   ggtitle("Integers (large size)")
 ```
@@ -654,7 +664,7 @@ df %>%
 df %>%
   filter_bench(size == 1e7, n_groups >= 10000) %>%
   select(-size) %>%
-  autoplot() +
+  autoplot_shaped() +
   facet_wrap(~n_groups, ncol = 1, labeller = label_both)
 ```
 
@@ -690,8 +700,6 @@ set.seed(123)
 n_groups <- 1e7
 
 x <- new_dictionary(n_groups, min_length = 5, max_length = 20)
-
-vctrs::vec_order(x)
 
 bench::mark(vec_order(x), vec_unique_loc(x), iterations = 10, check = FALSE)
 ```

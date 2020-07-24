@@ -1942,6 +1942,6 @@ void vctrs_init_utils(SEXP ns) {
   VCTRS_ASSERT(sizeof(double) == 2 * sizeof(int));
 
   // We assume the following in `vec_order()`
-  VCTRS_ASSERT(sizeof(int) == 4);
-  VCTRS_ASSERT(sizeof(double) == 8);
+  VCTRS_ASSERT(sizeof(int) == sizeof(int32_t));
+  VCTRS_ASSERT(sizeof(double) == sizeof(int64_t));
 }

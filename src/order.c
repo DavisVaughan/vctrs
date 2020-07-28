@@ -2681,6 +2681,36 @@ void chr_order_chunk(bool decreasing,
   );
 }
 
+
+struct chr_order_info {
+  SEXP x;
+  bool decreasing;
+  bool na_last;
+  r_ssize size;
+  struct lazy_int* p_lazy_o;
+  struct lazy_raw* p_lazy_x_chunk;
+  struct lazy_raw* p_lazy_x_aux;
+  struct lazy_raw* p_lazy_o_aux;
+  struct lazy_raw* p_lazy_bytes;
+  struct lazy_raw* p_lazy_counts;
+  struct group_infos* p_group_infos;
+  struct lazy_chr* p_lazy_x_reencoded;
+  struct truelength_info* p_truelength_info;
+};
+
+struct chr_order_cleanup_info {
+  struct truelength_info* p_truelength_info;
+};
+
+static SEXP chr_order_exec(void* p_data);
+static void chr_order_cleanup(void* p_data);
+
+/*
+ * `chr_order()` directly modifies the `TRUELENGTH()` values of the CHARSXPs
+ * in `x`. These must be reset after the call with `truelength_reset()`. To
+ * ensure that this function is called (even on a longjump),
+ * `R_ExecWithCleanup()` is used.
+ */
 static
 void chr_order(SEXP x,
                bool decreasing,
@@ -2695,6 +2725,91 @@ void chr_order(SEXP x,
                struct group_infos* p_group_infos,
                struct lazy_chr* p_lazy_x_reencoded,
                struct truelength_info* p_truelength_info) {
+  struct chr_order_info info = {
+    .x = x,
+    .decreasing = decreasing,
+    .na_last = na_last,
+    .size = size,
+    .p_lazy_o = p_lazy_o,
+    .p_lazy_x_chunk = p_lazy_x_chunk,
+    .p_lazy_x_aux = p_lazy_x_aux,
+    .p_lazy_o_aux = p_lazy_o_aux,
+    .p_lazy_bytes = p_lazy_bytes,
+    .p_lazy_counts = p_lazy_counts,
+    .p_group_infos = p_group_infos,
+    .p_lazy_x_reencoded = p_lazy_x_reencoded,
+    .p_truelength_info = p_truelength_info
+  };
+
+  struct chr_order_cleanup_info cleanup_info = {
+    .p_truelength_info = p_truelength_info
+  };
+
+  R_ExecWithCleanup(
+    chr_order_exec,
+    &info,
+    chr_order_cleanup,
+    &cleanup_info
+  );
+}
+
+static void chr_order_internal(SEXP x,
+                               bool decreasing,
+                               bool na_last,
+                               r_ssize size,
+                               struct lazy_int* p_lazy_o,
+                               struct lazy_raw* p_lazy_x_chunk,
+                               struct lazy_raw* p_lazy_x_aux,
+                               struct lazy_raw* p_lazy_o_aux,
+                               struct lazy_raw* p_lazy_bytes,
+                               struct lazy_raw* p_lazy_counts,
+                               struct group_infos* p_group_infos,
+                               struct lazy_chr* p_lazy_x_reencoded,
+                               struct truelength_info* p_truelength_info);
+
+static
+SEXP chr_order_exec(void* p_data) {
+  struct chr_order_info* p_info = (struct chr_order_info*) p_data;
+
+  chr_order_internal(
+    p_info->x,
+    p_info->decreasing,
+    p_info->na_last,
+    p_info->size,
+    p_info->p_lazy_o,
+    p_info->p_lazy_x_chunk,
+    p_info->p_lazy_x_aux,
+    p_info->p_lazy_o_aux,
+    p_info->p_lazy_bytes,
+    p_info->p_lazy_counts,
+    p_info->p_group_infos,
+    p_info->p_lazy_x_reencoded,
+    p_info->p_truelength_info
+  );
+
+  return R_NilValue;
+}
+
+static
+void chr_order_cleanup(void* p_data) {
+  struct chr_order_cleanup_info* p_info = (struct chr_order_cleanup_info*) p_data;
+  truelength_reset(p_info->p_truelength_info);
+}
+
+static
+void chr_order_internal(SEXP x,
+                        bool decreasing,
+                        bool na_last,
+                        r_ssize size,
+                        struct lazy_int* p_lazy_o,
+                        struct lazy_raw* p_lazy_x_chunk,
+                        struct lazy_raw* p_lazy_x_aux,
+                        struct lazy_raw* p_lazy_o_aux,
+                        struct lazy_raw* p_lazy_bytes,
+                        struct lazy_raw* p_lazy_counts,
+                        struct group_infos* p_group_infos,
+                        struct lazy_chr* p_lazy_x_reencoded,
+                        struct truelength_info* p_truelength_info) {
   const SEXP* p_x = STRING_PTR_RO(x);
 
   // Check encodings when determining sortedness of user input
@@ -2764,9 +2879,6 @@ void chr_order(SEXP x,
     p_lazy_counts,
     p_group_infos
   );
-
-  // Reset TRUELENGTHs
-  truelength_reset(p_truelength_info);
 }
 
 // -----------------------------------------------------------------------------
@@ -3223,6 +3335,133 @@ bool chr_str_ge(SEXP x, SEXP y, int x_size, const R_len_t pass) {
 
 // -----------------------------------------------------------------------------
 
+struct df_order_info {
+  SEXP x;
+  SEXP decreasing;
+  SEXP na_last;
+  r_ssize size;
+  struct lazy_int* p_lazy_o;
+  struct lazy_raw* p_lazy_x_chunk;
+  struct lazy_raw* p_lazy_x_aux;
+  struct lazy_raw* p_lazy_o_aux;
+  struct lazy_raw* p_lazy_bytes;
+  struct lazy_raw* p_lazy_counts;
+  struct group_infos* p_group_infos;
+  struct lazy_chr* p_lazy_x_reencoded;
+  struct truelength_info* p_truelength_info;
+};
+
+struct df_order_cleanup_info {
+  struct truelength_info* p_truelength_info;
+};
+
+static SEXP df_order_exec(void* p_data);
+static void df_order_cleanup(void* p_data);
+
+/*
+ * `df_order()` is the main user of `p_group_infos`. It uses the grouping
+ * of the current column to break up the next column into sub groups. That
+ * process is continued until either all columns have been processed or we
+ * can tell all of the values apart.
+ *
+ * Internally `df_order()` may call `chr_order_chunk()` to order character
+ * columns. The TRUELENGTHs of the column are marked with
+ * `chr_mark_sorted_uniques()`, and generally they are reset after each
+ * column is processed by using `truelength_reset()`. However, if a longjump
+ * occurs after the column is marked but before it is reset, then the
+ * truelengths won't be reset. This might happen if an allocation fails, or
+ * if an error is thrown. To carefully handle this case,
+ * `R_ExecWithCleanup()` is used to ensure that `truelength_reset()` is
+ * always called. When there aren't any character columns or if there are
+ * character columns and the truelengths were reset normally, this does
+ * nothing.
+ */
+static
+void df_order(SEXP x,
+              SEXP decreasing,
+              SEXP na_last,
+              r_ssize size,
+              struct lazy_int* p_lazy_o,
+              struct lazy_raw* p_lazy_x_chunk,
+              struct lazy_raw* p_lazy_x_aux,
+              struct lazy_raw* p_lazy_o_aux,
+              struct lazy_raw* p_lazy_bytes,
+              struct lazy_raw* p_lazy_counts,
+              struct group_infos* p_group_infos,
+              struct lazy_chr* p_lazy_x_reencoded,
+              struct truelength_info* p_truelength_info) {
+  struct df_order_info info = {
+    .x = x,
+    .decreasing = decreasing,
+    .na_last = na_last,
+    .size = size,
+    .p_lazy_o = p_lazy_o,
+    .p_lazy_x_chunk = p_lazy_x_chunk,
+    .p_lazy_x_aux = p_lazy_x_aux,
+    .p_lazy_o_aux = p_lazy_o_aux,
+    .p_lazy_bytes = p_lazy_bytes,
+    .p_lazy_counts = p_lazy_counts,
+    .p_group_infos = p_group_infos,
+    .p_lazy_x_reencoded = p_lazy_x_reencoded,
+    .p_truelength_info = p_truelength_info
+  };
+
+  struct df_order_cleanup_info cleanup_info = {
+    .p_truelength_info = p_truelength_info
+  };
+
+  R_ExecWithCleanup(
+    df_order_exec,
+    &info,
+    df_order_cleanup,
+    &cleanup_info
+  );
+}
+
+static void df_order_internal(SEXP x,
+                              SEXP decreasing,
+                              SEXP na_last,
+                              r_ssize size,
+                              struct lazy_int* p_lazy_o,
+                              struct lazy_raw* p_lazy_x_chunk,
+                              struct lazy_raw* p_lazy_x_aux,
+                              struct lazy_raw* p_lazy_o_aux,
+                              struct lazy_raw* p_lazy_bytes,
+                              struct lazy_raw* p_lazy_counts,
+                              struct group_infos* p_group_infos,
+                              struct lazy_chr* p_lazy_x_reencoded,
+                              struct truelength_info* p_truelength_info);
+
+static
+SEXP df_order_exec(void* p_data) {
+  struct df_order_info* p_info = (struct df_order_info*) p_data;
+
+  df_order_internal(
+    p_info->x,
+    p_info->decreasing,
+    p_info->na_last,
+    p_info->size,
+    p_info->p_lazy_o,
+    p_info->p_lazy_x_chunk,
+    p_info->p_lazy_x_aux,
+    p_info->p_lazy_o_aux,
+    p_info->p_lazy_bytes,
+    p_info->p_lazy_counts,
+    p_info->p_group_infos,
+    p_info->p_lazy_x_reencoded,
+    p_info->p_truelength_info
+  );
+
+  return R_NilValue;
+}
+
+static
+void df_order_cleanup(void* p_data) {
+  struct df_order_cleanup_info* p_info = (struct df_order_cleanup_info*) p_data;
+  truelength_reset(p_info->p_truelength_info);
+}
+
+
 static void vec_order_chunk_switch(bool decreasing,
                                    bool na_last,
                                    r_ssize size,
@@ -3270,27 +3509,20 @@ static void vec_order_chunk_switch(bool decreasing,
   }                                                            \
 } while (0)
 
-
-/*
- * `df_order()` is the main user of `p_group_infos`. It uses the grouping
- * of the current column to break up the next column into sub groups. That
- * process is continued until either all columns have been processed or we
- * can tell all of the values apart.
- */
 static
-void df_order(SEXP x,
-              SEXP decreasing,
-              SEXP na_last,
-              r_ssize size,
-              struct lazy_int* p_lazy_o,
-              struct lazy_raw* p_lazy_x_chunk,
-              struct lazy_raw* p_lazy_x_aux,
-              struct lazy_raw* p_lazy_o_aux,
-              struct lazy_raw* p_lazy_bytes,
-              struct lazy_raw* p_lazy_counts,
-              struct group_infos* p_group_infos,
-              struct lazy_chr* p_lazy_x_reencoded,
-              struct truelength_info* p_truelength_info) {
+void df_order_internal(SEXP x,
+                       SEXP decreasing,
+                       SEXP na_last,
+                       r_ssize size,
+                       struct lazy_int* p_lazy_o,
+                       struct lazy_raw* p_lazy_x_chunk,
+                       struct lazy_raw* p_lazy_x_aux,
+                       struct lazy_raw* p_lazy_o_aux,
+                       struct lazy_raw* p_lazy_bytes,
+                       struct lazy_raw* p_lazy_counts,
+                       struct group_infos* p_group_infos,
+                       struct lazy_chr* p_lazy_x_reencoded,
+                       struct truelength_info* p_truelength_info) {
   r_ssize n_cols = r_length(x);
 
   bool recycle_decreasing;

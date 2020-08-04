@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Repair names with legacy method — vec_as_names_legacy • vctrs</title>
+<title>FAQ - How is the compatibility of vector types decided? — faq-compatibility-types • vctrs</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,12 +46,14 @@
 
 
 
-<meta property="og:title" content="Repair names with legacy method — vec_as_names_legacy" />
-<meta property="og:description" content="This standardises names with the legacy approach that was used in
-tidyverse packages (such as tibble, tidyr, and readxl) before
-vec_as_names() was implemented. This tool is meant to help
-transitioning to the new name repairing standard and will be
-deprecated and removed from the package some time in the future." />
+<meta property="og:title" content="FAQ - How is the compatibility of vector types decided? — faq-compatibility-types" />
+<meta property="og:description" content="Two vectors are compatible when you can safely:
+Combine them into one larger vector.
+Assign values from one of the vectors into the other vector.
+
+
+Examples of compatible types are integer and double vectors. On the
+other hand, integer and character vectors are not compatible." />
 <meta property="og:image" content="https://vctrs.r-lib.org/logo.png" />
 
 
@@ -154,58 +156,80 @@ deprecated and removed from the package some time in the future." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Repair names with legacy method</h1>
-    <small class="dont-index">Source: <a href='https://github.com/r-lib/vctrs/blob/master/R/names.R'><code>R/names.R</code></a></small>
-    <div class="hidden name"><code>vec_as_names_legacy.Rd</code></div>
+    <h1>FAQ - How is the compatibility of vector types decided?</h1>
+    <small class="dont-index">Source: <a href='https://github.com/r-lib/vctrs/blob/master/R/faq.R'><code>R/faq.R</code></a></small>
+    <div class="hidden name"><code>faq-compatibility-types.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This standardises names with the legacy approach that was used in
-tidyverse packages (such as tibble, tidyr, and readxl) before
-<code><a href='vec_as_names.html'>vec_as_names()</a></code> was implemented. This tool is meant to help
-transitioning to the new name repairing standard and will be
-deprecated and removed from the package some time in the future.</p>
+    <p>Two vectors are <strong>compatible</strong> when you can safely:</p><ul>
+<li><p>Combine them into one larger vector.</p></li>
+<li><p>Assign values from one of the vectors into the other vector.</p></li>
+</ul>
+
+<p>Examples of compatible types are integer and double vectors. On the
+other hand, integer and character vectors are not compatible.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>vec_as_names_legacy</span>(<span class='no'>names</span>, <span class='kw'>prefix</span> <span class='kw'>=</span> <span class='st'>"V"</span>, <span class='kw'>sep</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
-
-    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
-    <table class="ref-arguments">
-    <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>names</th>
-      <td><p>A character vector.</p></td>
-    </tr>
-    <tr>
-      <th>prefix, sep</th>
-      <td><p>Prefix and separator for repaired names.</p></td>
-    </tr>
-    </table>
 
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='kw pkg'>rlang</span><span class='kw ns'>::</span><span class='fu'><a href='https://rlang.r-lib.org/reference/is_installed.html'>is_installed</a></span>(<span class='st'>"tibble"</span>)) {
+    <h2 class="hasAnchor" id="common-type-of-multiple-vectors"><a class="anchor" href="#common-type-of-multiple-vectors"></a>Common type of multiple vectors</h2>
 
-<span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>tibble</span>)
+    <p>There are two possible outcomes when multiple vectors of different types
+are combined into a larger vector:</p><ul>
+<li><p>An incompatible type error is thrown because some of the types are
+not compatible:<div class="r"></p><pre><span class='no'>df1</span> <span class='kw'>&amp;</span><span class='no'>lt</span>;- <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>x</span> <span class='kw'>=</span> <span class='fl'>1</span>:<span class='fl'>3</span>)
+<span class='no'>df2</span> <span class='kw'>&amp;</span><span class='no'>lt</span>;- <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>x</span> <span class='kw'>=</span> <span class='st'>"foo"</span>)
+<span class='kw pkg'>dplyr</span><span class='kw ns'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/bind.html'>bind_rows</a></span>(<span class='no'>df1</span>, <span class='no'>df2</span>)
+<span class='co'>#&amp;gt; Error: Can't combine `..1$x` &amp;lt;integer&amp;gt; and `..2$x` &amp;lt;character&amp;gt;.</span></pre><p></div></p></li>
+<li><p>The vectors are combined into a vector that has the common type of
+all inputs. In this example, the common type of integer and logical
+is integer:<div class="r"></p><pre><span class='no'>df1</span> <span class='kw'>&amp;</span><span class='no'>lt</span>;- <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>x</span> <span class='kw'>=</span> <span class='fl'>1</span>:<span class='fl'>3</span>)
+<span class='no'>df2</span> <span class='kw'>&amp;</span><span class='no'>lt</span>;- <span class='fu'><a href='https://rdrr.io/r/base/data.frame.html'>data.frame</a></span>(<span class='kw'>x</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='kw pkg'>dplyr</span><span class='kw ns'>::</span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/bind.html'>bind_rows</a></span>(<span class='no'>df1</span>, <span class='no'>df2</span>)
+<span class='co'>#&amp;gt;   x</span>
+<span class='co'>#&amp;gt; 1 1</span>
+<span class='co'>#&amp;gt; 2 2</span>
+<span class='co'>#&amp;gt; 3 3</span>
+<span class='co'>#&amp;gt; 4 0</span></pre><p></div></p></li>
+</ul>
 
-<span class='co'># Names repair is turned off by default in tibble:</span>
-<span class='fu'><a href='https://rdrr.io/r/base/try.html'>try</a></span>(<span class='fu'><a href='https://tibble.tidyverse.org/reference/tibble.html'>tibble</a></span>(<span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>2</span>))
+<p>In general, the common type is the <em>richer</em> type, in other words the
+type that can represent the most values. Logical vectors are at the
+bottom of the hierarchy of numeric types because they can only represent
+two values (not counting missing values). Then come integer vectors, and
+then doubles. Here is the vctrs type hierarchy for the fundamental
+vectors:</p>
+<p><img src='figures/coerce.png' alt='' /></p>
+    <h2 class="hasAnchor" id="type-conversion-and-lossy-cast-errors"><a class="anchor" href="#type-conversion-and-lossy-cast-errors"></a>Type conversion and lossy cast errors</h2>
 
-<span class='co'># You can turn it on by supplying a repair method:</span>
-<span class='fu'><a href='https://tibble.tidyverse.org/reference/tibble.html'>tibble</a></span>(<span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>.name_repair</span> <span class='kw'>=</span> <span class='st'>"universal"</span>)
+    <p>Type compatibility does not necessarily mean that you can <strong>convert</strong>
+one type to the other type. That’s because one of the types might
+support a larger set of possible values. For instance, integer and
+double vectors are compatible, but double vectors can’t be converted to
+integer if they contain fractional values.</p>
+<p>When vctrs can’t convert a vector because the target type is not as rich
+as the source type, it throws a lossy cast error. Assigning a fractional
+number to an integer vector is a typical example of a lossy cast error:<div class="r"></p><pre><span class='no'>int_vector</span> <span class='kw'>&amp;</span><span class='no'>lt</span>;- <span class='fl'>1</span>:<span class='fl'>3</span>
+<span class='fu'><a href='vec_slice.html'>vec_assign</a></span>(<span class='no'>int_vector</span>, <span class='fl'>2</span>, <span class='fl'>0.001</span>)
+<span class='co'>#&amp;gt; Error: Can't convert from &amp;lt;double&amp;gt; to &amp;lt;integer&amp;gt; due to loss of precision.</span>
+<span class='co'>#&amp;gt; * Locations: 1</span></pre><p></div></p>
+    <h2 class="hasAnchor" id="how-to-make-two-vector-classes-compatible-"><a class="anchor" href="#how-to-make-two-vector-classes-compatible-"></a>How to make two vector classes compatible?</h2>
 
-<span class='co'># If you prefer the legacy method, use `vec_as_names_legacy()`:</span>
-<span class='fu'><a href='https://tibble.tidyverse.org/reference/tibble.html'>tibble</a></span>(<span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>2</span>, <span class='kw'>.name_repair</span> <span class='kw'>=</span> <span class='no'>vec_as_names_legacy</span>)
+    <p>If you encounter two vector types that you think should be compatible,
+they might need to implement coercion methods. Reach out to the
+author(s) of the classes and ask them if it makes sense for their
+classes to be compatible.</p>
+<p>These developer FAQ items provide guides for implementing coercion
+methods:</p><ul>
+<li><p>For an example of implementing coercion methods for simple vectors,
+see <code><a href='howto-faq-coercion.html'>?howto-faq-coercion</a></code>.</p></li>
+<li><p>For an example of implementing coercion methods for data frame
+subclasses, see
+<code><a href='howto-faq-coercion-data-frame.html'>?howto-faq-coercion-data-frame</a></code>.</p></li>
+</ul>
 
-}</div><div class='output co'>#&gt; <span class='message'></span>
-#&gt; <span class='message'>Attaching package: ‘tibble’</span></div><div class='output co'>#&gt; <span class='message'>The following object is masked from ‘package:vctrs’:</span>
-#&gt; <span class='message'></span>
-#&gt; <span class='message'>    data_frame</span></div><div class='output co'>#&gt; Error : Column name `a` must not be duplicated.</div><div class='output co'>#&gt; <span class='message'>New names:</span>
-#&gt; <span class='message'>* a -&gt; a...1</span>
-#&gt; <span class='message'>* a -&gt; a...2</span></div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 1 x 2</span><span>
-#&gt;       a    a1
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span>     1     2</div></span></pre>
+
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

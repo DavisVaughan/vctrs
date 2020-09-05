@@ -2,7 +2,86 @@
 #include "utils.h"
 #include "equal.h"
 
+static SEXP vec_locate_runs(SEXP x, bool ends);
+
+// [[register()]]
+SEXP vctrs_locate_runs(SEXP x, SEXP ends) {
+  bool c_ends = (bool) r_bool_as_int(ends);
+  return vec_locate_runs(x, c_ends);
+}
+
 static SEXP vec_identify_runs(SEXP x);
+
+static void vec_locate_run_starts(const int* p_id, r_ssize size, int* p_out);
+static void vec_locate_run_ends(const int* p_id, r_ssize size, int* p_out);
+
+static SEXP vec_locate_runs(SEXP x, bool ends) {
+  SEXP id = PROTECT(vec_identify_runs(x));
+  const int* p_id = INTEGER(id);
+
+  r_ssize size = r_length(id);
+
+  int n = r_int_get(r_attrib_get(id, syms_n), 0);
+
+  SEXP out = PROTECT(r_new_integer(n));
+  int* p_out = INTEGER(out);
+
+  if (n == 0) {
+    UNPROTECT(2);
+    return out;
+  }
+
+  if (ends) {
+    vec_locate_run_ends(p_id, size, p_out);
+  } else {
+    vec_locate_run_starts(p_id, size, p_out);
+  }
+
+  UNPROTECT(2);
+  return out;
+}
+
+static void vec_locate_run_starts(const int* p_id, r_ssize size, int* p_out) {
+  r_ssize loc = 0;
+
+  // Handle first case
+  int ref = p_id[0];
+  p_out[loc] = 1;
+  ++loc;
+
+  for (r_ssize i = 1; i < size; ++i) {
+    const int elt = p_id[i];
+
+    if (elt == ref) {
+      continue;
+    }
+
+    ref = elt;
+    p_out[loc] = i + 1;
+    ++loc;
+  }
+}
+
+static void vec_locate_run_ends(const int* p_id, r_ssize size, int* p_out) {
+  r_ssize loc = 0;
+
+  int ref = p_id[0];
+
+  for (r_ssize i = 1; i < size; ++i) {
+    const int elt = p_id[i];
+
+    if (elt == ref) {
+      continue;
+    }
+
+    ref = elt;
+    p_out[loc] = i;
+    ++loc;
+  }
+
+  // Handle last case
+  p_out[loc] = size;
+}
 
 // [[register()]]
 SEXP vctrs_identify_runs(SEXP x) {

@@ -2,6 +2,10 @@
 #include "utils.h"
 #include "equal.h"
 
+static SEXP vec_identify_runs(SEXP x);
+
+// -----------------------------------------------------------------------------
+
 static SEXP vec_locate_runs(SEXP x, bool ends);
 
 // [[register()]]
@@ -9,8 +13,6 @@ SEXP vctrs_locate_runs(SEXP x, SEXP ends) {
   bool c_ends = (bool) r_bool_as_int(ends);
   return vec_locate_runs(x, c_ends);
 }
-
-static SEXP vec_identify_runs(SEXP x);
 
 static void vec_locate_run_starts(const int* p_id, r_ssize size, int* p_out);
 static void vec_locate_run_ends(const int* p_id, r_ssize size, int* p_out);
@@ -82,6 +84,81 @@ static void vec_locate_run_ends(const int* p_id, r_ssize size, int* p_out) {
   // Handle last case
   p_out[loc] = size;
 }
+
+// -----------------------------------------------------------------------------
+
+static SEXP vec_detect_runs(SEXP x, bool ends);
+
+// [[register()]]
+SEXP vctrs_detect_runs(SEXP x, SEXP ends) {
+  bool c_ends = (bool) r_bool_as_int(ends);
+  return vec_detect_runs(x, c_ends);
+}
+
+static void vec_detect_run_starts(const int* p_id, r_ssize size, int* p_out);
+static void vec_detect_run_ends(const int* p_id, r_ssize size, int* p_out);
+
+static SEXP vec_detect_runs(SEXP x, bool ends) {
+  SEXP id = PROTECT(vec_identify_runs(x));
+  const int* p_id = INTEGER(id);
+
+  r_ssize size = r_length(id);
+
+  SEXP out = PROTECT(r_new_logical(size));
+  int* p_out = LOGICAL(out);
+  memset(p_out, 0, size * sizeof(int));
+
+  if (size == 0) {
+    UNPROTECT(2);
+    return out;
+  }
+
+  if (ends) {
+    vec_detect_run_ends(p_id, size, p_out);
+  } else {
+    vec_detect_run_starts(p_id, size, p_out);
+  }
+
+  UNPROTECT(2);
+  return out;
+}
+
+static void vec_detect_run_starts(const int* p_id, r_ssize size, int* p_out) {
+  // Handle first case
+  int ref = p_id[0];
+  p_out[0] = 1;
+
+  for (r_ssize i = 1; i < size; ++i) {
+    const int elt = p_id[i];
+
+    if (elt == ref) {
+      continue;
+    }
+
+    ref = elt;
+    p_out[i] = 1;
+  }
+}
+
+static void vec_detect_run_ends(const int* p_id, r_ssize size, int* p_out) {
+  int ref = p_id[0];
+
+  for (r_ssize i = 1; i < size; ++i) {
+    const int elt = p_id[i];
+
+    if (elt == ref) {
+      continue;
+    }
+
+    ref = elt;
+    p_out[i - 1] = 1;
+  }
+
+  // Handle last case
+  p_out[size - 1] = 1;
+}
+
+// -----------------------------------------------------------------------------
 
 // [[register()]]
 SEXP vctrs_identify_runs(SEXP x) {

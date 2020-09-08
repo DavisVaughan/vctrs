@@ -1668,6 +1668,7 @@ SEXP strings_val = NULL;
 SEXP strings_group = NULL;
 SEXP strings_length = NULL;
 SEXP strings_vctrs_vctr = NULL;
+SEXP strings_size = NULL;
 
 SEXP chrs_subset = NULL;
 SEXP chrs_extract = NULL;
@@ -1813,7 +1814,7 @@ void vctrs_init_utils(SEXP ns) {
 
   // Holds the CHARSXP objects because unlike symbols they can be
   // garbage collected
-  strings = r_new_shared_vector(STRSXP, 20);
+  strings = r_new_shared_vector(STRSXP, 21);
 
   strings_dots = Rf_mkChar("...");
   SET_STRING_ELT(strings, 0, strings_dots);
@@ -1874,6 +1875,9 @@ void vctrs_init_utils(SEXP ns) {
 
   strings_vctrs_vctr = Rf_mkChar("vctrs_vctr");
   SET_STRING_ELT(strings, 19, strings_list);
+
+  strings_size = Rf_mkChar("size");
+  SET_STRING_ELT(strings, 20, strings_size);
 
 
   classes_data_frame = r_new_shared_vector(STRSXP, 1);

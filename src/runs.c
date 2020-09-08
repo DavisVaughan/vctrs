@@ -1,8 +1,93 @@
 #include "vctrs.h"
 #include "utils.h"
 #include "equal.h"
+#include "type-data-frame.h"
 
 static SEXP vec_identify_runs(SEXP x);
+
+// -----------------------------------------------------------------------------
+
+static SEXP vec_rle(SEXP x);
+
+// [[register()]]
+SEXP vctrs_rle(SEXP x) {
+  return vec_rle(x);
+}
+
+static SEXP new_rle_data_frame(SEXP x, SEXP sizes, SEXP locs, r_ssize size);
+
+static SEXP vec_rle(SEXP x) {
+  SEXP id = PROTECT(vec_identify_runs(x));
+  const int* p_id = INTEGER(id);
+
+  r_ssize x_size = r_length(id);
+  r_ssize out_size = (r_ssize) r_int_get(r_attrib_get(id, syms_n), 0);
+
+  SEXP sizes = PROTECT(Rf_allocVector(INTSXP, out_size));
+  int* p_sizes = INTEGER(sizes);
+
+  SEXP locs = PROTECT(Rf_allocVector(INTSXP, out_size));
+  int* p_locs = INTEGER(locs);
+
+  if (out_size == 0) {
+    SEXP out = new_rle_data_frame(x, sizes, locs, out_size);
+    UNPROTECT(3);
+    return out;
+  }
+
+  r_ssize idx = 0;
+  r_ssize i_last = 0;
+
+  int ref = p_id[0];
+
+  // Handle first case
+  p_locs[idx] = 1;
+  ++idx;
+
+  for (r_ssize i = 1; i < x_size; ++i) {
+    const int elt = p_id[i];
+
+    if (elt == ref) {
+      continue;
+    }
+
+    ref = elt;
+
+    // Size of current run
+    p_sizes[idx - 1] = i - i_last;
+    i_last = i;
+
+    // 1-based location of the start of the new run
+    p_locs[idx] = i + 1;
+    ++idx;
+  }
+
+  // Handle last case
+  p_sizes[idx - 1] = x_size - i_last;
+
+  SEXP out = new_rle_data_frame(x, sizes, locs, out_size);
+  UNPROTECT(3);
+  return out;
+}
+
+static SEXP new_rle_data_frame(SEXP x, SEXP sizes, SEXP locs, r_ssize size) {
+  SEXP out = PROTECT(Rf_allocVector(VECSXP, 2));
+
+  SEXP key = vec_slice(x, locs);
+  SET_VECTOR_ELT(out, 0, key);
+
+  SET_VECTOR_ELT(out, 1, sizes);
+
+  SEXP names = PROTECT(Rf_allocVector(STRSXP, 2));
+  SET_STRING_ELT(names, 0, strings_key);
+  SET_STRING_ELT(names, 1, strings_size);
+
+  r_poke_names(out, names);
+  init_data_frame(out, size);
+
+  UNPROTECT(2);
+  return out;
+}
 
 // -----------------------------------------------------------------------------
 

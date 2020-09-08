@@ -127,6 +127,7 @@ extern SEXP vctrs_df_list(SEXP, SEXP, SEXP);
 extern SEXP vctrs_identify_runs(SEXP);
 extern SEXP vctrs_locate_runs(SEXP, SEXP);
 extern SEXP vctrs_detect_runs(SEXP, SEXP);
+extern SEXP vctrs_rle(SEXP);
 
 
 // Maturing
@@ -232,7 +233,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_unset_s4",                   (DL_FUNC) &vctrs_unset_s4, 1},
   {"vctrs_maybe_translate_encoding",   (DL_FUNC) &vctrs_maybe_translate_encoding, 1},
   {"vctrs_maybe_translate_encoding2",  (DL_FUNC) &vctrs_maybe_translate_encoding2, 2},
-  {"vctrs_rle",                        (DL_FUNC) &altrep_rle_Make, 1},
+  {"vctrs_altrep_rle_Make",            (DL_FUNC) &altrep_rle_Make, 1},
   {"vctrs_validate_name_repair_arg",   (DL_FUNC) &vctrs_validate_name_repair_arg, 1},
   {"vctrs_validate_minimal_names",     (DL_FUNC) &vctrs_validate_minimal_names, 2},
   {"vctrs_as_names",                   (DL_FUNC) &vctrs_as_names, 4},
@@ -271,6 +272,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_identify_runs",              (DL_FUNC) &vctrs_identify_runs, 1},
   {"vctrs_locate_runs",                (DL_FUNC) &vctrs_locate_runs, 2},
   {"vctrs_detect_runs",                (DL_FUNC) &vctrs_detect_runs, 2},
+  {"vctrs_rle",                        (DL_FUNC) &vctrs_rle, 1},
   {NULL, NULL, 0}
 };
 

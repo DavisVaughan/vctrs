@@ -225,6 +225,7 @@ SEXP vec_order_locs(SEXP x, SEXP decreasing, SEXP na_last) {
 // -----------------------------------------------------------------------------
 
 static SEXP vec_order_group_loc_impl(SEXP x,
+                                     r_ssize size,
                                      struct lazy_int* p_lazy_o,
                                      struct lazy_raw* p_lazy_x_chunk,
                                      struct lazy_raw* p_lazy_x_aux,
@@ -368,6 +369,7 @@ SEXP vec_order_impl(SEXP x, SEXP decreasing, SEXP na_last, bool locations) {
   if (locations) {
     SEXP out = vec_order_group_loc_impl(
       x,
+      size,
       &lazy_o,
       &lazy_x_chunk,
       &lazy_x_aux,
@@ -406,6 +408,7 @@ static void vec_order_base_switch(SEXP x,
 
 static
 SEXP vec_order_group_loc_impl(SEXP x,
+                              r_ssize size,
                               struct lazy_int* p_lazy_o,
                               struct lazy_raw* p_lazy_x_chunk,
                               struct lazy_raw* p_lazy_x_aux,
@@ -416,51 +419,34 @@ SEXP vec_order_group_loc_impl(SEXP x,
                               struct lazy_chr* p_lazy_x_reencoded,
                               struct truelength_info* p_truelength_info) {
   int n_prot = 0;
-  int* p_n_prot = &n_prot;
-
-  r_ssize size = r_length(p_lazy_o->data);
 
   struct group_info* p_group_info = groups_current(p_group_infos);
-  int* p_group_sizes = p_group_info->p_data;
-  R_xlen_t n_groups = p_group_info->n_groups;
+  const int* p_group_sizes = p_group_info->p_data;
+  const r_ssize n_groups = p_group_info->n_groups;
 
-  SEXP key_loc = PROTECT_N(Rf_allocVector(INTSXP, n_groups), &n_prot);
-  int* p_key_loc = INTEGER(key_loc);
+  const int* p_o = p_lazy_o->p_data;
 
-  SEXP o = PROTECT_N(Rf_allocVector(INTSXP, size), &n_prot);
-  int* p_o = INTEGER(o);
+  int start = 0;
 
   SEXP o_unique = PROTECT_N(Rf_allocVector(INTSXP, n_groups), &n_prot);
   int* p_o_unique = INTEGER(o_unique);
 
-  SEXP starts = PROTECT_N(Rf_allocVector(INTSXP, n_groups), &n_prot);
-  int* p_starts = INTEGER(starts);
-
-  int start = 0;
-
   // Extract ordering of unique keys
-  for (R_xlen_t i = 0; i < n_groups; ++i) {
-    p_starts[i] = start;
-    p_o_unique[i] = p_lazy_o->p_data[start];
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    p_o_unique[i] = p_o[start];
     start += p_group_sizes[i];
   }
 
-  // Extract original ordering
-  memcpy(p_o, p_lazy_o->p_data, size * sizeof(int));
-
-  // Reset ordering where we plan to use it
-  for (R_xlen_t i = 0; i < n_groups; ++i) {
-    p_lazy_o->p_data[i] = i + 1;
-  }
-
-  // Turn off group tracking
-  // - We don't need it now, we just want the ordering
-  // - It would overwrite the `p_group_sizes` data
+  // Turn off group tracking, no longer needed
   p_group_infos->ignore = true;
 
   // Default ordering
   const bool decreasing = false;
   const bool na_last = true;
+
+  // New lazy vector to store the ordering of the unique order vector
+  struct lazy_int lazy_o_appear = new_lazy_int(n_groups);
+  PROTECT_LAZY_INT(&lazy_o_appear, &n_prot);
 
   // Compute order of unique order locations
   // (gives order by first appearance)
@@ -470,7 +456,7 @@ SEXP vec_order_group_loc_impl(SEXP x,
     na_last,
     n_groups,
     vctrs_type_integer,
-    p_lazy_o,
+    &lazy_o_appear,
     p_lazy_x_chunk,
     p_lazy_x_aux,
     p_lazy_o_aux,
@@ -481,34 +467,42 @@ SEXP vec_order_group_loc_impl(SEXP x,
     p_truelength_info
   );
 
-  // New ordering that orders the ordering of unique `x` keys
-  int* p_o_unique_appearance = p_lazy_o->p_data;
+  const int* p_o_appear = lazy_o_appear.p_data;
 
-  SEXP out_loc = PROTECT_N(Rf_allocVector(VECSXP, n_groups), p_n_prot);
+  // Locations along `x` to slice
+  SEXP out_key_loc = PROTECT_N(Rf_allocVector(INTSXP, n_groups), &n_prot);
+  int* p_out_key_loc = INTEGER(out_key_loc);
+
+  SEXP locs = PROTECT_N(Rf_allocVector(INTSXP, n_groups), &n_prot);
+  int* p_locs = INTEGER(locs);
 
   for (r_ssize i = 0; i < n_groups; ++i) {
-    const int loc = p_o_unique_appearance[i] - 1;
-    const r_ssize size = p_group_sizes[loc];
-
-    p_key_loc[i] = p_o_unique[loc];
-    int o_loc = p_starts[loc];
-
-    SEXP elt = Rf_allocVector(INTSXP, size);
-    SET_VECTOR_ELT(out_loc, i, elt);
-    int* p_elt = INTEGER(elt);
-
-    for (r_ssize j = 0; j < size; ++j) {
-      p_elt[j] = p_o[o_loc];
-      ++o_loc;
-    }
+    const int lookup = p_o_appear[i] - 1;
+    p_locs[lookup] = i;
+    p_out_key_loc[i] = p_o_unique[lookup];
   }
 
-  SEXP out_key = PROTECT_N(vec_slice(x, key_loc), &n_prot);
+  SEXP out_key = PROTECT_N(vec_slice_impl(x, out_key_loc), &n_prot);
+
+  // List of integer locations
+  SEXP out_locs = PROTECT_N(Rf_allocVector(VECSXP, n_groups), &n_prot);
+
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    const int loc = p_locs[i];
+    const r_ssize group_size = p_group_sizes[i];
+
+    SEXP elt = Rf_allocVector(INTSXP, group_size);
+    SET_VECTOR_ELT(out_locs, loc, elt);
+    int* p_elt = INTEGER(elt);
+
+    memcpy(p_elt, p_o, group_size * sizeof(int));
+    p_o += group_size;
+  }
 
   // Construct output data frame
   SEXP out = PROTECT_N(Rf_allocVector(VECSXP, 2), &n_prot);
   SET_VECTOR_ELT(out, 0, out_key);
-  SET_VECTOR_ELT(out, 1, out_loc);
+  SET_VECTOR_ELT(out, 1, out_locs);
 
   SEXP names = PROTECT_N(Rf_allocVector(STRSXP, 2), &n_prot);
   SET_STRING_ELT(names, 0, strings_key);

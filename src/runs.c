@@ -2,6 +2,8 @@
 #include "utils.h"
 #include "equal.h"
 #include "translate.h"
+#include "type-data-frame.h"
+#include "order-groups.h"
 
 static SEXP vec_identify_runs(SEXP x);
 
@@ -277,110 +279,128 @@ int list_identify_runs(SEXP x, R_len_t size, int* p_out) {
 
 // -----------------------------------------------------------------------------
 
-static inline int vec_identify_runs_col(SEXP x,
-                                        int id,
-                                        struct df_short_circuit_info* p_info,
-                                        int* p_out);
+static inline void vec_identify_runs_col(SEXP x,
+                                         r_ssize n_groups,
+                                         const int* p_group_sizes,
+                                         struct group_infos* p_group_infos);
 
 static
 int df_identify_runs(SEXP x, R_len_t size, int* p_out) {
-  int nprot = 0;
-
-  const SEXP* p_x = VECTOR_PTR_RO(x);
-
-  struct df_short_circuit_info info = new_df_short_circuit_info(size, false);
-  PROTECT_DF_SHORT_CIRCUIT_INFO(&info, &nprot);
-
-  int id = 1;
   R_len_t n_col = Rf_length(x);
 
   // Define 0 column case to be a single run
   if (n_col == 0) {
+    int id = 1;
     r_p_int_fill(p_out, id, size);
-    UNPROTECT(nprot);
     return id;
   }
 
-  // Handle first case
-  p_out[0] = id;
-  info.p_row_known[0] = true;
-  --info.remaining;
+  int nprot = 0;
 
-  // Compute non-sequential run IDs
-  for (R_len_t i = 0; i < n_col; ++i) {
+  struct group_info group_info0 = new_group_info();
+  PROTECT_GROUP_INFO(&group_info0, &nprot);
+
+  struct group_info group_info1 = new_group_info();
+  PROTECT_GROUP_INFO(&group_info1, &nprot);
+
+  struct group_info* p_p_group_info[2];
+  p_p_group_info[0] = &group_info0;
+  p_p_group_info[1] = &group_info1;
+
+  struct group_infos group_infos = new_group_infos(
+    p_p_group_info,
+    size,
+    true,
+    false
+  );
+
+  // Initialize to 1 group of size `size`
+  groups_size_push(size, &group_infos);
+
+  const SEXP* p_x = VECTOR_PTR_RO(x);
+
+  // Push groups in reverse column order
+  for (R_len_t i = n_col - 1; i >= 0; --i) {
     SEXP col = p_x[i];
 
-    id = vec_identify_runs_col(col, id, &info, p_out);
+    const struct group_info* p_group_info = groups_current(&group_infos);
+    const int* p_group_sizes = p_group_info->p_data;
+    const r_ssize n_groups = p_group_info->n_groups;
 
-    // All values are unique
-    if (info.remaining == 0) {
-      break;
-    }
+    groups_swap(&group_infos);
+
+    vec_identify_runs_col(
+      col,
+      n_groups,
+      p_group_sizes,
+      &group_infos
+    );
   }
 
-  id = 1;
-  int previous = p_out[0];
+  const struct group_info* p_group_info = groups_current(&group_infos);
+  const int* p_group_sizes = p_group_info->p_data;
+  const r_ssize n_groups = p_group_info->n_groups;
 
-  // Overwrite with sequential IDs
-  for (R_len_t i = 1; i < size; ++i) {
-    const int current = p_out[i];
+  r_ssize k = 0;
 
-    if (current != previous) {
-      ++id;
-      previous = current;
+  // Fill ids based on sizes
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    const r_ssize id = i + 1;
+    const r_ssize group_size = p_group_sizes[i];
+
+    for (r_ssize j = 0; j < group_size; ++j, ++k) {
+      p_out[k] = id;
     }
-
-    p_out[i] = id;
   }
 
   UNPROTECT(nprot);
-  return id;
+  return n_groups;
 }
 
 // -----------------------------------------------------------------------------
 
-static int lgl_identify_runs_col(SEXP x,
-                                 int id,
-                                 struct df_short_circuit_info* p_info,
-                                 int* p_out);
-static int int_identify_runs_col(SEXP x,
-                                 int id,
-                                 struct df_short_circuit_info* p_info,
-                                 int* p_out);
-static int dbl_identify_runs_col(SEXP x,
-                                 int id,
-                                 struct df_short_circuit_info* p_info,
-                                 int* p_out);
-static int cpl_identify_runs_col(SEXP x,
-                                 int id,
-                                 struct df_short_circuit_info* p_info,
-                                 int* p_out);
-static int chr_identify_runs_col(SEXP x,
-                                 int id,
-                                 struct df_short_circuit_info* p_info,
-                                 int* p_out);
-static int raw_identify_runs_col(SEXP x,
-                                 int id,
-                                 struct df_short_circuit_info* p_info,
-                                 int* p_out);
-static int list_identify_runs_col(SEXP x,
-                                  int id,
-                                  struct df_short_circuit_info* p_info,
-                                  int* p_out);
+static void lgl_identify_runs_col(SEXP x,
+                                  r_ssize n_groups,
+                                  const int* p_group_sizes,
+                                  struct group_infos* p_group_infos);
+static void int_identify_runs_col(SEXP x,
+                                  r_ssize n_groups,
+                                  const int* p_group_sizes,
+                                  struct group_infos* p_group_infos);
+static void dbl_identify_runs_col(SEXP x,
+                                  r_ssize n_groups,
+                                  const int* p_group_sizes,
+                                  struct group_infos* p_group_infos);
+static void cpl_identify_runs_col(SEXP x,
+                                  r_ssize n_groups,
+                                  const int* p_group_sizes,
+                                  struct group_infos* p_group_infos);
+static void chr_identify_runs_col(SEXP x,
+                                  r_ssize n_groups,
+                                  const int* p_group_sizes,
+                                  struct group_infos* p_group_infos);
+static void raw_identify_runs_col(SEXP x,
+                                  r_ssize n_groups,
+                                  const int* p_group_sizes,
+                                  struct group_infos* p_group_infos);
+static void list_identify_runs_col(SEXP x,
+                                   r_ssize n_groups,
+                                   const int* p_group_sizes,
+                                   struct group_infos* p_group_infos);
 
 static inline
-int vec_identify_runs_col(SEXP x,
-                          int id,
-                          struct df_short_circuit_info* p_info,
-                          int* p_out) {
+void vec_identify_runs_col(SEXP x,
+                           r_ssize n_groups,
+                           const int* p_group_sizes,
+                           struct group_infos* p_group_infos) {
   switch (vec_proxy_typeof(x)) {
-  case vctrs_type_logical: return lgl_identify_runs_col(x, id, p_info, p_out);
-  case vctrs_type_integer: return int_identify_runs_col(x, id, p_info, p_out);
-  case vctrs_type_double: return dbl_identify_runs_col(x, id, p_info, p_out);
-  case vctrs_type_complex: return cpl_identify_runs_col(x, id, p_info, p_out);
-  case vctrs_type_character: return chr_identify_runs_col(x, id, p_info, p_out);
-  case vctrs_type_raw: return raw_identify_runs_col(x, id, p_info, p_out);
-  case vctrs_type_list: return list_identify_runs_col(x, id, p_info, p_out);
+  case vctrs_type_logical: return lgl_identify_runs_col(x, n_groups, p_group_sizes, p_group_infos);
+  case vctrs_type_integer: return int_identify_runs_col(x, n_groups, p_group_sizes, p_group_infos);
+  case vctrs_type_double: return dbl_identify_runs_col(x, n_groups, p_group_sizes, p_group_infos);
+  case vctrs_type_complex: return cpl_identify_runs_col(x, n_groups, p_group_sizes, p_group_infos);
+  case vctrs_type_character: return chr_identify_runs_col(x, n_groups, p_group_sizes, p_group_infos);
+  case vctrs_type_raw: return raw_identify_runs_col(x, n_groups, p_group_sizes, p_group_infos);
+  case vctrs_type_list: return list_identify_runs_col(x, n_groups, p_group_sizes, p_group_infos);
   case vctrs_type_dataframe: stop_internal("vec_identify_runs_col", "Data frame columns should be flattened.");
   case vctrs_type_scalar: Rf_errorcall(R_NilValue, "Can't compare scalars with `vec_identify_runs()`");
   default: Rf_error("Unimplemented type in `vec_identify_runs()`");
@@ -390,94 +410,83 @@ int vec_identify_runs_col(SEXP x,
 // -----------------------------------------------------------------------------
 
 #define VEC_IDENTIFY_RUNS_COL(CTYPE, CONST_DEREF, EQUAL_SCALAR) { \
-  /* First row is always known, so `run_val` and `run_id` */      \
-  /* will always be initialized below */                          \
-  CTYPE run_val;                                                  \
-  int run_id;                                                     \
-                                                                  \
   const CTYPE* p_x = CONST_DEREF(x);                              \
+  r_ssize k = 0;                                                  \
                                                                   \
-  for (R_len_t i = 0; i < p_info->size; ++i) {                    \
-    /* Start of new run */                                        \
-    if (p_info->p_row_known[i]) {                                 \
-      run_val = p_x[i];                                           \
-      run_id = p_out[i];                                          \
-      continue;                                                   \
+  for (r_ssize i = 0; i < n_groups; ++i) {                        \
+    r_ssize size = 1;                                             \
+                                                                  \
+    CTYPE ref = p_x[k++];                                         \
+                                                                  \
+    const r_ssize group_size = p_group_sizes[i];                  \
+                                                                  \
+    for (r_ssize j = 1; j < group_size; ++j) {                    \
+      const CTYPE elt = p_x[k++];                                 \
+                                                                  \
+      /* Continue group run */                                    \
+      if (EQUAL_SCALAR(&elt, &ref)) {                             \
+        ++size;                                                   \
+        continue;                                                 \
+      }                                                           \
+                                                                  \
+      groups_size_push(size, p_group_infos);                      \
+                                                                  \
+      size = 1;                                                   \
+      ref = elt;                                                  \
     }                                                             \
                                                                   \
-    const CTYPE elt = p_x[i];                                     \
-    const int eq = EQUAL_SCALAR(&elt, &run_val);                  \
-                                                                  \
-    /* Update ID of identical values */                           \
-    if (eq != 0) {                                                \
-      p_out[i] = run_id;                                          \
-      continue;                                                   \
-    }                                                             \
-                                                                  \
-    ++id;                                                         \
-    run_val = elt;                                                \
-    run_id = id;                                                  \
-    p_out[i] = id;                                                \
-                                                                  \
-    /* This is a run change, so don't check this row again */     \
-    p_info->p_row_known[i] = true;                                \
-    --p_info->remaining;                                          \
-                                                                  \
-    if (p_info->remaining == 0) {                                 \
-      break;                                                      \
-    }                                                             \
+    /* Push final group size */                                   \
+    groups_size_push(size, p_group_infos);                        \
   }                                                               \
-                                                                  \
-  return id;                                                      \
 }
 
 static
-int lgl_identify_runs_col(SEXP x,
-                          int id,
-                          struct df_short_circuit_info* p_info,
-                          int* p_out) {
+void lgl_identify_runs_col(SEXP x,
+                           r_ssize n_groups,
+                           const int* p_group_sizes,
+                           struct group_infos* p_group_infos) {
   VEC_IDENTIFY_RUNS_COL(int, LOGICAL_RO, lgl_equal_scalar_na_equal);
 }
 static
-int int_identify_runs_col(SEXP x,
-                          int id,
-                          struct df_short_circuit_info* p_info,
-                          int* p_out) {
+void int_identify_runs_col(SEXP x,
+                           r_ssize n_groups,
+                           const int* p_group_sizes,
+                           struct group_infos* p_group_infos) {
   VEC_IDENTIFY_RUNS_COL(int, INTEGER_RO, int_equal_scalar_na_equal);
 }
 static
-int dbl_identify_runs_col(SEXP x,
-                          int id,
-                          struct df_short_circuit_info* p_info,
-                          int* p_out) {
+void dbl_identify_runs_col(SEXP x,
+                           r_ssize n_groups,
+                           const int* p_group_sizes,
+                           struct group_infos* p_group_infos) {
   VEC_IDENTIFY_RUNS_COL(double, REAL_RO, dbl_equal_scalar_na_equal);
 }
 static
-int cpl_identify_runs_col(SEXP x,
-                          int id,
-                          struct df_short_circuit_info* p_info,
-                          int* p_out) {
+void cpl_identify_runs_col(SEXP x,
+                           r_ssize n_groups,
+                           const int* p_group_sizes,
+                           struct group_infos* p_group_infos) {
   VEC_IDENTIFY_RUNS_COL(Rcomplex, COMPLEX_RO, cpl_equal_scalar_na_equal);
 }
 static
-int chr_identify_runs_col(SEXP x,
-                          int id,
-                          struct df_short_circuit_info* p_info,
-                          int* p_out) {
+void chr_identify_runs_col(SEXP x,
+                           r_ssize n_groups,
+                           const int* p_group_sizes,
+                           struct group_infos* p_group_infos) {
   VEC_IDENTIFY_RUNS_COL(SEXP, STRING_PTR_RO, chr_equal_scalar_na_equal);
 }
 static
-int raw_identify_runs_col(SEXP x,
-                          R_len_t id,
-                          struct df_short_circuit_info* p_info,
-                          int* p_out) {
+void raw_identify_runs_col(SEXP x,
+                           r_ssize n_groups,
+                           const int* p_group_sizes,
+                           struct group_infos* p_group_infos) {
   VEC_IDENTIFY_RUNS_COL(Rbyte, RAW_RO, raw_equal_scalar_na_equal);
 }
 static
-int list_identify_runs_col(SEXP x,
-                           int id,
-                           struct df_short_circuit_info* p_info,
-                           int* p_out) {
+void list_identify_runs_col(SEXP x,
+                            r_ssize n_groups,
+                            const int* p_group_sizes,
+                            struct group_infos* p_group_infos) {
   VEC_IDENTIFY_RUNS_COL(SEXP, VECTOR_PTR_RO, list_equal_scalar_na_equal);
 }
 

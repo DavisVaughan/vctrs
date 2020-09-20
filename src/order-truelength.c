@@ -105,6 +105,28 @@ void truelength_save(SEXP x,
 
 // -----------------------------------------------------------------------------
 
+static void truelength_realloc2(struct truelength_info* p_truelength_info);
+
+/*
+ * A variant on `truelength_save()` used when grouping by appearance order
+ * that only saves the string and its original truelength, not the size.
+ */
+void truelength_save2(SEXP x,
+                      r_ssize truelength,
+                      struct truelength_info* p_truelength_info) {
+  // Reallocate as needed
+  if (p_truelength_info->size_used == p_truelength_info->size_alloc) {
+    truelength_realloc2(p_truelength_info);
+  }
+
+  p_truelength_info->p_strings[p_truelength_info->size_used] = x;
+  p_truelength_info->p_lengths[p_truelength_info->size_used] = truelength;
+
+  ++p_truelength_info->size_used;
+}
+
+// -----------------------------------------------------------------------------
+
 static r_ssize truelength_realloc_size(struct truelength_info* p_truelength_info);
 
 static inline SEXP p_lengths_resize(const r_ssize* p_x, r_ssize x_size, r_ssize size);
@@ -159,6 +181,38 @@ void truelength_realloc(struct truelength_info* p_truelength_info) {
 
   p_truelength_info->size_alloc = size;
 }
+
+// -----------------------------------------------------------------------------
+
+/*
+ * A variant on `truelength_realloc()` that is only used when grouping by
+ * appearance order. It only reallocates the `strings` and `lengths` vectors,
+ * as that is all we used when grouping by appearance order.
+ */
+static
+void truelength_realloc2(struct truelength_info* p_truelength_info) {
+  r_ssize size = truelength_realloc_size(p_truelength_info);
+
+  p_truelength_info->strings = p_chr_resize(
+    p_truelength_info->p_strings,
+    p_truelength_info->size_used,
+    size
+  );
+  REPROTECT(p_truelength_info->strings, p_truelength_info->strings_pi);
+  p_truelength_info->p_strings = STRING_PTR(p_truelength_info->strings);
+
+  p_truelength_info->lengths = p_lengths_resize(
+    p_truelength_info->p_lengths,
+    p_truelength_info->size_used,
+    size
+  );
+  REPROTECT(p_truelength_info->lengths, p_truelength_info->lengths_pi);
+  p_truelength_info->p_lengths = (r_ssize*) RAW(p_truelength_info->lengths);
+
+  p_truelength_info->size_alloc = size;
+}
+
+// -----------------------------------------------------------------------------
 
 static inline
 SEXP p_lengths_resize(const r_ssize* p_x, r_ssize x_size, r_ssize size) {

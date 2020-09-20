@@ -130,6 +130,7 @@ void vec_order_info(SEXP proxy,
                     SEXP na_last,
                     r_ssize size,
                     const enum vctrs_type type,
+                    bool sort_chr,
                     struct order_info* p_info);
 
 // -----------------------------------------------------------------------------

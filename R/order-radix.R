@@ -68,8 +68,8 @@
 #'   na_value = c("largest", "smallest")
 #' )
 #' @noRd
-vec_order_radix <- function(x, direction = "asc", na_value = "largest") {
-  .Call(vctrs_order, x, direction, na_value)
+vec_order_radix <- function(x, direction = "asc", na_value = "largest", sort_chr = TRUE) {
+  .Call(vctrs_order, x, direction, na_value, sort_chr)
 }
 
 #' Identify ordered groups

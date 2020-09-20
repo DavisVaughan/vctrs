@@ -106,5 +106,9 @@ void truelength_save(SEXP x,
                      r_ssize size,
                      struct truelength_info* p_truelength_info);
 
+void truelength_save2(SEXP x,
+                     r_ssize truelength,
+                     struct truelength_info* p_truelength_info);
+
 // -----------------------------------------------------------------------------
 #endif

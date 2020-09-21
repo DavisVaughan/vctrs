@@ -101,6 +101,7 @@ struct order_info {
   struct lazy_raw* p_lazy_o_aux;
   struct lazy_raw* p_lazy_bytes;
   struct lazy_raw* p_lazy_counts;
+  struct lazy_raw* p_lazy_appearance;
   struct group_infos* p_group_infos;
   struct lazy_chr* p_lazy_x_reencoded;
   struct truelength_info* p_truelength_info;
@@ -115,6 +116,7 @@ struct order_info {
   PROTECT_LAZY_VEC((p_order_info)->p_lazy_o_aux, (p_n));              \
   PROTECT_LAZY_VEC((p_order_info)->p_lazy_bytes, (p_n));              \
   PROTECT_LAZY_VEC((p_order_info)->p_lazy_counts, (p_n));             \
+  PROTECT_LAZY_VEC((p_order_info)->p_lazy_appearance, (p_n));         \
   PROTECT_GROUP_INFOS((p_order_info)->p_group_infos, (p_n));          \
   PROTECT_LAZY_VEC((p_order_info)->p_lazy_x_reencoded, (p_n));        \
   PROTECT_TRUELENGTH_INFO((p_order_info)->p_truelength_info, (p_n));  \
@@ -130,6 +132,7 @@ void vec_order_info(SEXP proxy,
                     SEXP na_last,
                     r_ssize size,
                     const enum vctrs_type type,
+                    bool appearance,
                     struct order_info* p_info);
 
 // -----------------------------------------------------------------------------

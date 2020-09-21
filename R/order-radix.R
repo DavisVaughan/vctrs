@@ -107,3 +107,7 @@ vec_order_radix <- function(x, direction = "asc", na_value = "largest") {
 vec_order_locs <- function(x, direction = "asc", na_value = "largest") {
   .Call(vctrs_order_locs, x, direction, na_value)
 }
+
+vec_order_appearance <- function(x) {
+  .Call(vctrs_order_appearance, x)
+}

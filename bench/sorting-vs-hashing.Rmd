@@ -373,3 +373,35 @@ bench::mark(
   check = FALSE
 )
 ```
+
+### Test 4
+
+There is a point where we switch from counting sort to radix sort. For integers, it happens when we hit a _range_ of values exceeding 100,000. When there are many groups and we have a wide range, this transition isn't that impactful. But when we have a very small number of groups (here, 2), then that transition can be very big, and can make the dictionary approach of `vec_unique_loc()` faster.
+
+I feel like this case is somewhat rare though.
+
+```{r}
+dict1 <- c(1L, INT_ORDER_COUNTING_RANGE_BOUNDARY - 1L)
+dict2 <- c(1L, INT_ORDER_COUNTING_RANGE_BOUNDARY + 1L)
+size <- 10 ^ (6:8)
+
+df <- bench::press(
+  size = size,
+  {
+    x <- sample(dict1, size, replace = TRUE)
+    y <- sample(dict2, size, replace = TRUE)
+    bench::mark(
+      pre_boundary_order = vec_unique_loc2(x), 
+      pre_boundary_dict = vec_unique_loc(x), 
+      post_boundary_order = vec_unique_loc2(y), 
+      post_boundary_dict = vec_unique_loc(y), 
+      iterations = 10, 
+      check = FALSE
+    )
+  }
+)
+
+df
+```
+
+

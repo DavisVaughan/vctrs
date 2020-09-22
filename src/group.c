@@ -475,3 +475,103 @@ SEXP vec_duplicate_any2(SEXP x) {
 SEXP vctrs_duplicate_any2(SEXP x) {
   return vec_duplicate_any2(x);
 }
+
+// -----------------------------------------------------------------------------
+
+static SEXP vec_order_group_info(SEXP x, SEXP decreasing, SEXP na_last, bool appearance);
+
+// [[ register() ]]
+SEXP vctrs_order_group_info(SEXP x, SEXP direction, SEXP na_value, SEXP appearance) {
+  SEXP decreasing = PROTECT(parse_direction(direction));
+  SEXP na_last = PROTECT(parse_na_value(na_value));
+  bool c_appearance = r_bool_as_int(appearance);
+
+  SEXP out = vec_order_group_info(x, decreasing, na_last, c_appearance);
+
+  UNPROTECT(2);
+  return out;
+}
+
+static
+SEXP vec_order_group_info(SEXP x, SEXP decreasing, SEXP na_last, bool appearance) {
+  int n_prot = 0;
+
+  SEXP out = PROTECT_N(r_new_list(2), &n_prot);
+
+  SEXP names = PROTECT_N(r_new_character(2), &n_prot);
+  SET_STRING_ELT(names, 0, strings_order);
+  SET_STRING_ELT(names, 1, strings_sizes);
+
+  r_poke_names(out, names);
+
+  struct order_info* p_info = vec_order_info(
+    x,
+    decreasing,
+    na_last,
+    ORDER_FORCE_TRACKING_true
+  );
+  PROTECT_ORDER_INFO(p_info, &n_prot);
+
+  const int n_groups = order_info_n_groups(p_info);
+
+  // Sorted order requested, nothing else to do
+  if (!appearance) {
+    SEXP out_order = order_info_o(p_info);
+    SET_VECTOR_ELT(out, 0, out_order);
+
+    SEXP out_sizes = order_info_group_sizes_values(p_info);
+    SET_VECTOR_ELT(out, 1, out_sizes);
+
+    UNPROTECT(n_prot);
+    return out;
+  }
+
+  const int* p_o = order_info_p_o(p_info);
+  const int* p_group_sizes = order_info_p_group_sizes(p_info);
+
+  r_ssize start = 0;
+
+  SEXP starts = PROTECT_N(r_new_integer(n_groups), &n_prot);
+  int* p_starts = INTEGER(starts);
+
+  // Extract starts
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    p_starts[i] = start;
+    start += p_group_sizes[i];
+  }
+
+  r_ssize size = start;
+
+  SEXP o_unique = PROTECT_N(r_new_integer(n_groups), &n_prot);
+
+  p_info = vec_order_uniques_by_appearance(ORDER_OVERWRITE_false, o_unique, p_info);
+  PROTECT_ORDER_INFO(p_info, &n_prot);
+
+  const int* p_o_appear = order_info_p_o(p_info);
+
+  // Reuse `o_unique` as storage for output group sizes
+  SEXP out_sizes = o_unique;
+  int* p_out_sizes = INTEGER(out_sizes);
+
+  SEXP out_order = PROTECT_N(r_new_integer(size), &n_prot);
+  int* p_out_order = INTEGER(out_order);
+
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    const int lookup = p_o_appear[i] - 1;
+
+    const r_ssize group_size = p_group_sizes[lookup];
+    p_out_sizes[i] = group_size;
+
+    const int start = p_starts[lookup];
+    const int* p_o_start = p_o + start;
+
+    memcpy(p_out_order, p_o_start, group_size * sizeof(int));
+    p_out_order += group_size;
+  }
+
+  SET_VECTOR_ELT(out, 0, out_order);
+  SET_VECTOR_ELT(out, 1, out_sizes);
+
+  UNPROTECT(n_prot);
+  return out;
+}

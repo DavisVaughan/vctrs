@@ -89,6 +89,9 @@ vec_unique2 <- function(x, sort = FALSE) {
 vec_duplicate_any2 <- function(x) {
   .Call(vctrs_duplicate_any2, x)
 }
+vec_order_group_info <- function(x, direction = "asc", na_value = "largest", appearance = FALSE) {
+  .Call(vctrs_order_group_info, x, direction, na_value, appearance)
+}
 
 #' @rdname vec_group
 #' @export

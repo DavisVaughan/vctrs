@@ -136,6 +136,7 @@ extern SEXP vctrs_group_loc2(SEXP);
 extern SEXP vctrs_unique_loc2(SEXP, SEXP);
 extern SEXP vctrs_unique2(SEXP, SEXP);
 extern SEXP vctrs_duplicate_any2(SEXP);
+extern SEXP vctrs_order_group_info(SEXP, SEXP, SEXP, SEXP);
 
 
 // Maturing
@@ -289,6 +290,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_unique_loc2",                (DL_FUNC) &vctrs_unique_loc2, 2},
   {"vctrs_unique2",                    (DL_FUNC) &vctrs_unique2, 2},
   {"vctrs_duplicate_any2",             (DL_FUNC) &vctrs_duplicate_any2, 1},
+  {"vctrs_order_group_info",           (DL_FUNC) &vctrs_order_group_info, 4},
   {NULL, NULL, 0}
 };
 

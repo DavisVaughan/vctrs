@@ -74,6 +74,22 @@ vec_group_loc <- function(x) {
   .Call(vctrs_group_loc, x)
 }
 
+vec_group_id2 <- function(x) {
+  .Call(vctrs_group_id2, x)
+}
+vec_group_loc2 <- function(x) {
+  .Call(vctrs_group_loc2, x)
+}
+vec_unique_loc2 <- function(x, sort = FALSE) {
+  .Call(vctrs_unique_loc2, x, sort)
+}
+vec_unique2 <- function(x, sort = FALSE) {
+  .Call(vctrs_unique2, x, sort)
+}
+vec_duplicate_any2 <- function(x) {
+  .Call(vctrs_duplicate_any2, x)
+}
+
 #' @rdname vec_group
 #' @export
 vec_group_rle <- function(x) {

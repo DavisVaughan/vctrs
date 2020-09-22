@@ -131,6 +131,11 @@ extern SEXP vctrs_df_detect_complete(SEXP);
 extern SEXP vctrs_normalize_encoding(SEXP);
 extern SEXP vctrs_order(SEXP, SEXP, SEXP);
 extern SEXP vctrs_order_locs(SEXP, SEXP, SEXP);
+extern SEXP vctrs_group_id2(SEXP);
+extern SEXP vctrs_group_loc2(SEXP);
+extern SEXP vctrs_unique_loc2(SEXP, SEXP);
+extern SEXP vctrs_unique2(SEXP, SEXP);
+extern SEXP vctrs_duplicate_any2(SEXP);
 
 
 // Maturing
@@ -279,6 +284,11 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_normalize_encoding",         (DL_FUNC) &vctrs_normalize_encoding, 1},
   {"vctrs_order",                      (DL_FUNC) &vctrs_order, 3},
   {"vctrs_order_locs",                 (DL_FUNC) &vctrs_order_locs, 3},
+  {"vctrs_group_id2",                  (DL_FUNC) &vctrs_group_id2, 1},
+  {"vctrs_group_loc2",                 (DL_FUNC) &vctrs_group_loc2, 1},
+  {"vctrs_unique_loc2",                (DL_FUNC) &vctrs_unique_loc2, 2},
+  {"vctrs_unique2",                    (DL_FUNC) &vctrs_unique2, 2},
+  {"vctrs_duplicate_any2",             (DL_FUNC) &vctrs_duplicate_any2, 1},
   {NULL, NULL, 0}
 };
 

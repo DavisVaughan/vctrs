@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Convert to an index vector — vec_as_index • vctrs</title>
+<title>Complete — vec_detect_complete • vctrs</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,10 +46,13 @@
 
 
 
-<meta property="og:title" content="Convert to an index vector — vec_as_index" />
-<meta property="og:description" content="
-vec_as_index() has been renamed to vec_as_location() and is
-deprecated as of vctrs 0.2.2." />
+<meta property="og:title" content="Complete — vec_detect_complete" />
+<meta property="og:description" content="vec_detect_complete() detects &quot;complete&quot; observations. An observation is
+considered complete if it is non-missing. For most vectors, this implies that
+vec_detect_complete(x) == !vec_equal_na(x).
+For data frames and matrices, a row is only considered complete if all
+elements of that row are non-missing. To compare, !vec_equal_na(x) detects
+rows that are partially complete (they have at least one non-missing value)." />
 <meta property="og:image" content="https://vctrs.r-lib.org/logo.png" />
 
 
@@ -77,6 +80,8 @@ deprecated as of vctrs 0.2.2." />
   gtag('config', 'UA-115082821-1');
 </script>
 
+
+<!-- dependencies from examples -->
 
 
   
@@ -155,44 +160,70 @@ deprecated as of vctrs 0.2.2." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Convert to an index vector</h1>
-    <small class="dont-index">Source: <a href='https://github.com/r-lib/vctrs/blob/master/R/vctrs-deprecated.R'><code>R/vctrs-deprecated.R</code></a></small>
-    <div class="hidden name"><code>vec_as_index.Rd</code></div>
+    <h1>Complete</h1>
+    <small class="dont-index">Source: <a href='https://github.com/r-lib/vctrs/blob/master/R/complete.R'><code>R/complete.R</code></a></small>
+    <div class="hidden name"><code>vec_detect_complete.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p><a href='https://lifecycle.r-lib.org/articles/stages.html#deprecated'><img src='figures/lifecycle-deprecated.svg' alt='[Deprecated]' /></a></p>
-<p><code>vec_as_index()</code> has been renamed to <code><a href='vec_as_location.html'>vec_as_location()</a></code> and is
-deprecated as of vctrs 0.2.2.</p>
+    <p><code>vec_detect_complete()</code> detects "complete" observations. An observation is
+considered complete if it is non-missing. For most vectors, this implies that
+<code>vec_detect_complete(x) == !vec_equal_na(x)</code>.</p>
+<p>For data frames and matrices, a row is only considered complete if all
+elements of that row are non-missing. To compare, <code>!vec_equal_na(x)</code> detects
+rows that are partially complete (they have at least one non-missing value).</p>
     </div>
 
-    <pre class="usage"><span class='fu'>vec_as_index</span><span class='op'>(</span><span class='va'>i</span>, <span class='va'>n</span>, names <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>vec_detect_complete</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>i</th>
-      <td><p>An integer, character or logical vector specifying the
-locations or names of the observations to get/set. Specify
-<code>TRUE</code> to index all elements (as in <code>x[]</code>), or <code>NULL</code>, <code>FALSE</code> or
-<code><a href='https://rdrr.io/r/base/integer.html'>integer()</a></code> to index none (as in <code>x[NULL]</code>).</p></td>
-    </tr>
-    <tr>
-      <th>n</th>
-      <td><p>A single integer representing the total size of the
-object that <code>i</code> is meant to index into.</p></td>
-    </tr>
-    <tr>
-      <th>names</th>
-      <td><p>If <code>i</code> is a character vector, <code>names</code> should be a character
-vector that <code>i</code> will be matched against to construct the index. Otherwise,
-not used. The default value of <code>NULL</code> will result in an error
-if <code>i</code> is a character vector.</p></td>
+      <th>x</th>
+      <td><p>A vector</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>A logical vector with the same size as <code>x</code>.</p>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>A <a href='new_rcrd.html'>record</a> type vector is considered complete if any field is
+non-missing.</p>
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code><a href='https://rdrr.io/r/stats/complete.cases.html'>stats::complete.cases()</a></code></p></div>
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>2</span>, <span class='cn'>NA</span>, <span class='fl'>4</span>, <span class='cn'>NA</span><span class='op'>)</span>
+
+<span class='co'># For most vectors, this is identical to `!vec_equal_na(x)`</span>
+<span class='fu'>vec_detect_complete</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; [1]  TRUE  TRUE FALSE  TRUE FALSE</div><div class='input'><span class='op'>!</span><span class='fu'><a href='vec_equal.html'>vec_equal_na</a></span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; [1]  TRUE  TRUE FALSE  TRUE FALSE</div><div class='input'>
+<span class='va'>df</span> <span class='op'>&lt;-</span> <span class='fu'><a href='data_frame.html'>data_frame</a></span><span class='op'>(</span>
+  x <span class='op'>=</span> <span class='va'>x</span>,
+  y <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"a"</span>, <span class='st'>"b"</span>, <span class='cn'>NA</span>, <span class='st'>"d"</span>, <span class='st'>"e"</span><span class='op'>)</span>
+<span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='warning'>Warning: `data_frame()` was deprecated in tibble 1.1.0.</span>
+#&gt; <span class='warning'>Please use `tibble()` instead.</span></div><div class='input'>
+<span class='co'># This returns `TRUE` where all elements of the row are non-missing.</span>
+<span class='co'># Compare that with `!vec_equal_na()`, which detects rows that have at</span>
+<span class='co'># least one non-missing value.</span>
+<span class='va'>df2</span> <span class='op'>&lt;-</span> <span class='va'>df</span>
+<span class='va'>df2</span><span class='op'>$</span><span class='va'>all_non_missing</span> <span class='op'>&lt;-</span> <span class='fu'>vec_detect_complete</span><span class='op'>(</span><span class='va'>df</span><span class='op'>)</span>
+<span class='va'>df2</span><span class='op'>$</span><span class='va'>any_non_missing</span> <span class='op'>&lt;-</span> <span class='op'>!</span><span class='fu'><a href='vec_equal.html'>vec_equal_na</a></span><span class='op'>(</span><span class='va'>df</span><span class='op'>)</span>
+<span class='va'>df2</span>
+</div><div class='output co'>#&gt; <span style='color: #949494;'># A tibble: 5 x 4</span><span>
+#&gt;       x y     all_non_missing any_non_missing
+#&gt;   </span><span style='color: #949494;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #949494;font-style: italic;'>&lt;chr&gt;</span><span> </span><span style='color: #949494;font-style: italic;'>&lt;lgl&gt;</span><span>           </span><span style='color: #949494;font-style: italic;'>&lt;lgl&gt;</span><span>          
+#&gt; </span><span style='color: #BCBCBC;'>1</span><span>     1 a     TRUE            TRUE           
+#&gt; </span><span style='color: #BCBCBC;'>2</span><span>     2 b     TRUE            TRUE           
+#&gt; </span><span style='color: #BCBCBC;'>3</span><span>    </span><span style='color: #BB0000;'>NA</span><span> </span><span style='color: #BB0000;'>NA</span><span>    FALSE           FALSE          
+#&gt; </span><span style='color: #BCBCBC;'>4</span><span>     4 d     TRUE            TRUE           
+#&gt; </span><span style='color: #BCBCBC;'>5</span><span>    </span><span style='color: #BB0000;'>NA</span><span> e     FALSE           TRUE           </div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

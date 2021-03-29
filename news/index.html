@@ -158,7 +158,7 @@
 
     <div id="vctrs-037" class="section level1">
 <h1 class="page-header" data-toc-text="0.3.7">
-<a href="#vctrs-037" class="anchor"></a>vctrs 0.3.7<small> Unreleased </small>
+<a href="#vctrs-037" class="anchor"></a>vctrs 0.3.7<small> 2021-03-29 </small>
 </h1>
 <ul>
 <li><p><code><a href="../reference/vec_ptype_full.html">vec_ptype_abbr()</a></code> gains arguments to control whether to indicate named vectors with a prefix (<code>prefix_named</code>) and indicate shaped vectors with a suffix (<code>suffix_shape</code>) (<a href='https://github.com/r-lib/vctrs/issues/781'>#781</a>, <a href='https://github.com/krlmlr'>@krlmlr</a>).</p></li>
@@ -522,7 +522,7 @@ x
 <a href="#vctrs-020" class="anchor"></a>vctrs 0.2.0<small> 2019-07-05 </small>
 </h1>
 <p>With the 0.2.0 release, many vctrs functions have been rewritten with native C code to improve performance. Functions like <code><a href="../reference/vec_c.html">vec_c()</a></code> and <code><a href="../reference/vec_bind.html">vec_rbind()</a></code> should now be fast enough to be used in packages. This is an ongoing effort, for instance the handling of factors and dates has not been rewritten yet. These classes still slow down vctrs primitives.</p>
-<p>The API in 0.2.0 has been updated, please see a list of breaking changes below. vctrs has now graduated from experimental to a maturing package (see the <a href="https://www.tidyverse.org/lifecycle/" class="external-link">lifecycle of tidyverse packages</a>). Please note that API changes are still planned for future releases, for instance <code><a href="../reference/vec_ptype2.html">vec_ptype2()</a></code> and <code><a href="../reference/vec_cast.html">vec_cast()</a></code> might need to return a sentinel instead of failing with an error when there is no common type or possible cast.</p>
+<p>The API in 0.2.0 has been updated, please see a list of breaking changes below. vctrs has now graduated from experimental to a maturing package. Please note that API changes are still planned for future releases, for instance <code><a href="../reference/vec_ptype2.html">vec_ptype2()</a></code> and <code><a href="../reference/vec_cast.html">vec_cast()</a></code> might need to return a sentinel instead of failing with an error when there is no common type or possible cast.</p>
 <div id="breaking-changes-1" class="section level2">
 <h2 class="hasAnchor">
 <a href="#breaking-changes-1" class="anchor"></a>Breaking changes</h2>

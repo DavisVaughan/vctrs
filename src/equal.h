@@ -5,6 +5,14 @@
 
 // -----------------------------------------------------------------------------
 
+struct equal_na_info {
+  SEXP shelter;
+  SEXP missing;
+  r_ssize n_missing;
+};
+
+struct equal_na_info* vec_equal_na_info(SEXP x);
+
 SEXP vec_equal_na(SEXP x);
 
 // -----------------------------------------------------------------------------

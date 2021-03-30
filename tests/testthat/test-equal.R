@@ -414,3 +414,18 @@ test_that("vec_equal() takes vec_proxy_equal() if implemented", {
   bar <- data_frame(x = y)
   expect_identical(vec_equal(foo, bar), rep(TRUE, 3))
 })
+
+# info -------------------------------------------------------------------
+
+test_that("vec_equal_na_info() returns the logical vector and a count of missing values", {
+  x <- c(NA, 3, NA, 5, NA)
+  expect_identical(vec_equal_na_info(x), list(vec_equal_na(x), 3L))
+})
+
+test_that("vec_equal_na_info() works with data frames", {
+  df <- data_frame(
+    x = c(NA, 3, NA, 5, NA),
+    y = c(1, 2, NA, NA, NA)
+  )
+  expect_identical(vec_equal_na_info(df), list(vec_equal_na(df), 2L))
+})

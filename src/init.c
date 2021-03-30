@@ -30,6 +30,7 @@ extern SEXP vctrs_group_rle(SEXP);
 extern SEXP vec_group_loc(SEXP);
 extern SEXP vctrs_equal(SEXP, SEXP, SEXP);
 extern SEXP vctrs_equal_na(SEXP);
+extern SEXP vctrs_equal_na_info(SEXP x);
 extern SEXP vctrs_compare(SEXP, SEXP, SEXP);
 extern SEXP vctrs_match(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP vctrs_in(SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -185,6 +186,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_is_unspecified",             (DL_FUNC) &vctrs_is_unspecified, 1},
   {"vctrs_equal",                      (DL_FUNC) &vctrs_equal, 3},
   {"vctrs_equal_na",                   (DL_FUNC) &vctrs_equal_na, 1},
+  {"vctrs_equal_na_info",              (DL_FUNC) &vctrs_equal_na_info, 1},
   {"vctrs_compare",                    (DL_FUNC) &vctrs_compare, 3},
   {"vctrs_match",                      (DL_FUNC) &vctrs_match, 5},
   {"vctrs_in",                         (DL_FUNC) &vctrs_in, 5},

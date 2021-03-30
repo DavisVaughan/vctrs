@@ -431,31 +431,50 @@ bool equal_names(SEXP x, SEXP y) {
 
 // -----------------------------------------------------------------------------
 
-// [[ register() ]]
-SEXP vctrs_equal_na(SEXP x) {
-  return vec_equal_na(x);
+static
+struct equal_na_info* new_equal_na_info(SEXP missing, r_ssize n_missing) {
+  SEXP shelter = PROTECT(r_alloc_list(2));
+
+  SEXP out_raw = r_alloc_raw0(sizeof(struct equal_na_info));
+  r_list_poke(shelter, 0, out_raw);
+  struct equal_na_info* p_out = (struct equal_na_info*) r_raw_deref(out_raw);
+
+  p_out->shelter = shelter;
+
+  p_out->missing = missing;
+  r_list_poke(shelter, 1, p_out->missing);
+
+  p_out->n_missing = n_missing;
+
+  UNPROTECT(1);
+  return p_out;
 }
 
-#define EQUAL_NA(CTYPE, CONST_DEREF, IS_MISSING)           \
-  do {                                                     \
-    SEXP out = PROTECT(Rf_allocVector(LGLSXP, size));      \
-    int* p_out = LOGICAL(out);                             \
-                                                           \
-    const CTYPE* p_x = CONST_DEREF(x);                     \
-                                                           \
-    for (R_len_t i = 0; i < size; ++i) {                   \
-      p_out[i] = IS_MISSING(p_x[i]);                       \
-    }                                                      \
-                                                           \
-    UNPROTECT(2);                                          \
-    return out;                                            \
-  }                                                        \
+#define EQUAL_NA(CTYPE, CONST_DEREF, IS_MISSING)                          \
+  do {                                                                    \
+    r_ssize n_missing = 0;                                                \
+                                                                          \
+    SEXP missing = PROTECT(Rf_allocVector(LGLSXP, size));                 \
+    int* p_missing = LOGICAL(missing);                                    \
+                                                                          \
+    const CTYPE* p_x = CONST_DEREF(x);                                    \
+                                                                          \
+    for (R_len_t i = 0; i < size; ++i) {                                  \
+      bool missing = IS_MISSING(p_x[i]);                                  \
+      n_missing += missing;                                               \
+      p_missing[i] = missing;                                             \
+    }                                                                     \
+                                                                          \
+    struct equal_na_info* p_out = new_equal_na_info(missing, n_missing);  \
+    UNPROTECT(2);                                                         \
+    return p_out;                                                         \
+  }                                                                       \
   while (0)
 
-static SEXP df_equal_na(SEXP x, R_len_t size);
+static struct equal_na_info* df_equal_na(SEXP x, R_len_t size);
 
 // [[ include("equal.h") ]]
-SEXP vec_equal_na(SEXP x) {
+struct equal_na_info* vec_equal_na_info(SEXP x) {
   R_len_t size = vec_size(x);
 
   x = PROTECT(vec_proxy_equal(x));
@@ -471,9 +490,9 @@ SEXP vec_equal_na(SEXP x) {
   case vctrs_type_character: EQUAL_NA(SEXP, STRING_PTR_RO, chr_is_missing);
   case vctrs_type_list:      EQUAL_NA(SEXP, VECTOR_PTR_RO, list_is_missing);
   case vctrs_type_dataframe: {
-    SEXP out = df_equal_na(x, size);
+    struct equal_na_info* p_out = df_equal_na(x, size);
     UNPROTECT(1);
-    return out;
+    return p_out;
   }
   case vctrs_type_scalar:    Rf_errorcall(R_NilValue, "Can't detect `NA` values in scalars with `vctrs_equal_na()`.");
   default:                   Rf_error("Unimplemented type in `vctrs_equal_na()`.");
@@ -482,13 +501,40 @@ SEXP vec_equal_na(SEXP x) {
 
 #undef EQUAL_NA
 
+// [[ register() ]]
+SEXP vctrs_equal_na_info(SEXP x) {
+  struct equal_na_info* p_info = vec_equal_na_info(x);
+  PROTECT(p_info->shelter);
+
+  SEXP out = PROTECT(r_new_list(2));
+  SET_VECTOR_ELT(out, 0, p_info->missing);
+  SET_VECTOR_ELT(out, 1, r_int(p_info->n_missing));
+
+  UNPROTECT(2);
+  return out;
+}
+
+// [[ include("equal.h") ]]
+SEXP vec_equal_na(SEXP x) {
+  struct equal_na_info* p_info = vec_equal_na_info(x);
+  PROTECT(p_info->shelter);
+  SEXP out = p_info->missing;
+  UNPROTECT(1);
+  return out;
+}
+
+// [[ register() ]]
+SEXP vctrs_equal_na(SEXP x) {
+  return vec_equal_na(x);
+}
+
 // -----------------------------------------------------------------------------
 
-static void vec_equal_na_col(int* p_out,
+static void vec_equal_na_col(int* p_missing,
                              struct df_short_circuit_info* p_info,
                              SEXP x);
 
-static void df_equal_na_impl(int* p_out,
+static void df_equal_na_impl(int* p_missing,
                              struct df_short_circuit_info* p_info,
                              SEXP x) {
   int n_col = Rf_length(x);
@@ -496,7 +542,7 @@ static void df_equal_na_impl(int* p_out,
   for (R_len_t i = 0; i < n_col; ++i) {
     SEXP col = VECTOR_ELT(x, i);
 
-    vec_equal_na_col(p_out, p_info, col);
+    vec_equal_na_col(p_missing, p_info, col);
 
     // If all rows have at least one non-missing value, break
     if (p_info->remaining == 0) {
@@ -505,26 +551,27 @@ static void df_equal_na_impl(int* p_out,
   }
 }
 
-static SEXP df_equal_na(SEXP x, R_len_t size) {
+static struct equal_na_info* df_equal_na(SEXP x, R_len_t size) {
   int nprot = 0;
 
-  SEXP out = PROTECT_N(Rf_allocVector(LGLSXP, size), &nprot);
-  int* p_out = LOGICAL(out);
+  SEXP missing = PROTECT_N(Rf_allocVector(LGLSXP, size), &nprot);
+  int* p_missing = LOGICAL(missing);
 
   // Initialize to "equality" value
   // and only change if we learn that it differs
   for (R_len_t i = 0; i < size; ++i) {
-    p_out[i] = 1;
+    p_missing[i] = 1;
   }
 
   struct df_short_circuit_info info = new_df_short_circuit_info(size, false);
   struct df_short_circuit_info* p_info = &info;
   PROTECT_DF_SHORT_CIRCUIT_INFO(p_info, &nprot);
 
-  df_equal_na_impl(p_out, p_info, x);
+  df_equal_na_impl(p_missing, p_info, x);
 
+  struct equal_na_info* p_out = new_equal_na_info(missing, p_info->remaining);
   UNPROTECT(nprot);
-  return out;
+  return p_out;
 }
 
 // -----------------------------------------------------------------------------
@@ -539,7 +586,7 @@ do {                                                           \
     }                                                          \
                                                                \
     if (!IS_MISSING(p_x[i])) {                                 \
-      p_out[i] = 0;                                            \
+      p_missing[i] = 0;                                        \
       p_info->p_row_known[i] = true;                           \
       --p_info->remaining;                                     \
                                                                \
@@ -551,7 +598,7 @@ do {                                                           \
 }                                                              \
 while (0)
 
-static void vec_equal_na_col(int* p_out,
+static void vec_equal_na_col(int* p_missing,
                              struct df_short_circuit_info* p_info,
                              SEXP x) {
   switch (vec_proxy_typeof(x)) {
@@ -562,7 +609,7 @@ static void vec_equal_na_col(int* p_out,
   case vctrs_type_raw:       EQUAL_NA_COL(Rbyte, RAW_RO, raw_is_missing); break;
   case vctrs_type_character: EQUAL_NA_COL(SEXP, STRING_PTR_RO, chr_is_missing); break;
   case vctrs_type_list:      EQUAL_NA_COL(SEXP, VECTOR_PTR_RO, list_is_missing); break;
-  case vctrs_type_dataframe: df_equal_na_impl(p_out, p_info, x); break;
+  case vctrs_type_dataframe: df_equal_na_impl(p_missing, p_info, x); break;
   case vctrs_type_scalar:    Rf_errorcall(R_NilValue, "Can't compare scalars with `vec_equal_na()`");
   default:                   Rf_error("Unimplemented type in `vec_equal_na()`");
   }

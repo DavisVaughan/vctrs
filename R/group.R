@@ -68,10 +68,18 @@ vec_group_id <- function(x) {
   .Call(vctrs_group_id, x)
 }
 
+vec_group_id2 <- function(x) {
+  .Call(vctrs_group_id2, x)
+}
+
 #' @rdname vec_group
 #' @export
 vec_group_loc <- function(x) {
   .Call(vctrs_group_loc, x)
+}
+
+vec_group_loc2 <- function(x) {
+  .Call(vctrs_group_loc2, x)
 }
 
 #' @rdname vec_group

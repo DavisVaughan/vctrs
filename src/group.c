@@ -4,6 +4,7 @@
 #include "translate.h"
 #include "type-data-frame.h"
 #include "utils.h"
+#include "order-radix.h"
 
 // [[ register() ]]
 SEXP vctrs_group_id(SEXP x) {
@@ -235,5 +236,190 @@ SEXP vec_group_loc(SEXP x) {
   out = new_data_frame(out, n_groups);
 
   UNPROTECT(nprot);
+  return out;
+}
+
+r_obj* vec_group_loc2(r_obj* x) {
+  const bool nan_distinct = true;
+  const bool chr_ordered = false;
+  r_obj* chr_transform = r_null;
+
+  r_obj* info = KEEP(vec_order_info(
+    x,
+    chrs_asc,
+    chrs_largest,
+    nan_distinct,
+    chr_transform,
+    chr_ordered
+  ));
+
+  r_obj* order = r_list_get(info, 0);
+  const int* v_order = r_int_cbegin(order);
+
+  r_ssize size = r_length(order);
+
+  r_obj* group_sizes = r_list_get(info, 1);
+  int* v_group_sizes = r_int_begin(group_sizes);
+
+  r_ssize n_groups = r_length(group_sizes);
+
+  r_obj* loc_ordered_uniques = KEEP(r_alloc_integer(n_groups));
+  int* v_loc_ordered_uniques = r_int_begin(loc_ordered_uniques);
+
+  int group_start = 0;
+
+  // Reuse `group_sizes` memory for group start locations
+  int* v_group_starts = v_group_sizes;
+
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    int group_size = v_group_sizes[i];
+
+    v_group_starts[i] = group_start;
+    v_loc_ordered_uniques[i] = v_order[group_start];
+
+    group_start += group_size;
+  }
+
+  // Compute ordering of the unique order values
+  // to be able to report uniques by first appearance
+  r_obj* key_first_appearance = KEEP(vec_order(
+    loc_ordered_uniques,
+    chrs_asc,
+    chrs_largest,
+    nan_distinct,
+    chr_transform
+  ));
+  int* v_key_first_appearance = r_int_begin(key_first_appearance);
+
+  // Reuse `key_first_appearance` memory for `loc_uniques`
+  r_obj* loc_uniques = key_first_appearance;
+  int* v_loc_uniques = v_key_first_appearance;
+
+  r_obj* out_loc = KEEP(r_alloc_list(n_groups));
+
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    int loc_first_appearance = v_key_first_appearance[i] - 1;
+
+    // Use the current and next group starts to compute the group size, being
+    // careful to account for the last group's size being dependent on the input
+    int group_start = v_group_starts[loc_first_appearance];
+
+    int group_start_next =
+      (loc_first_appearance == n_groups - 1) ?
+      size :
+      v_group_starts[loc_first_appearance + 1];
+
+    int group_size = group_start_next - group_start;
+
+    r_obj* elt = r_alloc_integer(group_size);
+    r_list_poke(out_loc, i, elt);
+    int* v_elt = r_int_begin(elt);
+
+    const int* v_order_group_start = v_order + group_start;
+    v_loc_uniques[i] = *v_order_group_start;
+    memcpy(v_elt, v_order_group_start, group_size * sizeof(*v_order_group_start));
+  }
+
+  r_obj* out_key = KEEP(vec_slice_impl(x, loc_uniques));
+
+  // Construct output data frame
+  SEXP out = KEEP(r_alloc_list(2));
+  r_list_poke(out, 0, out_key);
+  r_list_poke(out, 1, out_loc);
+
+  SEXP names = KEEP(r_alloc_character(2));
+  r_chr_poke(names, 0, strings_key);
+  r_chr_poke(names, 1, strings_loc);
+
+  r_poke_names(out, names);
+
+  out = new_data_frame(out, n_groups);
+
+  UNPROTECT(7);
+  return out;
+}
+
+r_obj* vec_group_id2(r_obj* x) {
+  const bool nan_distinct = true;
+  const bool chr_ordered = false;
+  r_obj* chr_transform = r_null;
+
+  r_obj* info = KEEP(vec_order_info(
+    x,
+    chrs_asc,
+    chrs_largest,
+    nan_distinct,
+    chr_transform,
+    chr_ordered
+  ));
+
+  r_obj* order = r_list_get(info, 0);
+  const int* v_order = r_int_cbegin(order);
+
+  r_ssize size = r_length(order);
+
+  r_obj* group_sizes = r_list_get(info, 1);
+  int* v_group_sizes = r_int_begin(group_sizes);
+
+  r_ssize n_groups = r_length(group_sizes);
+
+  r_obj* loc_ordered_uniques = KEEP(r_alloc_integer(n_groups));
+  int* v_loc_ordered_uniques = r_int_begin(loc_ordered_uniques);
+
+  int group_start = 0;
+
+  // Reuse `group_sizes` memory for group start locations
+  int* v_group_starts = v_group_sizes;
+
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    int group_size = v_group_sizes[i];
+
+    v_group_starts[i] = group_start;
+    v_loc_ordered_uniques[i] = v_order[group_start];
+
+    group_start += group_size;
+  }
+
+  // Compute ordering of the unique order values
+  // to be able to report uniques by first appearance
+  r_obj* key_first_appearance = KEEP(vec_order(
+    loc_ordered_uniques,
+    chrs_asc,
+    chrs_largest,
+    nan_distinct,
+    chr_transform
+  ));
+  int* v_key_first_appearance = r_int_begin(key_first_appearance);
+
+  int group = 1;
+
+  r_obj* out = KEEP(r_alloc_integer(size));
+  int* v_out = r_int_begin(out);
+
+  for (r_ssize i = 0; i < n_groups; ++i) {
+    int loc_first_appearance = v_key_first_appearance[i] - 1;
+
+    // Use the current and next group starts to compute the group size, being
+    // careful to account for the last group's size being dependent on the input
+    int group_start = v_group_starts[loc_first_appearance];
+
+    int group_start_next =
+      (loc_first_appearance == n_groups - 1) ?
+      size :
+      v_group_starts[loc_first_appearance + 1];
+
+    int group_size = group_start_next - group_start;
+
+    for (int i = 0; i < group_size; ++i) {
+      v_out[v_order[group_start++] - 1] = group;
+    }
+
+    ++group;
+  }
+
+  r_obj* obj_n_groups = KEEP(r_int(n_groups));
+  r_attrib_poke(out, syms_n, obj_n_groups);
+
+  UNPROTECT(5);
   return out;
 }

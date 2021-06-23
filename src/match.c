@@ -10,6 +10,8 @@
 #include "order-radix.h"
 #include "order-transform.h"
 #include "match-compare.h"
+#include "type-data-frame.h"
+#include "rep.h"
 
 // -----------------------------------------------------------------------------
 
@@ -188,6 +190,34 @@ r_obj* vec_matches(r_obj* needles,
   }
 
   r_ssize n_cols = r_length(needles);
+
+  r_obj* flat_widths = KEEP_N(r_alloc_integer(n_cols), &n_prot);
+  int* v_flat_widths = r_int_begin(flat_widths);
+  const bool flatten = df_fill_flat_widths(needles, v_flat_widths);
+
+  if (flatten) {
+    r_ssize width = 0;
+    for (r_ssize i = 0; i < n_cols; ++i) {
+      width += v_flat_widths[i];
+    }
+
+    // Flatten before taking the proxy. We want df-cols to be flattened so
+    // the completeness of each individual column is computed separately.
+    // We don't want to flatten the df-proxy of rcrd columns, as rcrd columns
+    // are only incomplete if the entire row is incomplete, and that will
+    // bubble up to the front of the ordering results automatically.
+    needles = KEEP_N(df_flatten(needles), &n_prot);
+    haystack = KEEP_N(df_flatten(haystack), &n_prot);
+
+    if (r_length(condition) != 1) {
+      condition = KEEP_N(vec_rep_each(condition, flat_widths), &n_prot);
+    }
+    if (r_length(filter) != 1) {
+      filter = KEEP_N(vec_rep_each(filter, flat_widths), &n_prot);
+    }
+
+    n_cols = width;
+  }
 
   enum vctrs_ops* v_ops = (enum vctrs_ops*) R_alloc(n_cols, sizeof(enum vctrs_ops));
   parse_condition(condition, v_ops, n_cols);

@@ -122,6 +122,8 @@ int p_order_compare_na_equal(const void* p_x,
   }
 }
 
+// Used only for non-df columns that have a `vec_order_proxy()` result that is a
+// data frame, like rcrd types. df-cols are flattened ahead of time.
 static inline
 int p_df_order_compare_na_equal(const void* x,
                                 r_ssize i,
@@ -137,7 +139,6 @@ int p_df_order_compare_na_equal(const void* x,
   const void** x_ptrs = x_data->col_ptrs;
   const void** y_ptrs = y_data->col_ptrs;
 
-  // df-cols should already be flattened
   for (r_ssize col = 0; col < n_col; ++col) {
     int cmp = p_order_compare_na_equal(x_ptrs[col], i, y_ptrs[col], j, nan_distinct, types[col]);
 

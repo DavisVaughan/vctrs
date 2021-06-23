@@ -248,48 +248,6 @@ test_that("can match with >1 column data frames", {
   expect_identical(res$haystack, c(1L, 3L, NA, 1L, 3L, 2L))
 })
 
-test_that("can match with df-cols of varying types", {
-  y <- c(1L, 1L)
-
-  expect_needles <- c(1L, 2L)
-  expect_haystack <- c(NA, 1L)
-
-  df1 <- data_frame(x = data_frame(x = c(2L, 1L), y = y))
-  df2 <- data_frame(x = data_frame(x = c(1L, 3L), y = y))
-
-  res <- vec_matches(df1, df2)
-  expect_identical(res$needles, expect_needles)
-  expect_identical(res$haystack, expect_haystack)
-
-  df1 <- data_frame(x = data_frame(x = c(2, 1), y = y))
-  df2 <- data_frame(x = data_frame(x = c(1, 3), y = y))
-
-  res <- vec_matches(df1, df2)
-  expect_identical(res$needles, expect_needles)
-  expect_identical(res$haystack, expect_haystack)
-
-  df1 <- data_frame(x = data_frame(x = c(TRUE, FALSE), y = y))
-  df2 <- data_frame(x = data_frame(x = c(FALSE, NA), y = y))
-
-  res <- vec_matches(df1, df2)
-  expect_identical(res$needles, expect_needles)
-  expect_identical(res$haystack, expect_haystack)
-
-  df1 <- data_frame(x = data_frame(x = c("x", "y"), y = y))
-  df2 <- data_frame(x = data_frame(x = c("y", "z"), y = y))
-
-  res <- vec_matches(df1, df2)
-  expect_identical(res$needles, expect_needles)
-  expect_identical(res$haystack, expect_haystack)
-
-  df1 <- data_frame(x = data_frame(x = complex(real = c(1, 2), imaginary = c(2, 1)), y = y))
-  df2 <- data_frame(x = data_frame(x = complex(real = c(2, 3), imaginary = c(1, 1)), y = y))
-
-  res <- vec_matches(df1, df2)
-  expect_identical(res$needles, expect_needles)
-  expect_identical(res$haystack, expect_haystack)
-})
-
 test_that("ensure that matching works if outer runs are present (i.e. `==` comes before non-equi condition)", {
   df1 <- data_frame(x = c(1, 2, 1, 1), y = c(2, 2, 3, 2))
   df2 <- data_frame(x = c(1, 1), y = c(2, 3))
@@ -330,6 +288,14 @@ test_that("df-cols propagate an NA if any columns are incomplete", {
   expect_identical(res$haystack, 1L)
 })
 
+test_that("missing value avoidance works with df-cols (this relies on df-cols being flattened)", {
+  df <- data_frame(x = data_frame(a = c(1, 1, 2, 2), b = c(NA, 1, NA, 2)))
+
+  res <- vec_matches(df, df, condition = ">=")
+  expect_identical(res$needles, c(1L, 2L, 3L, 3L, 4L, 4L))
+  expect_identical(res$haystack, c(1L, 2L, 1L, 3L, 2L, 4L))
+})
+
 # ------------------------------------------------------------------------------
 # vec_matches() - rcrd
 
@@ -358,6 +324,61 @@ test_that("rcrd type missingness is propagated correctly", {
   res <- vec_matches(x, y, condition = "==", missing = "propagate")
   expect_identical(res$needles, c(1L, 2L))
   expect_identical(res$haystack, c(1L, NA))
+})
+
+test_that("partially missing rcrd rows are not considered incomplete", {
+  # This is admittedly a bit strange, but falls out from the fact that:
+  # - Completeness is used, which for rcrd types means only fully missing
+  #   rcrd rows are considered incomplete.
+  # - We order in ascending order with NAs as the smallest value
+  x <- new_rcrd(list(x = c(1, 2, 1, NA), y = c(NA, NA, 1, NA)))
+
+  res <- vec_matches(x, x, condition = ">=")
+
+  expect_identical(res$needles, c(1L, 2L, 2L, 2L, 3L, 3L, 4L))
+  expect_identical(res$haystack, c(1L, 1L, 2L, 3L, 1L, 3L, 4L))
+})
+
+test_that("can match with rcrd-cols of varying types", {
+  y <- c(1L, 1L)
+
+  expect_needles <- c(1L, 2L)
+  expect_haystack <- c(NA, 1L)
+
+  df1 <- data_frame(x = new_rcrd(list(x = c(2L, 1L), y = y)))
+  df2 <- data_frame(x = new_rcrd(list(x = c(1L, 3L), y = y)))
+
+  res <- vec_matches(df1, df2)
+  expect_identical(res$needles, expect_needles)
+  expect_identical(res$haystack, expect_haystack)
+
+  df1 <- data_frame(x = new_rcrd(list(x = c(2, 1), y = y)))
+  df2 <- data_frame(x = new_rcrd(list(x = c(1, 3), y = y)))
+
+  res <- vec_matches(df1, df2)
+  expect_identical(res$needles, expect_needles)
+  expect_identical(res$haystack, expect_haystack)
+
+  df1 <- data_frame(x = new_rcrd(list(x = c(TRUE, FALSE), y = y)))
+  df2 <- data_frame(x = new_rcrd(list(x = c(FALSE, NA), y = y)))
+
+  res <- vec_matches(df1, df2)
+  expect_identical(res$needles, expect_needles)
+  expect_identical(res$haystack, expect_haystack)
+
+  df1 <- data_frame(x = new_rcrd(list(x = c("x", "y"), y = y)))
+  df2 <- data_frame(x = new_rcrd(list(x = c("y", "z"), y = y)))
+
+  res <- vec_matches(df1, df2)
+  expect_identical(res$needles, expect_needles)
+  expect_identical(res$haystack, expect_haystack)
+
+  df1 <- data_frame(x = new_rcrd(list(x = complex(real = c(1, 2), imaginary = c(2, 1)), y = y)))
+  df2 <- data_frame(x = new_rcrd(list(x = complex(real = c(2, 3), imaginary = c(1, 1)), y = y)))
+
+  res <- vec_matches(df1, df2)
+  expect_identical(res$needles, expect_needles)
+  expect_identical(res$haystack, expect_haystack)
 })
 
 # ------------------------------------------------------------------------------
@@ -1069,8 +1090,18 @@ test_that("`condition = NULL` is correct in all possible cases", {
 })
 
 test_that("zero column data frames are not allowed if `condition != NULL`", {
+  x <- data_frame(.size = 2L)
+
   expect_error(
-    vec_matches(data_frame(.size = 2L), data_frame(.size = 2L)),
+    vec_matches(x, x),
+    "at least 1 column"
+  )
+
+  # df-col should be flattened to a 0-col result before the check is run
+  x <- data_frame(x = x)
+
+  expect_error(
+    vec_matches(x, x),
     "at least 1 column"
   )
 })

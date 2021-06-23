@@ -1,5 +1,4 @@
-#include <rlang.h>
-#include "vctrs.h"
+#include "rep.h"
 #include "utils.h"
 #include "type-data-frame.h"
 
@@ -75,8 +74,6 @@ static SEXP vec_rep(SEXP x, int times) {
 
 // -----------------------------------------------------------------------------
 
-static SEXP vec_rep_each(SEXP x, SEXP times);
-
 // [[ register() ]]
 SEXP vctrs_rep_each(SEXP x, SEXP times) {
   return vec_rep_each(x, times);
@@ -85,7 +82,8 @@ SEXP vctrs_rep_each(SEXP x, SEXP times) {
 static SEXP vec_rep_each_uniform(SEXP x, int times);
 static SEXP vec_rep_each_impl(SEXP x, SEXP times, const R_len_t times_size);
 
-static SEXP vec_rep_each(SEXP x, SEXP times) {
+// [[ include("rep.h") ]]
+SEXP vec_rep_each(SEXP x, SEXP times) {
   times = PROTECT(vec_cast(times, vctrs_shared_empty_int, args_times, args_empty));
 
   const R_len_t times_size = vec_size(times);

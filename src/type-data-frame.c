@@ -870,6 +870,27 @@ struct flatten_info df_flatten_info(SEXP x) {
   return (struct flatten_info){flatten, width};
 }
 
+// [[ include("type-data-frame.h") ]]
+bool df_fill_flat_widths(r_obj* x, int* v_flat_widths) {
+  bool flatten = false;
+
+  r_ssize n_cols = r_length(x);
+  r_obj* const* v_x = r_list_cbegin(x);
+
+  for (r_ssize i = 0; i < n_cols; ++i) {
+    r_obj* col = v_x[i];
+
+    if (is_data_frame(col)) {
+      flatten = true;
+      v_flat_widths[i] = df_flat_width(col);
+    } else {
+      v_flat_widths[i] = 1;
+    }
+  }
+
+  return flatten;
+}
+
 // [[ register() ]]
 SEXP vctrs_df_flatten_info(SEXP x) {
   struct flatten_info info = df_flatten_info(x);

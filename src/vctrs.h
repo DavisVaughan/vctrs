@@ -360,6 +360,7 @@ SEXP vec_proxy(SEXP x);
 SEXP vec_proxy_equal(SEXP x);
 SEXP vec_proxy_compare(SEXP x);
 SEXP vec_proxy_order(SEXP x);
+r_obj* vec_joint_proxy_order(r_obj* x, r_obj* y);
 SEXP vec_proxy_complete(SEXP x);
 SEXP vec_restore(SEXP x, SEXP to, SEXP n, const enum vctrs_owned owned);
 SEXP vec_restore_default(SEXP x, SEXP to, const enum vctrs_owned owned);

@@ -104,8 +104,7 @@ r_obj* df_joint_xtfrm_by_col(r_obj* x,
                              r_ssize y_size,
                              r_ssize n_cols,
                              r_obj* ptype,
-                             bool nan_distinct,
-                             r_obj* chr_transform);
+                             bool nan_distinct);
 
 static
 r_obj* df_detect_complete_by_col(r_obj* x, r_ssize x_size, r_ssize n_cols);

@@ -199,6 +199,8 @@ test_that("lists can be matched", {
 })
 
 test_that("list missingness propagates", {
+  skip("Until #1401 is fixed")
+
   res <- vec_matches(list(NULL), list(NULL), missing = "propagate")
 
   expect_identical(res$needles, 1L)
@@ -206,6 +208,8 @@ test_that("list missingness propagates", {
 })
 
 test_that("list ordering is by first appearance in `needles` (so non-equi joins don't make much sense)", {
+  skip("Until #1401 is fixed")
+
   x <- list(3, 2, 1, NULL)
   y <- list(1, 3, 1, 3)
 
@@ -334,6 +338,8 @@ test_that("df-cols propagate an NA if any columns are incomplete", {
 # vec_matches() - rcrd
 
 test_that("rcrd types can be matched", {
+  skip("Until #1404 is merged")
+
   x <- new_rcrd(list(x = c(1L, 3L), y = c(1L, 4L)))
   y <- new_rcrd(list(x = c(1L, 2L), y = c(1L, 5L)))
 
@@ -347,6 +353,8 @@ test_that("rcrd types can be matched", {
 })
 
 test_that("rcrd type missingness is propagated correctly", {
+  skip("Until #1404 is merged")
+
   x <- new_rcrd(list(x = c(1L, NA), y = c(NA_integer_, NA_integer_)))
   y <- new_rcrd(list(x = c(1L, 2L, NA), y = c(NA, 5L, NA)))
 

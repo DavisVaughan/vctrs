@@ -9,6 +9,8 @@
 #include "translate.h"
 #include "order-radix.h"
 #include "order-transform.h"
+#include "type-data-frame.h"
+#include "rep.h"
 #include "match-compare.h"
 
 // -----------------------------------------------------------------------------
@@ -189,6 +191,63 @@ r_obj* vec_matches(r_obj* needles,
 
   r_ssize n_cols = r_length(needles);
 
+  r_obj* const* v_needles = r_list_cbegin(needles);
+  r_obj* const* v_haystack = r_list_cbegin(haystack);
+
+  needles = KEEP_N(r_clone_referenced(needles), &n_prot);
+  haystack = KEEP_N(r_clone_referenced(haystack), &n_prot);
+
+  r_obj* widths = KEEP_N(r_alloc_integer(n_cols), &n_prot);
+  int* v_widths = r_int_begin(widths);
+
+  bool flatten = false;
+
+  for (r_ssize i = 0; i < n_cols; ++i) {
+    r_obj* col_needles = v_needles[i];
+    r_obj* col_haystack = v_haystack[i];
+
+    // Compute joint proxy on each column individually to record
+    // the width of the new proxy column before flattening occurs.
+    // Joint proxy is required to correctly compute an order-proxy for
+    // list columns.
+    r_obj* proxies = vec_joint_proxy_order(col_needles, col_haystack);
+
+    col_needles = r_list_get(proxies, 0);
+    r_list_poke(needles, i, col_needles);
+
+    col_haystack = r_list_get(proxies, 1);
+    r_list_poke(haystack, i, col_haystack);
+
+    if (is_data_frame(col_needles)) {
+      flatten = true;
+      v_widths[i] = r_length(col_needles);
+    } else {
+      v_widths[i] = 1;
+    }
+  }
+
+  if (flatten) {
+    // Flatten but don't unwrap, we want a data frame
+    needles = KEEP_N(df_flatten(needles), &n_prot);
+    haystack = KEEP_N(df_flatten(haystack), &n_prot);
+
+    // These two arguments recycle with the number of columns
+    if (r_length(condition) != 1) {
+      condition = KEEP_N(vec_rep_each(condition, widths), &n_prot);
+    }
+    if (r_length(filter) != 1) {
+      filter = KEEP_N(vec_rep_each(filter, widths), &n_prot);
+    }
+
+    n_cols = r_length(needles);
+  }
+
+  needles = KEEP_N(vec_normalize_encoding(needles), &n_prot);
+  haystack = KEEP_N(vec_normalize_encoding(haystack), &n_prot);
+
+  needles = KEEP_N(proxy_chr_transform(needles, chr_transform), &n_prot);
+  haystack = KEEP_N(proxy_chr_transform(haystack, chr_transform), &n_prot);
+
   enum vctrs_ops* v_ops = (enum vctrs_ops*) R_alloc(n_cols, sizeof(enum vctrs_ops));
   parse_condition(condition, v_ops, n_cols);
 
@@ -223,8 +282,7 @@ r_obj* vec_matches(r_obj* needles,
     size_haystack,
     n_cols,
     ptype,
-    nan_distinct,
-    chr_transform
+    nan_distinct
   ), &n_prot);
   needles = r_list_get(args, 0);
   haystack = r_list_get(args, 1);
@@ -1224,7 +1282,10 @@ r_ssize int_upper_duplicate(int needle,
 
 // -----------------------------------------------------------------------------
 
-#define VEC_JOINT_XTFRM_LOOP(CMP) do {                         \
+#define PROXY_JOINT_XTFRM_LOOP(CTYPE, CBEGIN, CMP) do {        \
+  CTYPE const* v_x_proxy = CBEGIN(x_proxy);                    \
+  CTYPE const* v_y_proxy = CBEGIN(y_proxy);                    \
+                                                               \
   while (i < x_n_groups && j < y_n_groups) {                   \
     const int x_group_size = v_x_group_sizes[i];               \
     const int y_group_size = v_y_group_sizes[j];               \
@@ -1233,8 +1294,8 @@ r_ssize int_upper_duplicate(int needle,
     const int y_loc = v_y_o[y_o_loc] - 1;                      \
                                                                \
     const int cmp = CMP(                                       \
-      p_x_vec, x_loc,                                          \
-      p_y_vec, y_loc,                                          \
+      v_x_proxy[x_loc],                                        \
+      v_y_proxy[y_loc],                                        \
       nan_distinct                                             \
     );                                                         \
                                                                \
@@ -1268,7 +1329,7 @@ r_ssize int_upper_duplicate(int needle,
 } while(0)
 
 /*
- * `vec_joint_xtfrm()` takes two columns of the same type and computes an
+ * `proxy_joint_xtfrm()` takes two columns of the same type and computes an
  * xtfrm-like integer proxy for each that takes into account the values between
  * the two columns. It is approximately equal to the idea of:
  * `vec_rank(vec_c(x, y), ties = "dense")`
@@ -1280,7 +1341,7 @@ r_ssize int_upper_duplicate(int needle,
  * # For example:
  * x <- c(2, 1.5, 1)
  * y <- c(3, 1.2, 2)
- * # vec_joint_xtfrm(x, y) theoretically results in:
+ * # proxy_joint_xtfrm(x, y) theoretically results in:
  * x <- c(4L, 3L, 1L)
  * y <- c(5L, 2L, 4L)
  * # While the above result is the general idea, we actually start counting
@@ -1290,12 +1351,11 @@ r_ssize int_upper_duplicate(int needle,
  * y <- c(-2147483643L, -2147483646L, -2147483644L)
  */
 static
-r_obj* vec_joint_xtfrm(r_obj* x,
-                       r_obj* y,
-                       r_ssize x_size,
-                       r_ssize y_size,
-                       bool nan_distinct,
-                       r_obj* chr_transform) {
+r_obj* proxy_joint_xtfrm(r_obj* x_proxy,
+                         r_obj* y_proxy,
+                         r_ssize x_size,
+                         r_ssize y_size,
+                         bool nan_distinct) {
   int n_prot = 0;
 
   r_obj* out = KEEP_N(r_alloc_list(2), &n_prot);
@@ -1308,19 +1368,6 @@ r_obj* vec_joint_xtfrm(r_obj* x,
   r_obj* y_ranks = r_alloc_integer(y_size);
   r_list_poke(out, 1, y_ranks);
   int* v_y_ranks = r_int_begin(y_ranks);
-
-  // Apply proxy and transforms ahead of time, since comparisons will be
-  // made on the actual values after ordering. Using a special variant
-  // of `vec_proxy_order()` to correctly support list columns.
-  r_obj* proxies = KEEP_N(vec_joint_proxy_order(x, y), &n_prot);
-
-  r_obj* x_proxy = r_list_get(proxies, 0);
-  x_proxy = KEEP_N(vec_normalize_encoding(x_proxy), &n_prot);
-  x_proxy = KEEP_N(proxy_chr_transform(x_proxy, chr_transform), &n_prot);
-
-  r_obj* y_proxy = r_list_get(proxies, 1);
-  y_proxy = KEEP_N(vec_normalize_encoding(y_proxy), &n_prot);
-  y_proxy = KEEP_N(proxy_chr_transform(y_proxy, chr_transform), &n_prot);
 
   r_obj* x_info = KEEP_N(vec_order_info(
     x_proxy,
@@ -1348,16 +1395,6 @@ r_obj* vec_joint_xtfrm(r_obj* x,
   const int* v_y_group_sizes = r_int_cbegin(r_list_get(y_info, 1));
   r_ssize y_n_groups = r_length(r_list_get(y_info, 1));
 
-  const enum vctrs_type type = vec_proxy_typeof(x_proxy);
-
-  const struct poly_vec* p_x_poly = new_poly_vec(x_proxy, type);
-  PROTECT_POLY_VEC(p_x_poly, &n_prot);
-  const void* p_x_vec = p_x_poly->p_vec;
-
-  const struct poly_vec* p_y_poly = new_poly_vec(y_proxy, type);
-  PROTECT_POLY_VEC(p_x_poly, &n_prot);
-  const void* p_y_vec = p_y_poly->p_vec;
-
   r_ssize i = 0;
   r_ssize j = 0;
   r_ssize x_o_loc = 0;
@@ -1369,14 +1406,13 @@ r_obj* vec_joint_xtfrm(r_obj* x,
 
   // Now that we have the ordering of both vectors,
   // its just a matter of merging two sorted arrays
-  switch (type) {
-  case vctrs_type_logical: VEC_JOINT_XTFRM_LOOP(p_lgl_order_compare_na_equal); break;
-  case vctrs_type_integer: VEC_JOINT_XTFRM_LOOP(p_int_order_compare_na_equal); break;
-  case vctrs_type_double: VEC_JOINT_XTFRM_LOOP(p_dbl_order_compare_na_equal); break;
-  case vctrs_type_complex: VEC_JOINT_XTFRM_LOOP(p_cpl_order_compare_na_equal); break;
-  case vctrs_type_character: VEC_JOINT_XTFRM_LOOP(p_chr_order_compare_na_equal); break;
-  case vctrs_type_dataframe: VEC_JOINT_XTFRM_LOOP(p_df_order_compare_na_equal); break;
-  default: stop_unimplemented_vctrs_type("vec_joint_xtfrm", type);
+  switch (vec_proxy_typeof(x_proxy)) {
+  case vctrs_type_logical: PROXY_JOINT_XTFRM_LOOP(int, r_lgl_cbegin, lgl_order_compare_na_equal); break;
+  case vctrs_type_integer: PROXY_JOINT_XTFRM_LOOP(int, r_int_cbegin, int_order_compare_na_equal); break;
+  case vctrs_type_double: PROXY_JOINT_XTFRM_LOOP(double, r_dbl_cbegin, dbl_order_compare_na_equal); break;
+  case vctrs_type_complex: PROXY_JOINT_XTFRM_LOOP(r_complex_t, r_cpl_cbegin, cpl_order_compare_na_equal); break;
+  case vctrs_type_character: PROXY_JOINT_XTFRM_LOOP(r_obj*, r_chr_cbegin, chr_order_compare_na_equal); break;
+  default: stop_unimplemented_vctrs_type("proxy_joint_xtfrm", vec_proxy_typeof(x_proxy));
   }
 
   while (i < x_n_groups) {
@@ -1410,9 +1446,10 @@ r_obj* vec_joint_xtfrm(r_obj* x,
 }
 
 
-#undef VEC_JOINT_XTFRM_LOOP
+#undef PROXY_JOINT_XTFRM_LOOP
 
 
+// Assumes `x` and `y` have already been proxied, normalized, and chr_transformed
 static
 r_obj* df_joint_xtfrm_by_col(r_obj* x,
                              r_obj* y,
@@ -1420,14 +1457,13 @@ r_obj* df_joint_xtfrm_by_col(r_obj* x,
                              r_ssize y_size,
                              r_ssize n_cols,
                              r_obj* ptype,
-                             bool nan_distinct,
-                             r_obj* chr_transform) {
+                             bool nan_distinct) {
   r_obj* out = KEEP(r_alloc_list(2));
 
-  x = r_clone(x);
+  x = r_clone_referenced(x);
   r_list_poke(out, 0, x);
 
-  y = r_clone(y);
+  y = r_clone_referenced(y);
   r_list_poke(out, 1, y);
 
   r_obj* const* v_x = r_list_cbegin(x);
@@ -1436,7 +1472,7 @@ r_obj* df_joint_xtfrm_by_col(r_obj* x,
   for (r_ssize col = 0; col < n_cols; ++col) {
     r_obj* x_col = v_x[col];
     r_obj* y_col = v_y[col];
-    r_obj* xtfrms = vec_joint_xtfrm(x_col, y_col, x_size, y_size, nan_distinct, chr_transform);
+    r_obj* xtfrms = proxy_joint_xtfrm(x_col, y_col, x_size, y_size, nan_distinct);
     r_list_poke(x, col, r_list_get(xtfrms, 0));
     r_list_poke(y, col, r_list_get(xtfrms, 1));
   }

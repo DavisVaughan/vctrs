@@ -2,7 +2,6 @@
 #include "vctrs.h"
 #include "utils.h"
 #include "rank.h"
-#include "complete.h"
 #include "poly-op.h"
 #include "compare.h"
 #include "ptype2.h"
@@ -266,13 +265,16 @@ r_obj* vec_matches(r_obj* needles,
     missing == VCTRS_MISSING_NEEDLE_drop ||
     missing == VCTRS_MISSING_NEEDLE_error;
 
-  // Compute the locations of missing values for each column if computing ranks
-  // later on is going to replace the missing values with integer ranks
-  r_obj* needles_complete = df_detect_complete_by_col(needles, size_needles, n_cols);
-  KEEP_N(needles_complete, &n_prot);
+  // Compute the locations of missing values for each column.
+  // By flattening all df-cols and rcrd-cols up front, and then computing
+  // missingness per flattened column, this actually uses completeness to
+  // determine whether or not to propagate missing values, which makes the
+  // most sense and aligns with `vec_match()`.
+  r_obj* needles_missing = df_detect_missing_by_col(needles, size_needles, n_cols);
+  KEEP_N(needles_missing, &n_prot);
 
-  r_obj* haystack_complete = df_detect_complete_by_col(haystack, size_haystack, n_cols);
-  KEEP_N(haystack_complete, &n_prot);
+  r_obj* haystack_missing = df_detect_missing_by_col(haystack, size_haystack, n_cols);
+  KEEP_N(haystack_missing, &n_prot);
 
   // Compute joint xtfrm to simplify each column down to an integer vector
   r_obj* args = KEEP_N(df_joint_xtfrm_by_col(
@@ -290,8 +292,8 @@ r_obj* vec_matches(r_obj* needles,
   r_obj* out = df_matches(
     needles,
     haystack,
-    needles_complete,
-    haystack_complete,
+    needles_missing,
+    haystack_missing,
     size_needles,
     size_haystack,
     missing,
@@ -316,8 +318,8 @@ r_obj* vec_matches(r_obj* needles,
 static
 r_obj* df_matches(r_obj* needles,
                   r_obj* haystack,
-                  r_obj* needles_complete,
-                  r_obj* haystack_complete,
+                  r_obj* needles_missing,
+                  r_obj* haystack_missing,
                   r_ssize size_needles,
                   r_ssize size_haystack,
                   enum vctrs_missing_needle missing,
@@ -437,13 +439,13 @@ r_obj* df_matches(r_obj* needles,
   PROTECT_POLY_VEC(p_poly_haystack, &n_prot);
   const struct poly_df_data* p_haystack = (const struct poly_df_data*) p_poly_haystack->p_vec;
 
-  const struct poly_vec* p_poly_needles_complete = new_poly_vec(needles_complete, vctrs_type_dataframe);
-  PROTECT_POLY_VEC(p_poly_needles_complete, &n_prot);
-  const struct poly_df_data* p_needles_complete = (const struct poly_df_data*) p_poly_needles_complete->p_vec;
+  const struct poly_vec* p_poly_needles_missing = new_poly_vec(needles_missing, vctrs_type_dataframe);
+  PROTECT_POLY_VEC(p_poly_needles_missing, &n_prot);
+  const struct poly_df_data* p_needles_missing = (const struct poly_df_data*) p_poly_needles_missing->p_vec;
 
-  struct poly_vec* p_poly_haystack_complete = new_poly_vec(haystack_complete, vctrs_type_dataframe);
-  PROTECT_POLY_VEC(p_poly_haystack_complete, &n_prot);
-  const struct poly_df_data* p_haystack_complete = (const struct poly_df_data*) p_poly_haystack_complete->p_vec;
+  struct poly_vec* p_poly_haystack_missing = new_poly_vec(haystack_missing, vctrs_type_dataframe);
+  PROTECT_POLY_VEC(p_poly_haystack_missing, &n_prot);
+  const struct poly_df_data* p_haystack_missing = (const struct poly_df_data*) p_poly_haystack_missing->p_vec;
 
   r_ssize n_extra = 0;
 
@@ -468,8 +470,8 @@ r_obj* df_matches(r_obj* needles,
         loc_upper_o_haystack,
         p_needles,
         p_haystack,
-        p_needles_complete,
-        p_haystack_complete,
+        p_needles_missing,
+        p_haystack_missing,
         v_o_needles,
         v_o_haystack,
         missing_propagate,
@@ -493,8 +495,8 @@ r_obj* df_matches(r_obj* needles,
         loc_upper_o_needles,
         p_needles,
         p_haystack,
-        p_needles_complete,
-        p_haystack_complete,
+        p_needles_missing,
+        p_haystack_missing,
         v_o_needles,
         v_o_haystack,
         missing_propagate,
@@ -548,8 +550,8 @@ void df_matches_recurse(r_ssize col,
                         r_ssize loc_upper_o_haystack,
                         const struct poly_df_data* p_needles,
                         const struct poly_df_data* p_haystack,
-                        const struct poly_df_data* p_needles_complete,
-                        const struct poly_df_data* p_haystack_complete,
+                        const struct poly_df_data* p_needles_missing,
+                        const struct poly_df_data* p_haystack_missing,
                         const int* v_o_needles,
                         const int* v_o_haystack,
                         bool missing_propagate,
@@ -567,10 +569,10 @@ void df_matches_recurse(r_ssize col,
   const r_ssize n_col = p_needles->n_col;
 
   const int* v_needles = (const int*) p_needles->col_ptrs[col];
-  const int* v_needles_complete = (const int*) p_needles_complete->col_ptrs[col];
+  const int* v_needles_missing = (const int*) p_needles_missing->col_ptrs[col];
 
   const int* v_haystack = (const int*) p_haystack->col_ptrs[col];
-  const int* v_haystack_complete = (const int*) p_haystack_complete->col_ptrs[col];
+  const int* v_haystack_missing = (const int*) p_haystack_missing->col_ptrs[col];
 
   r_ssize loc_group_lower_o_needles = loc_lower_o_needles;
   r_ssize loc_group_upper_o_needles = loc_upper_o_needles;
@@ -579,7 +581,7 @@ void df_matches_recurse(r_ssize col,
   const r_ssize loc_group_mid_needles = v_o_needles[loc_group_mid_o_needles] - 1;
 
   const int val_needle = v_needles[loc_group_mid_needles];
-  const bool needle_is_complete = v_needles_complete[loc_group_mid_needles];
+  const bool needle_is_missing = v_needles_missing[loc_group_mid_needles];
 
   // Find lower and upper group bounds for the needle value
   loc_group_lower_o_needles = int_lower_duplicate(
@@ -597,7 +599,7 @@ void df_matches_recurse(r_ssize col,
     loc_group_upper_o_needles
   );
 
-  if (missing_propagate && !needle_is_complete) {
+  if (missing_propagate && needle_is_missing) {
     // Propagate NA, don't recursive into further columns.
     for (r_ssize i = loc_group_lower_o_needles; i <= loc_group_upper_o_needles; ++i) {
       // Will always be the first and only time the output is touched for this
@@ -622,8 +624,8 @@ void df_matches_recurse(r_ssize col,
         loc_upper_o_haystack,
         p_needles,
         p_haystack,
-        p_needles_complete,
-        p_haystack_complete,
+        p_needles_missing,
+        p_haystack_missing,
         v_o_needles,
         v_o_haystack,
         missing_propagate,
@@ -650,8 +652,8 @@ void df_matches_recurse(r_ssize col,
         loc_upper_o_haystack,
         p_needles,
         p_haystack,
-        p_needles_complete,
-        p_haystack_complete,
+        p_needles_missing,
+        p_haystack_missing,
         v_o_needles,
         v_o_haystack,
         missing_propagate,
@@ -711,13 +713,13 @@ void df_matches_recurse(r_ssize col,
   case VCTRS_OPS_lt: {
     // Exclude found needle
     loc_group_lower_o_haystack = loc_group_upper_o_haystack + 1;
-    if (needle_is_complete) {
+    if (!needle_is_missing) {
       loc_group_upper_o_haystack = loc_upper_o_haystack;
     }
     break;
   }
   case VCTRS_OPS_lte: {
-    if (needle_is_complete) {
+    if (!needle_is_missing) {
       loc_group_upper_o_haystack = loc_upper_o_haystack;
     }
     break;
@@ -725,13 +727,13 @@ void df_matches_recurse(r_ssize col,
   case VCTRS_OPS_gt: {
     // Exclude found needle
     loc_group_upper_o_haystack = loc_group_lower_o_haystack - 1;
-    if (needle_is_complete) {
+    if (!needle_is_missing) {
       loc_group_lower_o_haystack = loc_lower_o_haystack;
     }
     break;
   }
   case VCTRS_OPS_gte: {
-    if (needle_is_complete) {
+    if (!needle_is_missing) {
       loc_group_lower_o_haystack = loc_lower_o_haystack;
     }
     break;
@@ -741,7 +743,7 @@ void df_matches_recurse(r_ssize col,
   }
   }
 
-  if (needle_is_complete &&
+  if (!needle_is_missing &&
       (op == VCTRS_OPS_gt || op == VCTRS_OPS_gte) &&
       (loc_group_lower_o_haystack <= loc_group_upper_o_haystack)) {
     // In this specific case, a non-NA needle may match an NA in the haystack
@@ -749,18 +751,18 @@ void df_matches_recurse(r_ssize col,
     // haystack, we avoid including it by shifting the lower bound to 1 past
     // the final NA.
     const r_ssize loc_group_lower_haystack = v_o_haystack[loc_group_lower_o_haystack] - 1;
-    const bool group_lower_haystack_is_complete = v_haystack_complete[loc_group_lower_haystack];
+    const bool group_lower_haystack_is_missing = v_haystack_missing[loc_group_lower_haystack];
 
-    if (!group_lower_haystack_is_complete) {
-      /* If there was an NA in the haystack, find the last NA */
-      loc_group_lower_o_haystack = int_locate_upper_incomplete(
-        v_haystack_complete,
+    if (group_lower_haystack_is_missing) {
+      // If there was an NA in the haystack, find the last NA
+      loc_group_lower_o_haystack = int_locate_upper_missing(
+        v_haystack_missing,
         v_o_haystack,
         loc_group_lower_o_haystack,
         loc_group_upper_o_haystack
       );
 
-      /* Exclude it and all before it */
+      // Exclude it and all before it
       ++loc_group_lower_o_haystack;
     }
   }
@@ -770,7 +772,7 @@ void df_matches_recurse(r_ssize col,
 
     switch (filter) {
     case VCTRS_FILTER_max: {
-      if (!needle_is_complete || op == VCTRS_OPS_eq) {
+      if (needle_is_missing || op == VCTRS_OPS_eq) {
         // Lower bound value will already equal upper bound value
         break;
       }
@@ -799,7 +801,7 @@ void df_matches_recurse(r_ssize col,
       break;
     }
     case VCTRS_FILTER_min: {
-      if (!needle_is_complete || op == VCTRS_OPS_eq) {
+      if (needle_is_missing || op == VCTRS_OPS_eq) {
         // Lower bound value will already equal upper bound value
         break;
       }
@@ -842,8 +844,8 @@ void df_matches_recurse(r_ssize col,
         loc_group_upper_o_haystack,
         p_needles,
         p_haystack,
-        p_needles_complete,
-        p_haystack_complete,
+        p_needles_missing,
+        p_haystack_missing,
         v_o_needles,
         v_o_haystack,
         missing_propagate,
@@ -997,10 +999,10 @@ void df_matches_recurse(r_ssize col,
       const r_ssize loc_needles = v_o_needles[i] - 1;
 
       for (r_ssize j = col + 1; j < n_col; ++j) {
-        const int* v_future_needles_complete = (const int*) p_needles_complete->col_ptrs[j];
-        const bool future_needle_is_complete = v_future_needles_complete[loc_needles];
+        const int* v_future_needles_missing = (const int*) p_needles_missing->col_ptrs[j];
+        const bool future_needle_is_missing = v_future_needles_missing[loc_needles];
 
-        if (!future_needle_is_complete) {
+        if (future_needle_is_missing) {
           R_ARR_POKE(int, p_locs_start_o_haystack, loc_needles, SIGNAL_NA_PROPAGATE);
           break;
         }
@@ -1071,8 +1073,8 @@ void df_matches_recurse(r_ssize col,
       lhs_loc_upper_o_haystack,
       p_needles,
       p_haystack,
-      p_needles_complete,
-      p_haystack_complete,
+      p_needles_missing,
+      p_haystack_missing,
       v_o_needles,
       v_o_haystack,
       missing_propagate,
@@ -1096,8 +1098,8 @@ void df_matches_recurse(r_ssize col,
       rhs_loc_upper_o_haystack,
       p_needles,
       p_haystack,
-      p_needles_complete,
-      p_haystack_complete,
+      p_needles_missing,
+      p_haystack_missing,
       v_o_needles,
       v_o_haystack,
       missing_propagate,
@@ -1125,8 +1127,8 @@ void df_matches_with_nested_groups(r_ssize size_haystack,
                                    r_ssize loc_upper_o_needles,
                                    const struct poly_df_data* p_needles,
                                    const struct poly_df_data* p_haystack,
-                                   const struct poly_df_data* p_needles_complete,
-                                   const struct poly_df_data* p_haystack_complete,
+                                   const struct poly_df_data* p_needles_missing,
+                                   const struct poly_df_data* p_haystack_missing,
                                    const int* v_o_needles,
                                    const int* v_o_haystack,
                                    bool missing_propagate,
@@ -1187,8 +1189,8 @@ void df_matches_with_nested_groups(r_ssize size_haystack,
       loc_group_upper_o_haystack,
       p_needles,
       p_haystack,
-      p_needles_complete,
-      p_haystack_complete,
+      p_needles_missing,
+      p_haystack_missing,
       v_o_needles,
       v_o_haystack,
       missing_propagate,
@@ -1211,21 +1213,21 @@ void df_matches_with_nested_groups(r_ssize size_haystack,
 
 // -----------------------------------------------------------------------------
 
-// Find the largest contiguous location containing an incomplete value
+// Find the largest contiguous location containing a missing value
 static inline
-r_ssize int_locate_upper_incomplete(const int* v_haystack_complete,
-                                    const int* v_o_haystack,
-                                    r_ssize loc_lower_o_haystack,
-                                    r_ssize loc_upper_o_haystack) {
+r_ssize int_locate_upper_missing(const int* v_haystack_missing,
+                                 const int* v_o_haystack,
+                                 r_ssize loc_lower_o_haystack,
+                                 r_ssize loc_upper_o_haystack) {
   while (loc_lower_o_haystack <= loc_upper_o_haystack) {
     const r_ssize loc_mid_o_haystack = midpoint(loc_lower_o_haystack, loc_upper_o_haystack);
     const r_ssize loc_mid_haystack = v_o_haystack[loc_mid_o_haystack] - 1;
-    const int haystack_is_complete = v_haystack_complete[loc_mid_haystack];
+    const int haystack_is_missing = v_haystack_missing[loc_mid_haystack];
 
-    if (haystack_is_complete) {
-      loc_upper_o_haystack = loc_mid_o_haystack - 1;
-    } else {
+    if (haystack_is_missing) {
       loc_lower_o_haystack = loc_mid_o_haystack + 1;
+    } else {
+      loc_upper_o_haystack = loc_mid_o_haystack - 1;
     }
   }
 
@@ -1484,7 +1486,7 @@ r_obj* df_joint_xtfrm_by_col(r_obj* x,
 // -----------------------------------------------------------------------------
 
 static
-r_obj* df_detect_complete_by_col(r_obj* x, r_ssize x_size, r_ssize n_cols) {
+r_obj* df_detect_missing_by_col(r_obj* x, r_ssize x_size, r_ssize n_cols) {
   r_obj* out = KEEP(r_alloc_list(n_cols));
   r_poke_names(out, r_names(x));
   r_init_data_frame(out, x_size);
@@ -1493,9 +1495,8 @@ r_obj* df_detect_complete_by_col(r_obj* x, r_ssize x_size, r_ssize n_cols) {
 
   for (r_ssize i = 0; i < n_cols; ++i) {
     r_obj* col = v_x[i];
-    // Use completeness to match `vec_rank()` and `vec_match()`
-    r_obj* complete = vec_detect_complete(col);
-    r_list_poke(out, i, complete);
+    r_obj* missing = vec_equal_na(col);
+    r_list_poke(out, i, missing);
   }
 
   FREE(1);

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>A 1d vector of unspecified type — unspecified • vctrs</title>
+<title>Drop empty elements from a list — list_drop_empty • vctrs</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,10 +46,10 @@
 
 
 
-<meta property="og:title" content="A 1d vector of unspecified type — unspecified" />
-<meta property="og:description" content="This is a partial type used to represent logical vectors
-that only contain NA. These require special handling because we want to
-allow NA to specify missingness without requiring a type." />
+<meta property="og:title" content="Drop empty elements from a list — list_drop_empty" />
+<meta property="og:description" content="list_drop_empty() removes empty elements from a list. This includes NULL
+elements along with empty vectors, like integer(0). This is equivalent to,
+but faster than, vec_slice(x, list_sizes(x) != 0L)." />
 <meta property="og:image" content="https://vctrs.r-lib.org/logo.png" />
 
 
@@ -154,51 +154,45 @@ allow NA to specify missingness without requiring a type." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>A 1d vector of unspecified type</h1>
-    <small class="dont-index">Source: <a href='https://github.com/r-lib/vctrs/blob/master/R/type-unspecified.R'><code>R/type-unspecified.R</code></a></small>
-    <div class="hidden name"><code>unspecified.Rd</code></div>
+    <h1>Drop empty elements from a list</h1>
+    <small class="dont-index">Source: <a href='https://github.com/r-lib/vctrs/blob/master/R/empty.R'><code>R/empty.R</code></a></small>
+    <div class="hidden name"><code>list_drop_empty.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This is a <a href='new_partial.html'>partial type</a> used to represent logical vectors
-that only contain <code>NA</code>. These require special handling because we want to
-allow <code>NA</code> to specify missingness without requiring a type.</p>
+    <p><code>list_drop_empty()</code> removes empty elements from a list. This includes <code>NULL</code>
+elements along with empty vectors, like <code>integer(0)</code>. This is equivalent to,
+but faster than, <code>vec_slice(x, list_sizes(x) != 0L)</code>.</p>
     </div>
 
-    <div class="ref-usage sourceCode"><pre class='sourceCode r'><code><span class='fu'>unspecified</span><span class='op'>(</span>n <span class='op'>=</span> <span class='fl'>0</span><span class='op'>)</span></code></pre></div>
+    <div class="ref-usage sourceCode"><pre class='sourceCode r'><code><span class='fu'>list_drop_empty</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span></code></pre></div>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>n</th>
-      <td><p>Length of vector</p></td>
+      <th>x</th>
+      <td><p>A list.</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="dependencies"><a class="anchor" href="#dependencies"></a>Dependencies</h2>
+
+    
+
+<ul>
+<li><p><code><a href='vec_slice.html'>vec_slice()</a></code></p></li>
+</ul>
+
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <div class="ref-examples sourceCode"><pre class='sourceCode r'><code><span class='r-in'><span class='fu'><a href='vec_ptype.html'>vec_ptype_show</a></span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> Prototype: NULL</span>
-<span class='r-in'><span class='fu'><a href='vec_ptype.html'>vec_ptype_show</a></span><span class='op'>(</span><span class='cn'>NA</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> Prototype: logical</span>
-<span class='r-in'></span>
-<span class='r-in'><span class='fu'><a href='vec_c.html'>vec_c</a></span><span class='op'>(</span><span class='cn'>NA</span>, <span class='fu'><a href='https://rdrr.io/r/base/factor.html'>factor</a></span><span class='op'>(</span><span class='st'>"x"</span><span class='op'>)</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] &lt;NA&gt; x   </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> Levels: x</span>
-<span class='r-in'><span class='fu'><a href='vec_c.html'>vec_c</a></span><span class='op'>(</span><span class='cn'>NA</span>, <span class='fu'><a href='https://rdrr.io/r/base/Sys.time.html'>Sys.Date</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] NA           "2021-09-16"</span>
-<span class='r-in'><span class='fu'><a href='vec_c.html'>vec_c</a></span><span class='op'>(</span><span class='cn'>NA</span>, <span class='fu'><a href='https://rdrr.io/r/base/Sys.time.html'>Sys.time</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] NA                        "2021-09-16 21:18:51 UTC"</span>
-<span class='r-in'><span class='fu'><a href='vec_c.html'>vec_c</a></span><span class='op'>(</span><span class='cn'>NA</span>, <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>3</span>, <span class='fl'>4</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>)</span><span class='op'>)</span></span>
+    <div class="ref-examples sourceCode"><pre class='sourceCode r'><code><span class='r-in'><span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='cn'>NULL</span>, <span class='fu'><a href='https://rdrr.io/r/base/integer.html'>integer</a></span><span class='op'>(</span><span class='op'>)</span>, <span class='fl'>2</span><span class='op'>)</span></span>
+<span class='r-in'><span class='fu'>list_drop_empty</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span></span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> [[1]]</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> NULL</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] 1</span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> [[2]]</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] 1 2 3</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [[3]]</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] 4 5</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] 2</span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
 </code></pre></div>
   </div>

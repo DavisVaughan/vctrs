@@ -54,3 +54,42 @@ vec_complement <- function(start, end, ..., force_start = NULL, force_end = NULL
   check_dots_empty0(...)
   .Call(vctrs_complement, start, end, force_start, force_end)
 }
+
+interval_union <- function(x_start, x_end, y_start, y_end) {
+  start <- vec_c(x_start, y_start)
+  end <- vec_c(x_end, y_end)
+  vec_merge_overlaps(start, end)
+}
+
+interval_setdiff <- function(x_start, x_end, y_start, y_end) {
+  if (length(x_start) == 0L) {
+    # Just for the data frame structure (return empty interval object `x` here)
+    return(vec_complement(x_start, x_end))
+  }
+
+  force_start <- min(vec_c(x_start, y_start))
+  force_end <- max(vec_c(x_end, y_end))
+
+  out <- vec_complement(x_start, x_end, force_start = force_start, force_end = force_end)
+  out <- interval_union(out$start, out$end, y_start, y_end)
+  out <- vec_complement(out$start, out$end, force_start = force_start, force_end = force_end)
+
+  out
+}
+
+interval_intersect <- function(x_start, x_end, y_start, y_end) {
+  if (length(x_start) == 0L) {
+    # Just for the data frame structure (return empty interval object `x` here)
+    return(vec_complement(x_start, x_end))
+  }
+
+  force_start <- min(vec_c(x_start, y_start))
+  force_end <- max(vec_c(x_end, y_end))
+
+  out <- vec_complement(y_start, y_end, force_start = force_start, force_end = force_end)
+  out <- interval_setdiff(x_start, x_end, out$start, out$end)
+
+  out
+}
+
+# define parallel intersect, union, and setdiff helpers as well

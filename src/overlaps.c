@@ -147,8 +147,11 @@ r_obj* vctrs_merge_overlaps(r_obj* start, r_obj* end, r_obj* locations) {
 // -----------------------------------------------------------------------------
 
 static
-r_obj* vec_complement(r_obj* start, r_obj* end) {
+r_obj* vec_complement(r_obj* start, r_obj* end, int force_start, int force_end) {
   const r_ssize size = r_length(start);
+
+  bool use_force_start = (force_start != r_globals.na_int);
+  bool use_force_end = (force_end != r_globals.na_int);
 
   if (r_typeof(start) != R_TYPE_integer) {
     r_abort("`start` must be an integer.");
@@ -200,8 +203,35 @@ r_obj* vec_complement(r_obj* start, r_obj* end) {
   struct r_dyn_array* p_ends = r_new_dyn_vector(R_TYPE_integer, initial_size);
   KEEP(p_ends->shelter);
 
+  if (size == 0 && use_force_start && use_force_end) {
+    const int gap_start = force_start;
+    const int gap_end = force_end;
+
+    if (gap_start <= gap_end) {
+      r_int_push_back(p_starts, gap_start);
+      r_int_push_back(p_ends, gap_end);
+    }
+  }
+
   if (size > 0) {
+    int set_start = v_start[v_order[0] - 1];
     int set_end = v_end[v_order[0] - 1];
+
+    if (use_force_start && force_start < set_start) {
+      use_force_start = false;
+
+      const int gap_start = force_start;
+
+      int gap_end = set_start - 1;
+      if (use_force_end && force_end < gap_end) {
+        gap_end = force_end;
+      }
+
+      if (gap_start <= gap_end) {
+        r_int_push_back(p_starts, gap_start);
+        r_int_push_back(p_ends, gap_end);
+      }
+    }
 
     for (r_ssize i = 1; i < size; ++i) {
       const r_ssize loc = v_order[i] - 1;
@@ -209,12 +239,17 @@ r_obj* vec_complement(r_obj* start, r_obj* end) {
       const int elt_start = v_start[loc];
       const int elt_end = v_end[loc];
 
-      if (set_end < elt_start) {
+      const bool has_potential_gap =
+        !(use_force_end && set_end >= force_end) &&
+        !(use_force_start && set_end < force_start) &&
+        (set_end < elt_start);
+
+      if (has_potential_gap) {
         const int gap_start = set_end + 1;
         const int gap_end = elt_start - 1;
 
         if (gap_start <= gap_end) {
-          // `gap_start > gap_end` occurs with sequential intervals,
+          // `gap_start > gap_end` occurs with adjacent intervals,
           // which don't have a gap
           r_int_push_back(p_starts, gap_start);
           r_int_push_back(p_ends, gap_end);
@@ -223,6 +258,22 @@ r_obj* vec_complement(r_obj* start, r_obj* end) {
         set_end = elt_end;
       } else if (set_end < elt_end) {
         set_end = elt_end;
+      }
+    }
+
+    if (use_force_end && force_end > set_end) {
+      use_force_end = false;
+
+      int gap_start = set_end + 1;
+      if (use_force_start && force_start > gap_start) {
+        gap_start = force_start;
+      }
+
+      const int gap_end = force_end;
+
+      if (gap_start <= gap_end) {
+        r_int_push_back(p_starts, gap_start);
+        r_int_push_back(p_ends, gap_end);
       }
     }
   }
@@ -243,6 +294,8 @@ r_obj* vec_complement(r_obj* start, r_obj* end) {
 }
 
 // [[ register() ]]
-r_obj* vctrs_complement(r_obj* start, r_obj* end) {
-  return vec_complement(start, end);
+r_obj* vctrs_complement(r_obj* start, r_obj* end, r_obj* force_start, r_obj* force_end) {
+  const int c_force_start = (force_start == r_null) ? r_globals.na_int : r_as_int(force_start);
+  const int c_force_end = (force_end == r_null) ? r_globals.na_int : r_as_int(force_end);
+  return vec_complement(start, end, c_force_start, c_force_end);
 }

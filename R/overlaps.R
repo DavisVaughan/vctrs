@@ -50,6 +50,7 @@ vec_merge_overlaps <- function(start, end, ..., locations = FALSE) {
   .Call(vctrs_merge_overlaps, start, end, locations)
 }
 
-vec_complement <- function(start, end) {
-  .Call(vctrs_complement, start, end)
+vec_complement <- function(start, end, ..., force_start = NULL, force_end = NULL) {
+  check_dots_empty0(...)
+  .Call(vctrs_complement, start, end, force_start, force_end)
 }

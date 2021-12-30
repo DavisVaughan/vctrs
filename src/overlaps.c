@@ -3,7 +3,7 @@
 #include "order.h"
 
 static
-r_obj* vec_merge_overlaps(r_obj* start, r_obj* end) {
+r_obj* vec_merge_overlaps(r_obj* start, r_obj* end, bool locations) {
   const r_ssize size = r_length(start);
 
   if (r_typeof(start) != R_TYPE_integer) {
@@ -56,6 +56,15 @@ r_obj* vec_merge_overlaps(r_obj* start, r_obj* end) {
   struct r_dyn_array* p_ends = r_new_dyn_vector(R_TYPE_integer, initial_size);
   KEEP(p_ends->shelter);
 
+  r_ssize loc_order_start = 0;
+  struct r_dyn_array* p_loc = NULL;
+  r_obj* loc_shelter = r_null;
+  if (locations) {
+    p_loc = r_new_dyn_vector(R_TYPE_list, initial_size);
+    loc_shelter = p_loc->shelter;
+  }
+  KEEP(loc_shelter);
+
   if (size > 0) {
     int set_start = v_start[v_order[0] - 1];
     int set_end = v_end[v_order[0] - 1];
@@ -69,6 +78,21 @@ r_obj* vec_merge_overlaps(r_obj* start, r_obj* end) {
       if (set_end < elt_start) {
         r_int_push_back(p_starts, set_start);
         r_int_push_back(p_ends, set_end);
+
+        if (locations) {
+          const r_ssize loc_order_stop = i - 1;
+          const r_ssize loc_size = loc_order_stop - loc_order_start + 1;
+
+          r_obj* loc = r_new_integer(loc_size);
+          r_list_push_back(p_loc, loc);
+          int* v_loc = r_int_begin(loc);
+
+          const int* v_order_start = v_order + loc_order_start;
+          memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+
+          loc_order_start = loc_order_stop + 1;
+        }
+
         set_start = elt_start;
         set_end = elt_end;
       } else if (set_end < elt_end) {
@@ -78,24 +102,44 @@ r_obj* vec_merge_overlaps(r_obj* start, r_obj* end) {
 
     r_int_push_back(p_starts, set_start);
     r_int_push_back(p_ends, set_end);
+
+    if (locations) {
+      const r_ssize loc_order_stop = size - 1;
+      const r_ssize loc_size = loc_order_stop - loc_order_start + 1;
+
+      r_obj* loc = r_new_integer(loc_size);
+      r_list_push_back(p_loc, loc);
+      int* v_loc = r_int_begin(loc);
+
+      const int* v_order_start = v_order + loc_order_start;
+      memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+    }
   }
 
-  r_obj* out = KEEP(r_new_list(2));
+  const r_ssize out_n = locations ? 3 : 2;
+
+  r_obj* out = KEEP(r_new_list(out_n));
   r_list_poke(out, 0, r_arr_unwrap(p_starts));
   r_list_poke(out, 1, r_arr_unwrap(p_ends));
 
-  r_obj* out_names = r_new_character(2);
+  r_obj* out_names = r_new_character(out_n);
   r_poke_names(out, out_names);
   r_chr_poke(out_names, 0, r_str("start"));
   r_chr_poke(out_names, 1, r_str("end"));
 
+  if (locations) {
+    r_list_poke(out, 2, r_arr_unwrap(p_loc));
+    r_chr_poke(out_names, 2, r_str("loc"));
+  }
+
   r_init_data_frame(out, p_starts->count);
 
-  FREE(7);
+  FREE(8);
   return out;
 }
 
 // [[ register() ]]
-r_obj* vctrs_merge_overlaps(r_obj* start, r_obj* end) {
-  return vec_merge_overlaps(start, end);
+r_obj* vctrs_merge_overlaps(r_obj* start, r_obj* end, r_obj* locations) {
+  const bool c_locations = r_as_bool(locations);
+  return vec_merge_overlaps(start, end, c_locations);
 }

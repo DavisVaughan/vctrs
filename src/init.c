@@ -138,7 +138,7 @@ extern r_obj* vctrs_integer64_proxy(r_obj*);
 extern r_obj* vctrs_integer64_restore(r_obj*);
 extern r_obj* vctrs_list_drop_empty(r_obj*);
 extern r_obj* vctrs_is_altrep(r_obj* x);
-extern r_obj* vctrs_merge_overlaps(r_obj*, r_obj*);
+extern r_obj* vctrs_merge_overlaps(r_obj*, r_obj*, r_obj*);
 
 
 // Maturing
@@ -297,7 +297,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_integer64_restore",          (DL_FUNC) &vctrs_integer64_restore, 1},
   {"vctrs_list_drop_empty",            (DL_FUNC) &vctrs_list_drop_empty, 1},
   {"vctrs_is_altrep",                  (DL_FUNC) &vctrs_is_altrep, 1},
-  {"vctrs_merge_overlaps",             (DL_FUNC) &vctrs_merge_overlaps, 2},
+  {"vctrs_merge_overlaps",             (DL_FUNC) &vctrs_merge_overlaps, 3},
   {NULL, NULL, 0}
 };
 

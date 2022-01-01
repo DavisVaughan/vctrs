@@ -47,48 +47,12 @@ test_that("empty intervals touching another interval on either side are not link
   )
 })
 
-test_that("can merge overlaps and append locations", {
-  out <- interval_link(
-    c(1L, 9L,  2L, 2L, 10L),
-    c(5L, 11L, 6L, 8L, 12L),
-    locations = TRUE
-  )
-
-  expect_identical(
-    out$loc,
-    list(c(1L, 3L, 4L), c(2L, 5L))
-  )
-
-  expect_identical(
-    interval_link(2L, 2L, locations = TRUE),
-    data_frame(start = 2L, end = 2L, loc = list(1L))
-  )
-})
-
 test_that("keys are returned ordered", {
   x <- data_frame(start = c(4L, 3L, 1L), end = c(6L, 5L, 2L))
 
   expect_identical(
     interval_link(x$start, x$end),
     data_frame(start = c(1L, 3L), end = c(2L, 6L))
-  )
-})
-
-test_that("locations are ordered by both `start` and `end`", {
-  x <- data_frame(start = c(4L, 4L, 1L), end = c(6L, 5L, 2L))
-
-  out <- interval_link(x$start, x$end, locations = TRUE)
-
-  # Ties of `start = 4` are broken by `end` values and reordered
-  expect_identical(
-    out$loc,
-    list(3L, c(2L, 1L))
-  )
-
-  # So this orders `x`
-  expect_identical(
-    vec_slice(x, unlist(out$loc)),
-    vec_sort(x)
   )
 })
 
@@ -107,22 +71,12 @@ test_that("can link with size zero input", {
     interval_link(integer(), integer()),
     data_frame(start = integer(), end = integer())
   )
-
-  expect_identical(
-    interval_link(integer(), integer(), locations = TRUE),
-    data_frame(start = integer(), end = integer(), loc = list())
-  )
 })
 
 test_that("can link with size one input", {
   expect_identical(
     interval_link(2L, 2L),
     data_frame(start = 2L, end = 2L)
-  )
-
-  expect_identical(
-    interval_link(2L, 2L, locations = TRUE),
-    data_frame(start = 2L, end = 2L, loc = list(1L))
   )
 })
 
@@ -164,6 +118,58 @@ test_that("can set a maximum gap of `< -1` to require an amount of overlap", {
   expect_identical(
     interval_link(x$start, x$end, gap = -3L),
     x
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_locate_links()
+
+test_that("can merge overlaps and append locations", {
+  out <- interval_locate_links(
+    c(1L, 9L,  2L, 2L, 10L),
+    c(5L, 11L, 6L, 8L, 12L)
+  )
+
+  expect_identical(
+    out$loc,
+    list(c(1L, 3L, 4L), c(2L, 5L))
+  )
+
+  expect_identical(
+    interval_locate_links(2L, 2L),
+    data_frame(start = 2L, end = 2L, loc = list(1L))
+  )
+})
+
+test_that("can link with size one input", {
+  expect_identical(
+    interval_locate_links(2L, 2L),
+    data_frame(start = 2L, end = 2L, loc = list(1L))
+  )
+})
+
+test_that("can link with size zero input", {
+  expect_identical(
+    interval_locate_links(integer(), integer()),
+    data_frame(start = integer(), end = integer(), loc = list())
+  )
+})
+
+test_that("locations are ordered by both `start` and `end`", {
+  x <- data_frame(start = c(4L, 4L, 1L), end = c(6L, 5L, 2L))
+
+  out <- interval_locate_links(x$start, x$end)
+
+  # Ties of `start = 4` are broken by `end` values and reordered
+  expect_identical(
+    out$loc,
+    list(3L, c(2L, 1L))
+  )
+
+  # So this orders `x`
+  expect_identical(
+    vec_slice(x, unlist(out$loc)),
+    vec_sort(x)
   )
 })
 

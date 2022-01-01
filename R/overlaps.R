@@ -4,22 +4,12 @@
 #' `end`, resulting in new `start` and `end` values that are non-overlapping
 #' and contain no redundant information.
 #'
-#' @details
-#' If `locations` are returned, they are returned in such a way that they
-#' order the original input.
-#'
 #' @inheritParams ellipsis::dots_empty
 #'
 #' @param start,end `[integer]`
 #'
 #'   A pair of integer vectors. It is assumed that `start <= end`, but this is
 #'   not checked.
-#'
-#' @param locations `[logical(1)]`
-#'
-#'   Should locations that map the output back to the input also be returned? If
-#'   so, they are returned as a list of integer vectors in an additional `loc`
-#'   column.
 #'
 #' @param gap `[integer(1) / NULL]`
 #'
@@ -36,8 +26,7 @@
 #'
 #' @return
 #' A data frame with `start` and `end` integer columns containing the collapsed
-#' ranges. If `locations` is `TRUE`, an additional `loc` list column will be
-#' returned.
+#' ranges.
 #'
 #' @noRd
 #'
@@ -63,7 +52,7 @@
 #' interval_link(start, end, gap = 1L)
 #'
 #' # Retain locations to map input to output
-#' info <- interval_link(start, end, locations = TRUE)
+#' info <- interval_locate_links(start, end)
 #' info
 #'
 #' old <- vec_slice(df, vec_unchop(info$loc))
@@ -73,8 +62,15 @@
 #' )
 #'
 #' vec_cbind(old, new)
-interval_link <- function(start, end, ..., locations = FALSE, gap = NULL) {
+interval_link <- function(start, end, ..., gap = NULL) {
   check_dots_empty0(...)
+  locations <- FALSE
+  .Call(vctrs_interval_link, start, end, locations, gap)
+}
+
+interval_locate_links <- function(start, end, ..., gap = NULL) {
+  check_dots_empty0(...)
+  locations <- TRUE
   .Call(vctrs_interval_link, start, end, locations, gap)
 }
 

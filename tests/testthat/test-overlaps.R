@@ -121,6 +121,15 @@ test_that("can set a maximum gap of `< -1` to require an amount of overlap", {
   )
 })
 
+test_that("duplicated empty intervals are deduplicated", {
+  x <- data_frame(start = c(5L, 5L), end = c(5L, 5L))
+
+  expect_identical(
+    interval_link(x$start, x$end),
+    data_frame(start = 5L, end = 5L)
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_locate_links()
 
@@ -196,13 +205,13 @@ test_that("treats intervals as half-open like [a, b)", {
   )
 })
 
-test_that("touching intervals like [a, b) [b, c) don't generate gaps", {
+test_that("adjacent but non-overlapping intervals like [a, b) [b, c) generate empty gaps", {
   start <- c(1L, 5L)
   end <- c(5L, 6L)
 
   expect_identical(
     interval_complement(start, end),
-    data_frame(start = integer(), end = integer())
+    data_frame(start = 5L, end = 5L)
   )
 })
 
@@ -345,5 +354,62 @@ test_that("size zero case with `force_start >= force_end` doesn't return anythin
   expect_identical(
     interval_complement(integer(), integer(), force_start = 10L, force_end = 5L),
     data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("complement of empty interval is correct", {
+  x <- data_frame(start = 5L, end = 5L)
+
+  expect_identical(
+    interval_complement(x$start, x$end),
+    data_frame(start = integer(), end = integer())
+  )
+
+  x <- data_frame(start = c(5L, 5L), end = c(5L, 5L))
+
+  expect_identical(
+    interval_complement(x$start, x$end),
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("complement of empty interval is correct when it isn't the first set", {
+  x <- data_frame(start = c(1L, 5L, 5L), end = c(2L, 5L, 5L))
+
+  expect_identical(
+    interval_complement(x$start, x$end),
+    data_frame(start = 2L, end = 5L)
+  )
+})
+
+test_that("complement of empty interval is correct with `force_start` and `force_end`", {
+  x <- data_frame(start = 5L, end = 5L)
+
+  expect_identical(
+    interval_complement(x$start, x$end, force_start = 4L),
+    data_frame(start = 4L, end = 5L)
+  )
+  expect_identical(
+    interval_complement(x$start, x$end, force_end = 6L),
+    data_frame(start = 5L, end = 6L)
+  )
+  expect_identical(
+    interval_complement(x$start, x$end, force_start = 4L, force_end = 6L),
+    data_frame(start = c(4L, 5L), end = c(5L, 6L))
+  )
+
+  x <- data_frame(start = c(5L, 5L), end = c(5L, 5L))
+
+  expect_identical(
+    interval_complement(x$start, x$end, force_start = 4L),
+    data_frame(start = 4L, end = 5L)
+  )
+  expect_identical(
+    interval_complement(x$start, x$end, force_end = 6L),
+    data_frame(start = 5L, end = 6L)
+  )
+  expect_identical(
+    interval_complement(x$start, x$end, force_start = 4L, force_end = 6L),
+    data_frame(start = c(4L, 5L), end = c(5L, 6L))
   )
 })

@@ -75,7 +75,7 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
       const int elt_start = v_start[loc];
       const int elt_end = v_end[loc];
 
-      if (elt_start - set_end > gap) {
+      if ((set_end < elt_start - gap) && (elt_end > set_start)) {
         r_int_push_back(p_starts, set_start);
         r_int_push_back(p_ends, set_end);
 
@@ -243,7 +243,7 @@ r_obj* interval_complement(r_obj* start, r_obj* end, int force_start, int force_
       const bool has_gap =
         !(use_force_end && set_end >= force_end) &&
         !(use_force_start && set_end < force_start) &&
-        (set_end < elt_start);
+        (set_end <= elt_start && elt_end > set_start);
 
       if (has_gap) {
         const int gap_start = set_end;
@@ -252,6 +252,7 @@ r_obj* interval_complement(r_obj* start, r_obj* end, int force_start, int force_
         r_int_push_back(p_starts, gap_start);
         r_int_push_back(p_ends, gap_end);
 
+        set_start = elt_start;
         set_end = elt_end;
       } else if (set_end < elt_end) {
         set_end = elt_end;

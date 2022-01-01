@@ -1,9 +1,9 @@
 # ------------------------------------------------------------------------------
-# vec_merge_overlaps()
+# interval_link()
 
-test_that("can merge overlaps", {
+test_that("can link up overlaps", {
   expect_identical(
-    vec_merge_overlaps(
+    interval_link(
       c(1L, 10L,  2L, 2L, 9L),
       c(5L, 12L, 6L, 8L, 11L)
     ),
@@ -14,7 +14,7 @@ test_that("can merge overlaps", {
 test_that("treats intervals as half-open, like `[a, b)`", {
   # [9, 10) doesn't overlap with [10, 12)
   expect_identical(
-    vec_merge_overlaps(
+    interval_link(
       c(10L, 9L),
       c(12L, 10L)
     ),
@@ -26,29 +26,29 @@ test_that("empty intervals are merged if they fall fully within another interval
   df <- data_frame(start = c(2L, 1L), end = c(2L, 3L))
 
   expect_identical(
-    vec_merge_overlaps(df$start, df$end),
+    interval_link(df$start, df$end),
     data_frame(start = 1L, end = 3L)
   )
 })
 
-test_that("empty intervals touching another interval on either side are not merged", {
+test_that("empty intervals touching another interval on either side are not linked", {
   df <- data_frame(start = c(2L, 2L), end = c(2L, 3L))
 
   expect_identical(
-    vec_merge_overlaps(df$start, df$end),
+    interval_link(df$start, df$end),
     data_frame(start = c(2L, 2L), end = c(2L, 3L))
   )
 
   df <- data_frame(start = c(2L, 1L), end = c(2L, 2L))
 
   expect_identical(
-    vec_merge_overlaps(df$start, df$end),
+    interval_link(df$start, df$end),
     data_frame(start = c(1L, 2L), end = c(2L, 2L))
   )
 })
 
 test_that("can merge overlaps and append locations", {
-  out <- vec_merge_overlaps(
+  out <- interval_link(
     c(1L, 9L,  2L, 2L, 10L),
     c(5L, 11L, 6L, 8L, 12L),
     locations = TRUE
@@ -60,7 +60,7 @@ test_that("can merge overlaps and append locations", {
   )
 
   expect_identical(
-    vec_merge_overlaps(2L, 2L, locations = TRUE),
+    interval_link(2L, 2L, locations = TRUE),
     data_frame(start = 2L, end = 2L, loc = list(1L))
   )
 })
@@ -69,7 +69,7 @@ test_that("keys are returned ordered", {
   x <- data_frame(start = c(4L, 3L, 1L), end = c(6L, 5L, 2L))
 
   expect_identical(
-    vec_merge_overlaps(x$start, x$end),
+    interval_link(x$start, x$end),
     data_frame(start = c(1L, 3L), end = c(2L, 6L))
   )
 })
@@ -77,7 +77,7 @@ test_that("keys are returned ordered", {
 test_that("locations are ordered by both `start` and `end`", {
   x <- data_frame(start = c(4L, 4L, 1L), end = c(6L, 5L, 2L))
 
-  out <- vec_merge_overlaps(x$start, x$end, locations = TRUE)
+  out <- interval_link(x$start, x$end, locations = TRUE)
 
   # Ties of `start = 4` are broken by `end` values and reordered
   expect_identical(
@@ -97,31 +97,31 @@ test_that("max endpoint is retained even if it isn't the last in the group", {
   x <- data_frame(start = c(1L, 2L, 12L), end = c(10L, 5L, 15L))
 
   expect_identical(
-    vec_merge_overlaps(x$start, x$end),
+    interval_link(x$start, x$end),
     data_frame(start = c(1L, 12L), end = c(10L, 15L))
   )
 })
 
-test_that("can merge overlaps with size zero input", {
+test_that("can link with size zero input", {
   expect_identical(
-    vec_merge_overlaps(integer(), integer()),
+    interval_link(integer(), integer()),
     data_frame(start = integer(), end = integer())
   )
 
   expect_identical(
-    vec_merge_overlaps(integer(), integer(), locations = TRUE),
+    interval_link(integer(), integer(), locations = TRUE),
     data_frame(start = integer(), end = integer(), loc = list())
   )
 })
 
-test_that("can merge overlaps with size one input", {
+test_that("can link with size one input", {
   expect_identical(
-    vec_merge_overlaps(2L, 2L),
+    interval_link(2L, 2L),
     data_frame(start = 2L, end = 2L)
   )
 
   expect_identical(
-    vec_merge_overlaps(2L, 2L, locations = TRUE),
+    interval_link(2L, 2L, locations = TRUE),
     data_frame(start = 2L, end = 2L, loc = list(1L))
   )
 })

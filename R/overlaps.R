@@ -1,6 +1,6 @@
-#' Merge overlapping ranges
+#' Link up overlapping ranges
 #'
-#' `vec_merge_overlaps()` collapses overlapping information in `start` and
+#' `interval_link()` collapses overlapping information in `start` and
 #' `end`, resulting in new `start` and `end` values that are non-overlapping
 #' and contain no redundant information.
 #'
@@ -32,10 +32,10 @@
 #' df <- data_frame(start = start, end = end)
 #'
 #' # Remove all redundant overlaps
-#' vec_merge_overlaps(start, end)
+#' interval_link(start, end)
 #'
 #' # Retain locations to map input to output
-#' info <- vec_merge_overlaps(start, end, locations = TRUE)
+#' info <- interval_link(start, end, locations = TRUE)
 #' info
 #'
 #' old <- vec_slice(df, vec_unchop(info$loc))
@@ -45,9 +45,9 @@
 #' )
 #'
 #' vec_cbind(old, new)
-vec_merge_overlaps <- function(start, end, ..., locations = FALSE) {
+interval_link <- function(start, end, ..., locations = FALSE) {
   check_dots_empty0(...)
-  .Call(vctrs_merge_overlaps, start, end, locations)
+  .Call(vctrs_interval_link, start, end, locations)
 }
 
 interval_complement <- function(start, end, ..., force_start = NULL, force_end = NULL) {
@@ -58,7 +58,7 @@ interval_complement <- function(start, end, ..., force_start = NULL, force_end =
 interval_union <- function(x_start, x_end, y_start, y_end) {
   start <- vec_c(x_start, y_start)
   end <- vec_c(x_end, y_end)
-  vec_merge_overlaps(start, end)
+  interval_link(start, end)
 }
 
 interval_setdiff <- function(x_start, x_end, y_start, y_end) {

@@ -3,7 +3,7 @@
 #include "order.h"
 
 static
-r_obj* vec_merge_overlaps(r_obj* start, r_obj* end, bool locations) {
+r_obj* interval_link(r_obj* start, r_obj* end, bool locations) {
   const r_ssize size = r_length(start);
 
   if (r_typeof(start) != R_TYPE_integer) {
@@ -139,9 +139,9 @@ r_obj* vec_merge_overlaps(r_obj* start, r_obj* end, bool locations) {
 }
 
 // [[ register() ]]
-r_obj* vctrs_merge_overlaps(r_obj* start, r_obj* end, r_obj* locations) {
+r_obj* vctrs_interval_link(r_obj* start, r_obj* end, r_obj* locations) {
   const bool c_locations = r_as_bool(locations);
-  return vec_merge_overlaps(start, end, c_locations);
+  return interval_link(start, end, c_locations);
 }
 
 // -----------------------------------------------------------------------------

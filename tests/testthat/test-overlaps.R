@@ -5,16 +5,52 @@ test_that("can merge overlaps", {
   expect_identical(
     vec_merge_overlaps(
       c(1L, 10L,  2L, 2L, 9L),
-      c(5L, 12L, 6L, 8L, 10L)
+      c(5L, 12L, 6L, 8L, 11L)
     ),
     data_frame(start = c(1L, 9L), end = c(8L, 12L))
+  )
+})
+
+test_that("treats intervals as half-open, like `[a, b)`", {
+  # [9, 10) doesn't overlap with [10, 12)
+  expect_identical(
+    vec_merge_overlaps(
+      c(10L, 9L),
+      c(12L, 10L)
+    ),
+    data_frame(start = c(9L, 10L), end = c(10L, 12L))
+  )
+})
+
+test_that("empty intervals are merged if they fall fully within another interval", {
+  df <- data_frame(start = c(2L, 1L), end = c(2L, 3L))
+
+  expect_identical(
+    vec_merge_overlaps(df$start, df$end),
+    data_frame(start = 1L, end = 3L)
+  )
+})
+
+test_that("empty intervals touching another interval on either side are not merged", {
+  df <- data_frame(start = c(2L, 2L), end = c(2L, 3L))
+
+  expect_identical(
+    vec_merge_overlaps(df$start, df$end),
+    data_frame(start = c(2L, 2L), end = c(2L, 3L))
+  )
+
+  df <- data_frame(start = c(2L, 1L), end = c(2L, 2L))
+
+  expect_identical(
+    vec_merge_overlaps(df$start, df$end),
+    data_frame(start = c(1L, 2L), end = c(2L, 2L))
   )
 })
 
 test_that("can merge overlaps and append locations", {
   out <- vec_merge_overlaps(
     c(1L, 9L,  2L, 2L, 10L),
-    c(5L, 10L, 6L, 8L, 12L),
+    c(5L, 11L, 6L, 8L, 12L),
     locations = TRUE
   )
 

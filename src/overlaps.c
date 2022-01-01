@@ -75,7 +75,7 @@ r_obj* vec_merge_overlaps(r_obj* start, r_obj* end, bool locations) {
       const int elt_start = v_start[loc];
       const int elt_end = v_end[loc];
 
-      if (set_end < elt_start) {
+      if (set_end <= elt_start) {
         r_int_push_back(p_starts, set_start);
         r_int_push_back(p_ends, set_end);
 

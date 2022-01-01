@@ -135,13 +135,23 @@ test_that("computes the complement", {
 
   expect_identical(
     vec_complement(start, end),
-    data_frame(start = c(5L, 10L), end = c(5L, 11L))
+    data_frame(start = c(4L, 9L), end = c(6L, 12L))
   )
 })
 
-test_that("adjacent intervals don't generate gaps", {
+test_that("treats intervals as half-open like [a, b)", {
   start <- c(1L, 5L)
   end <- c(4L, 6L)
+
+  expect_identical(
+    vec_complement(start, end),
+    data_frame(start = 4L, end = 5L)
+  )
+})
+
+test_that("touching intervals like [a, b) [b, c) don't generate gaps", {
+  start <- c(1L, 5L)
+  end <- c(5L, 6L)
 
   expect_identical(
     vec_complement(start, end),
@@ -149,12 +159,44 @@ test_that("adjacent intervals don't generate gaps", {
   )
 })
 
-test_that("works with `force_start > force_end`", {
+test_that("works with `force_start >= force_end`", {
   start <- c(1L, 2L, 12L)
   end <- c(10L, 5L, 15L)
 
   expect_identical(
     vec_complement(start, end, force_start = 10L, force_end = 9L),
+    data_frame(start = integer(), end = integer())
+  )
+  expect_identical(
+    vec_complement(start, end, force_start = 10L, force_end = 10L),
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("works with `force_start >= force_end` before any values", {
+  start <- c(1L, 2L, 12L)
+  end <- c(10L, 5L, 15L)
+
+  expect_identical(
+    vec_complement(start, end, force_start = -1L, force_end = -3L),
+    data_frame(start = integer(), end = integer())
+  )
+  expect_identical(
+    vec_complement(start, end, force_start = -1L, force_end = -1L),
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("works with `force_start >= force_end` after any values", {
+  start <- c(1L, 2L, 12L)
+  end <- c(10L, 5L, 15L)
+
+  expect_identical(
+    vec_complement(start, end, force_start = 20L, force_end = 18L),
+    data_frame(start = integer(), end = integer())
+  )
+  expect_identical(
+    vec_complement(start, end, force_start = 20L, force_end = 20L),
     data_frame(start = integer(), end = integer())
   )
 })
@@ -165,7 +207,7 @@ test_that("works with `force_start` before any values", {
 
   expect_identical(
     vec_complement(start, end, force_start = -1L),
-    data_frame(start = c(-1L, 11L), end = c(0L, 11L))
+    data_frame(start = c(-1L, 10L), end = c(1L, 12L))
   )
 })
 
@@ -185,7 +227,7 @@ test_that("works with `force_end` after any values", {
 
   expect_identical(
     vec_complement(start, end, force_end = 20L),
-    data_frame(start = c(11L, 18L), end = c(11L, 20L))
+    data_frame(start = c(10L, 17L), end = c(12L, 20L))
   )
 })
 
@@ -205,7 +247,7 @@ test_that("works with `force_start` that is on the max set value", {
 
   expect_identical(
     vec_complement(start, end, force_start = 9L),
-    data_frame(start = 10L, end = 11L)
+    data_frame(start = 9L, end = 12L)
   )
 })
 
@@ -243,17 +285,16 @@ test_that("size zero case generally returns nothing", {
 
 test_that("size zero case with both `force_start` and `force_end` returns an interval", {
   expect_identical(
-    vec_complement(integer(), integer(), force_start = 5L, force_end = 5L),
-    data_frame(start = 5L, end = 5L)
-  )
-
-  expect_identical(
     vec_complement(integer(), integer(), force_start = 5L, force_end = 10L),
     data_frame(start = 5L, end = 10L)
   )
 })
 
-test_that("size zero case with `force_start > force_end` doesn't return anything", {
+test_that("size zero case with `force_start >= force_end` doesn't return anything", {
+  expect_identical(
+    vec_complement(integer(), integer(), force_start = 5L, force_end = 5L),
+    data_frame(start = integer(), end = integer())
+  )
   expect_identical(
     vec_complement(integer(), integer(), force_start = 10L, force_end = 5L),
     data_frame(start = integer(), end = integer())

@@ -207,7 +207,7 @@ r_obj* vec_complement(r_obj* start, r_obj* end, int force_start, int force_end) 
     const int gap_start = force_start;
     const int gap_end = force_end;
 
-    if (gap_start <= gap_end) {
+    if (gap_start < gap_end) {
       r_int_push_back(p_starts, gap_start);
       r_int_push_back(p_ends, gap_end);
     }
@@ -222,12 +222,12 @@ r_obj* vec_complement(r_obj* start, r_obj* end, int force_start, int force_end) 
 
       const int gap_start = force_start;
 
-      int gap_end = set_start - 1;
+      int gap_end = set_start;
       if (use_force_end && force_end < gap_end) {
         gap_end = force_end;
       }
 
-      if (gap_start <= gap_end) {
+      if (gap_start < gap_end) {
         r_int_push_back(p_starts, gap_start);
         r_int_push_back(p_ends, gap_end);
       }
@@ -239,21 +239,17 @@ r_obj* vec_complement(r_obj* start, r_obj* end, int force_start, int force_end) 
       const int elt_start = v_start[loc];
       const int elt_end = v_end[loc];
 
-      const bool has_potential_gap =
+      const bool has_gap =
         !(use_force_end && set_end >= force_end) &&
         !(use_force_start && set_end < force_start) &&
         (set_end < elt_start);
 
-      if (has_potential_gap) {
-        const int gap_start = set_end + 1;
-        const int gap_end = elt_start - 1;
+      if (has_gap) {
+        const int gap_start = set_end;
+        const int gap_end = elt_start;
 
-        if (gap_start <= gap_end) {
-          // `gap_start > gap_end` occurs with adjacent intervals,
-          // which don't have a gap
-          r_int_push_back(p_starts, gap_start);
-          r_int_push_back(p_ends, gap_end);
-        }
+        r_int_push_back(p_starts, gap_start);
+        r_int_push_back(p_ends, gap_end);
 
         set_end = elt_end;
       } else if (set_end < elt_end) {
@@ -264,14 +260,14 @@ r_obj* vec_complement(r_obj* start, r_obj* end, int force_start, int force_end) 
     if (use_force_end && force_end > set_end) {
       use_force_end = false;
 
-      int gap_start = set_end + 1;
+      int gap_start = set_end;
       if (use_force_start && force_start > gap_start) {
         gap_start = force_start;
       }
 
       const int gap_end = force_end;
 
-      if (gap_start <= gap_end) {
+      if (gap_start < gap_end) {
         r_int_push_back(p_starts, gap_start);
         r_int_push_back(p_ends, gap_end);
       }

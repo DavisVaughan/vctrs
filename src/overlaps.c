@@ -3,7 +3,7 @@
 #include "order.h"
 
 static
-r_obj* interval_link(r_obj* start, r_obj* end, bool locations) {
+r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
   const r_ssize size = r_length(start);
 
   if (r_typeof(start) != R_TYPE_integer) {
@@ -75,7 +75,7 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations) {
       const int elt_start = v_start[loc];
       const int elt_end = v_end[loc];
 
-      if (set_end <= elt_start) {
+      if (elt_start - set_end > gap) {
         r_int_push_back(p_starts, set_start);
         r_int_push_back(p_ends, set_end);
 
@@ -139,9 +139,10 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations) {
 }
 
 // [[ register() ]]
-r_obj* vctrs_interval_link(r_obj* start, r_obj* end, r_obj* locations) {
+r_obj* vctrs_interval_link(r_obj* start, r_obj* end, r_obj* locations, r_obj* gap) {
   const bool c_locations = r_as_bool(locations);
-  return interval_link(start, end, c_locations);
+  const int c_gap = (gap == r_null) ? -1 : r_as_int(gap);
+  return interval_link(start, end, c_locations, c_gap);
 }
 
 // -----------------------------------------------------------------------------

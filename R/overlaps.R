@@ -10,12 +10,29 @@
 #'
 #' @inheritParams ellipsis::dots_empty
 #'
-#' @param start,end A pair of integer vectors. It is assumed that
-#'   `start <= end`, but this is not checked.
+#' @param start,end `[integer]`
 #'
-#' @param locations Should locations that map the output back to the input
-#'   also be returned? If so, they are returned as a list of integer vectors in
-#'   an additional `loc` column.
+#'   A pair of integer vectors. It is assumed that `start <= end`, but this is
+#'   not checked.
+#'
+#' @param locations `[logical(1)]`
+#'
+#'   Should locations that map the output back to the input also be returned? If
+#'   so, they are returned as a list of integer vectors in an additional `loc`
+#'   column.
+#'
+#' @param gap `[integer(1) / NULL]`
+#'
+#'   The maximum gap allowed when deciding whether or not two intervals can
+#'   be linked. The default, `NULL`, requires that two intervals must overlap
+#'   to be linked (this is equivalent to a `gap` of `-1L`).
+#'
+#'   Setting this to `0L` will link adjacent intervals. For example, `[1, 3)`
+#'   and `[3, 4)` would be linked together as `[1, 4)`.
+#'
+#'   Setting this to a positive number will link intervals with discrete gaps.
+#'   For example, with `gap = 1L` the intervals `[1, 3)` and `[4, 5)` would be
+#'   linked together as `[1, 5)`.
 #'
 #' @return
 #' A data frame with `start` and `end` integer columns containing the collapsed
@@ -30,9 +47,20 @@
 #'
 #' # Look at the overlaps
 #' df <- data_frame(start = start, end = end)
+#' df
 #'
 #' # Remove all redundant overlaps
 #' interval_link(start, end)
+#'
+#' # Note that because these are half-open intervals,
+#' # an endpoint of 10) doesn't overlap a startpoint of [10.
+#' # To force this to overlap, set `gap = 0` to allow a maximum gap
+#' # size of 0 to still be linkable.
+#' interval_link(start, end, gap = 0L)
+#'
+#' # You can set also set `gap` to be `>0` to link intervals that have actual
+#' # gaps between them
+#' interval_link(start, end, gap = 1L)
 #'
 #' # Retain locations to map input to output
 #' info <- interval_link(start, end, locations = TRUE)
@@ -45,9 +73,9 @@
 #' )
 #'
 #' vec_cbind(old, new)
-interval_link <- function(start, end, ..., locations = FALSE) {
+interval_link <- function(start, end, ..., locations = FALSE, gap = NULL) {
   check_dots_empty0(...)
-  .Call(vctrs_interval_link, start, end, locations)
+  .Call(vctrs_interval_link, start, end, locations, gap)
 }
 
 interval_complement <- function(start, end, ..., force_start = NULL, force_end = NULL) {

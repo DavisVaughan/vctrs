@@ -126,6 +126,47 @@ test_that("can link with size one input", {
   )
 })
 
+test_that("can set a maximum gap of `0` to link adjacent intervals", {
+  x <- data_frame(start = c(1L, 2L), end = c(2L, 3L))
+
+  expect_identical(
+    interval_link(x$start, x$end, gap = 0L),
+    data_frame(start = 1L, end = 3L)
+  )
+})
+
+test_that("can set a maximum gap of `>0` to link intervals with gaps", {
+  x <- data_frame(start = c(1L, 3L, 4L), end = c(2L, 4L, 5L))
+
+  expect_identical(
+    interval_link(x$start, x$end, gap = 1L),
+    data_frame(start = 1L, end = 5L)
+  )
+
+  x <- data_frame(start = c(1L, 3L, 6L), end = c(2L, 4L, 7L))
+
+  expect_identical(
+    interval_link(x$start, x$end, gap = 1L),
+    data_frame(start = c(1L, 6L), end = c(4L, 7L))
+  )
+})
+
+test_that("can set a maximum gap of `< -1` to require an amount of overlap", {
+  x <- data_frame(start = c(5L, 8L), end = c(10L, 12L))
+
+  # This overlaps still (8 - 10 > -2 is not true, so don't link)
+  expect_identical(
+    interval_link(x$start, x$end, gap = -2L),
+    data_frame(start = 5L, end = 12L)
+  )
+
+  # But this doesn't (8 - 10 > -3 is true, so link)
+  expect_identical(
+    interval_link(x$start, x$end, gap = -3L),
+    x
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_complement()
 

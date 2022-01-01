@@ -147,7 +147,7 @@ r_obj* vctrs_merge_overlaps(r_obj* start, r_obj* end, r_obj* locations) {
 // -----------------------------------------------------------------------------
 
 static
-r_obj* vec_complement(r_obj* start, r_obj* end, int force_start, int force_end) {
+r_obj* interval_complement(r_obj* start, r_obj* end, int force_start, int force_end) {
   const r_ssize size = r_length(start);
 
   bool use_force_start = (force_start != r_globals.na_int);
@@ -290,8 +290,8 @@ r_obj* vec_complement(r_obj* start, r_obj* end, int force_start, int force_end) 
 }
 
 // [[ register() ]]
-r_obj* vctrs_complement(r_obj* start, r_obj* end, r_obj* force_start, r_obj* force_end) {
+r_obj* vctrs_interval_complement(r_obj* start, r_obj* end, r_obj* force_start, r_obj* force_end) {
   const int c_force_start = (force_start == r_null) ? r_globals.na_int : r_as_int(force_start);
   const int c_force_end = (force_end == r_null) ? r_globals.na_int : r_as_int(force_end);
-  return vec_complement(start, end, c_force_start, c_force_end);
+  return interval_complement(start, end, c_force_start, c_force_end);
 }

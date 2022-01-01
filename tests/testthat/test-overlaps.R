@@ -127,14 +127,14 @@ test_that("can merge overlaps with size one input", {
 })
 
 # ------------------------------------------------------------------------------
-# vec_complement()
+# interval_complement()
 
 test_that("computes the complement", {
   start <- c(6L, 1L, 2L, 12L)
   end <- c(9L, 3L, 4L, 14L)
 
   expect_identical(
-    vec_complement(start, end),
+    interval_complement(start, end),
     data_frame(start = c(4L, 9L), end = c(6L, 12L))
   )
 })
@@ -144,7 +144,7 @@ test_that("treats intervals as half-open like [a, b)", {
   end <- c(4L, 6L)
 
   expect_identical(
-    vec_complement(start, end),
+    interval_complement(start, end),
     data_frame(start = 4L, end = 5L)
   )
 })
@@ -154,7 +154,7 @@ test_that("touching intervals like [a, b) [b, c) don't generate gaps", {
   end <- c(5L, 6L)
 
   expect_identical(
-    vec_complement(start, end),
+    interval_complement(start, end),
     data_frame(start = integer(), end = integer())
   )
 })
@@ -164,11 +164,11 @@ test_that("works with `force_start >= force_end`", {
   end <- c(10L, 5L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_start = 10L, force_end = 9L),
+    interval_complement(start, end, force_start = 10L, force_end = 9L),
     data_frame(start = integer(), end = integer())
   )
   expect_identical(
-    vec_complement(start, end, force_start = 10L, force_end = 10L),
+    interval_complement(start, end, force_start = 10L, force_end = 10L),
     data_frame(start = integer(), end = integer())
   )
 })
@@ -178,11 +178,11 @@ test_that("works with `force_start >= force_end` before any values", {
   end <- c(10L, 5L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_start = -1L, force_end = -3L),
+    interval_complement(start, end, force_start = -1L, force_end = -3L),
     data_frame(start = integer(), end = integer())
   )
   expect_identical(
-    vec_complement(start, end, force_start = -1L, force_end = -1L),
+    interval_complement(start, end, force_start = -1L, force_end = -1L),
     data_frame(start = integer(), end = integer())
   )
 })
@@ -192,11 +192,11 @@ test_that("works with `force_start >= force_end` after any values", {
   end <- c(10L, 5L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_start = 20L, force_end = 18L),
+    interval_complement(start, end, force_start = 20L, force_end = 18L),
     data_frame(start = integer(), end = integer())
   )
   expect_identical(
-    vec_complement(start, end, force_start = 20L, force_end = 20L),
+    interval_complement(start, end, force_start = 20L, force_end = 20L),
     data_frame(start = integer(), end = integer())
   )
 })
@@ -206,7 +206,7 @@ test_that("works with `force_start` before any values", {
   end <- c(5L, 10L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_start = -1L),
+    interval_complement(start, end, force_start = -1L),
     data_frame(start = c(-1L, 10L), end = c(1L, 12L))
   )
 })
@@ -216,7 +216,7 @@ test_that("works if both `force_start` and `force_end` are before any values", {
   end <- c(5L, 10L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_start = -5L, force_end = -2L),
+    interval_complement(start, end, force_start = -5L, force_end = -2L),
     data_frame(start = -5L, end = -2L)
   )
 })
@@ -226,7 +226,7 @@ test_that("works with `force_end` after any values", {
   end <- c(5L, 10L, 17L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_end = 20L),
+    interval_complement(start, end, force_end = 20L),
     data_frame(start = c(10L, 17L), end = c(12L, 20L))
   )
 })
@@ -236,7 +236,7 @@ test_that("works if both `force_start` and `force_end` are after any values", {
   end <- c(5L, 10L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_start = 17L, force_end = 19L),
+    interval_complement(start, end, force_start = 17L, force_end = 19L),
     data_frame(start = 17L, end = 19L)
   )
 })
@@ -246,7 +246,7 @@ test_that("works with `force_start` that is on the max set value", {
   end <- c(9L, 13L)
 
   expect_identical(
-    vec_complement(start, end, force_start = 9L),
+    interval_complement(start, end, force_start = 9L),
     data_frame(start = 9L, end = 12L)
   )
 })
@@ -256,47 +256,47 @@ test_that("works with `force_end` that is on the max set value", {
   end <- c(10L, 5L, 15L)
 
   expect_identical(
-    vec_complement(start, end, force_end = 10L),
+    interval_complement(start, end, force_end = 10L),
     data_frame(start = integer(), end = integer())
   )
 
   expect_identical(
-    vec_complement(start, end, force_start = 10L, force_end = 10L),
+    interval_complement(start, end, force_start = 10L, force_end = 10L),
     data_frame(start = integer(), end = integer())
   )
 })
 
 test_that("size zero case generally returns nothing", {
   expect_identical(
-    vec_complement(integer(), integer()),
+    interval_complement(integer(), integer()),
     data_frame(start = integer(), end = integer())
   )
 
   expect_identical(
-    vec_complement(integer(), integer(), force_start = 5L),
+    interval_complement(integer(), integer(), force_start = 5L),
     data_frame(start = integer(), end = integer())
   )
 
   expect_identical(
-    vec_complement(integer(), integer(), force_end = 5L),
+    interval_complement(integer(), integer(), force_end = 5L),
     data_frame(start = integer(), end = integer())
   )
 })
 
 test_that("size zero case with both `force_start` and `force_end` returns an interval", {
   expect_identical(
-    vec_complement(integer(), integer(), force_start = 5L, force_end = 10L),
+    interval_complement(integer(), integer(), force_start = 5L, force_end = 10L),
     data_frame(start = 5L, end = 10L)
   )
 })
 
 test_that("size zero case with `force_start >= force_end` doesn't return anything", {
   expect_identical(
-    vec_complement(integer(), integer(), force_start = 5L, force_end = 5L),
+    interval_complement(integer(), integer(), force_start = 5L, force_end = 5L),
     data_frame(start = integer(), end = integer())
   )
   expect_identical(
-    vec_complement(integer(), integer(), force_start = 10L, force_end = 5L),
+    interval_complement(integer(), integer(), force_start = 10L, force_end = 5L),
     data_frame(start = integer(), end = integer())
   )
 })

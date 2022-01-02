@@ -3,7 +3,7 @@
 #include "order.h"
 
 static
-r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
+r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int gap) {
   const r_ssize size = r_length(start);
 
   if (r_typeof(start) != R_TYPE_integer) {
@@ -14,6 +14,9 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
   }
   if (size != r_length(end)) {
     r_abort("`start` must be the same length as `end`.");
+  }
+  if (groups && !locations) {
+    r_abort("If `groups` is set, then `locations` must also be set.");
   }
 
   // Put them in a data frame to compute joint ordering
@@ -62,7 +65,7 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
   r_ssize loc_order_start = 0;
   struct r_dyn_array* p_loc = NULL;
   r_obj* loc_shelter = r_null;
-  if (locations) {
+  if (groups) {
     p_loc = r_new_dyn_vector(R_TYPE_list, initial_size);
     loc_shelter = p_loc->shelter;
   }
@@ -89,12 +92,14 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
           r_int_push_back(p_starts, loc_start);
           r_int_push_back(p_ends, loc_end);
 
-          r_obj* loc = r_new_integer(loc_size);
-          r_list_push_back(p_loc, loc);
-          int* v_loc = r_int_begin(loc);
+          if (groups) {
+            r_obj* loc = r_new_integer(loc_size);
+            r_list_push_back(p_loc, loc);
+            int* v_loc = r_int_begin(loc);
 
-          const int* v_order_start = v_order + loc_order_start;
-          memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+            const int* v_order_start = v_order + loc_order_start;
+            memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+          }
 
           loc_order_start = loc_order_end + 1;
         } else {
@@ -119,12 +124,14 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
       r_int_push_back(p_starts, loc_start);
       r_int_push_back(p_ends, loc_end);
 
-      r_obj* loc = r_new_integer(loc_size);
-      r_list_push_back(p_loc, loc);
-      int* v_loc = r_int_begin(loc);
+      if (groups) {
+        r_obj* loc = r_new_integer(loc_size);
+        r_list_push_back(p_loc, loc);
+        int* v_loc = r_int_begin(loc);
 
-      const int* v_order_start = v_order + loc_order_start;
-      memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+        const int* v_order_start = v_order + loc_order_start;
+        memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+      }
     } else {
       r_int_push_back(p_starts, set_start);
       r_int_push_back(p_ends, set_end);
@@ -144,7 +151,7 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
 
   r_obj* out = r_null;
 
-  if (locations) {
+  if (groups) {
     out = KEEP(r_new_list(2));
     r_list_poke(out, 0, key);
     r_list_poke(out, 1, r_arr_unwrap(p_loc));
@@ -167,10 +174,11 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
 }
 
 // [[ register() ]]
-r_obj* vctrs_interval_link(r_obj* start, r_obj* end, r_obj* locations, r_obj* gap) {
+r_obj* vctrs_interval_link(r_obj* start, r_obj* end, r_obj* locations, r_obj* groups, r_obj* gap) {
   const bool c_locations = r_as_bool(locations);
+  const bool c_groups = r_as_bool(groups);
   const int c_gap = (gap == r_null) ? -1 : r_as_int(gap);
-  return interval_link(start, end, c_locations, c_gap);
+  return interval_link(start, end, c_locations, c_groups, c_gap);
 }
 
 // -----------------------------------------------------------------------------

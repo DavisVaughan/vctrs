@@ -69,13 +69,22 @@
 interval_link <- function(start, end, ..., gap = NULL) {
   check_dots_empty0(...)
   locations <- FALSE
-  .Call(vctrs_interval_link, start, end, locations, gap)
+  groups <- FALSE
+  .Call(vctrs_interval_link, start, end, locations, groups, gap)
 }
 
 interval_locate_links <- function(start, end, ..., gap = NULL) {
   check_dots_empty0(...)
   locations <- TRUE
-  .Call(vctrs_interval_link, start, end, locations, gap)
+  groups <- FALSE
+  .Call(vctrs_interval_link, start, end, locations, groups, gap)
+}
+
+interval_locate_link_groups <- function(start, end, ..., gap = NULL) {
+  check_dots_empty0(...)
+  locations <- TRUE
+  groups <- TRUE
+  .Call(vctrs_interval_link, start, end, locations, groups, gap)
 }
 
 interval_complement <- function(start, end, ..., force_start = NULL, force_end = NULL) {

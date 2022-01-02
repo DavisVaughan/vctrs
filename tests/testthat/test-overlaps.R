@@ -140,6 +140,35 @@ test_that("can compute link locations", {
   )
 
   expect_identical(
+    out,
+    data_frame(start = c(1L, 2L), end = c(4L, 5L))
+  )
+})
+
+test_that("can link with size one input", {
+  expect_identical(
+    interval_locate_links(2L, 2L),
+    data_frame(start = 1L, end = 1L)
+  )
+})
+
+test_that("can link with size zero input", {
+  expect_identical(
+    interval_locate_links(integer(), integer()),
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_locate_link_groups()
+
+test_that("can compute link locations and groups", {
+  out <- interval_locate_link_groups(
+    c(1L, 9L,  2L, 2L, 10L),
+    c(5L, 11L, 6L, 8L, 12L)
+  )
+
+  expect_identical(
     out$key,
     data_frame(start = c(1L, 2L), end = c(4L, 5L))
   )
@@ -152,7 +181,7 @@ test_that("can compute link locations", {
 
 test_that("can link with size one input", {
   expect_identical(
-    interval_locate_links(2L, 2L),
+    interval_locate_link_groups(2L, 2L),
     data_frame(
       key = data_frame(start = 1L, end = 1L),
       loc = list(1L)
@@ -162,7 +191,7 @@ test_that("can link with size one input", {
 
 test_that("can link with size zero input", {
   expect_identical(
-    interval_locate_links(integer(), integer()),
+    interval_locate_link_groups(integer(), integer()),
     data_frame(
       key = data_frame(start = integer(), end = integer()),
       loc = list()
@@ -173,7 +202,7 @@ test_that("can link with size zero input", {
 test_that("locations are ordered by both `start` and `end`", {
   x <- data_frame(start = c(4L, 4L, 1L), end = c(6L, 5L, 2L))
 
-  out <- interval_locate_links(x$start, x$end)
+  out <- interval_locate_link_groups(x$start, x$end)
 
   # Ties of `start = 4` are broken by `end` values and reordered
   expect_identical(

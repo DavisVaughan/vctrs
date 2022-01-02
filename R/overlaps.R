@@ -51,15 +51,19 @@
 #' # gaps between them
 #' interval_link(start, end, gap = 1L)
 #'
-#' # Retain locations to map input to output
+#' # Compute locations telling you where to slice the start/end data to
+#' # construct the linked result and how to map each start/end combination
+#' # of the input to its corresponding linked result in the output.
 #' info <- interval_locate_links(start, end)
 #' info
 #'
 #' old <- vec_slice(df, vec_unchop(info$loc))
-#' new <- vec_slice(
-#'   data_frame(start_new = info$start, end_new = info$end),
-#'   vec_rep_each(vec_seq_along(info), lengths(info$loc))
+#'
+#' new <- data_frame(
+#'   start_link = vec_slice(df$start, info$key$start),
+#'   end_link = vec_slice(df$end, info$key$end)
 #' )
+#' new <- vec_slice(new, vec_rep_each(vec_seq_along(info), list_sizes(info$loc)))
 #'
 #' vec_cbind(old, new)
 interval_link <- function(start, end, ..., gap = NULL) {

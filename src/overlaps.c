@@ -50,6 +50,9 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
   // Apply a minimum size to avoid a size of zero.
   const r_ssize initial_size = r_ssize_max(size / 2, 1);
 
+  // If `locations = false`, `p_starts` and `p_ends` contain the linked
+  // interval values. If `locations = true`, they contain locations telling
+  // you how to slice the original input to obtain the linked interval values.
   struct r_dyn_array* p_starts = r_new_dyn_vector(R_TYPE_integer, initial_size);
   KEEP(p_starts->shelter);
 
@@ -76,12 +79,15 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
       const int elt_end = v_end[loc];
 
       if ((set_end < elt_start - gap) && (elt_end > set_start)) {
-        r_int_push_back(p_starts, set_start);
-        r_int_push_back(p_ends, set_end);
-
         if (locations) {
-          const r_ssize loc_order_stop = i - 1;
-          const r_ssize loc_size = loc_order_stop - loc_order_start + 1;
+          const r_ssize loc_order_end = i - 1;
+          const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+
+          const int loc_start = v_order[loc_order_start];
+          const int loc_end = v_order[loc_order_end];
+
+          r_int_push_back(p_starts, loc_start);
+          r_int_push_back(p_ends, loc_end);
 
           r_obj* loc = r_new_integer(loc_size);
           r_list_push_back(p_loc, loc);
@@ -90,7 +96,10 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
           const int* v_order_start = v_order + loc_order_start;
           memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
 
-          loc_order_start = loc_order_stop + 1;
+          loc_order_start = loc_order_end + 1;
+        } else {
+          r_int_push_back(p_starts, set_start);
+          r_int_push_back(p_ends, set_end);
         }
 
         set_start = elt_start;
@@ -100,12 +109,15 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
       }
     }
 
-    r_int_push_back(p_starts, set_start);
-    r_int_push_back(p_ends, set_end);
-
     if (locations) {
-      const r_ssize loc_order_stop = size - 1;
-      const r_ssize loc_size = loc_order_stop - loc_order_start + 1;
+      const r_ssize loc_order_end = size - 1;
+      const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+
+      const int loc_start = v_order[loc_order_start];
+      const int loc_end = v_order[loc_order_end];
+
+      r_int_push_back(p_starts, loc_start);
+      r_int_push_back(p_ends, loc_end);
 
       r_obj* loc = r_new_integer(loc_size);
       r_list_push_back(p_loc, loc);
@@ -113,28 +125,44 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, int gap) {
 
       const int* v_order_start = v_order + loc_order_start;
       memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+    } else {
+      r_int_push_back(p_starts, set_start);
+      r_int_push_back(p_ends, set_end);
     }
   }
 
-  const r_ssize out_n = locations ? 3 : 2;
+  r_obj* key = KEEP(r_new_list(2));
+  r_list_poke(key, 0, r_arr_unwrap(p_starts));
+  r_list_poke(key, 1, r_arr_unwrap(p_ends));
 
-  r_obj* out = KEEP(r_new_list(out_n));
-  r_list_poke(out, 0, r_arr_unwrap(p_starts));
-  r_list_poke(out, 1, r_arr_unwrap(p_ends));
+  r_obj* key_names = r_new_character(2);
+  r_poke_names(key, key_names);
+  r_chr_poke(key_names, 0, r_str("start"));
+  r_chr_poke(key_names, 1, r_str("end"));
 
-  r_obj* out_names = r_new_character(out_n);
-  r_poke_names(out, out_names);
-  r_chr_poke(out_names, 0, r_str("start"));
-  r_chr_poke(out_names, 1, r_str("end"));
+  r_init_data_frame(key, p_starts->count);
+
+  r_obj* out = r_null;
 
   if (locations) {
-    r_list_poke(out, 2, r_arr_unwrap(p_loc));
-    r_chr_poke(out_names, 2, r_str("loc"));
+    out = KEEP(r_new_list(2));
+    r_list_poke(out, 0, key);
+    r_list_poke(out, 1, r_arr_unwrap(p_loc));
+
+    r_obj* out_names = r_new_character(2);
+    r_poke_names(out, out_names);
+    r_chr_poke(out_names, 0, r_str("key"));
+    r_chr_poke(out_names, 1, r_str("loc"));
+
+    r_init_data_frame(out, p_starts->count);
+
+    FREE(1);
+  } else {
+    out = key;
   }
+  KEEP(out);
 
-  r_init_data_frame(out, p_starts->count);
-
-  FREE(8);
+  FREE(9);
   return out;
 }
 

@@ -133,34 +133,40 @@ test_that("duplicated empty intervals are deduplicated", {
 # ------------------------------------------------------------------------------
 # interval_locate_links()
 
-test_that("can merge overlaps and append locations", {
+test_that("can compute link locations", {
   out <- interval_locate_links(
     c(1L, 9L,  2L, 2L, 10L),
     c(5L, 11L, 6L, 8L, 12L)
   )
 
   expect_identical(
-    out$loc,
-    list(c(1L, 3L, 4L), c(2L, 5L))
+    out$key,
+    data_frame(start = c(1L, 2L), end = c(4L, 5L))
   )
 
   expect_identical(
-    interval_locate_links(2L, 2L),
-    data_frame(start = 2L, end = 2L, loc = list(1L))
+    out$loc,
+    list(c(1L, 3L, 4L), c(2L, 5L))
   )
 })
 
 test_that("can link with size one input", {
   expect_identical(
     interval_locate_links(2L, 2L),
-    data_frame(start = 2L, end = 2L, loc = list(1L))
+    data_frame(
+      key = data_frame(start = 1L, end = 1L),
+      loc = list(1L)
+    )
   )
 })
 
 test_that("can link with size zero input", {
   expect_identical(
     interval_locate_links(integer(), integer()),
-    data_frame(start = integer(), end = integer(), loc = list())
+    data_frame(
+      key = data_frame(start = integer(), end = integer()),
+      loc = list()
+    )
   )
 })
 

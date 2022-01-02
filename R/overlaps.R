@@ -90,34 +90,42 @@ interval_union <- function(x_start, x_end, y_start, y_end) {
 }
 
 interval_setdiff <- function(x_start, x_end, y_start, y_end) {
-  if (length(x_start) == 0L) {
-    # Just for the data frame structure (return empty interval object `x` here)
-    return(interval_complement(x_start, x_end))
-  }
+  force_start <- min(int_min(x_start), int_min(y_start))
+  force_end <- max(int_max(x_end), int_max(y_end))
 
-  force_start <- min(vec_c(x_start, y_start))
-  force_end <- max(vec_c(x_end, y_end))
+  x_c <- interval_complement(x_start, x_end, force_start = force_start, force_end = force_end)
 
-  out <- interval_complement(x_start, x_end, force_start = force_start, force_end = force_end)
-  out <- interval_union(out$start, out$end, y_start, y_end)
-  out <- interval_complement(out$start, out$end, force_start = force_start, force_end = force_end)
+  u <- interval_union(x_c$start, x_c$end, y_start, y_end)
 
-  out
+  interval_complement(u$start, u$end, force_start = force_start, force_end = force_end)
 }
 
 interval_intersect <- function(x_start, x_end, y_start, y_end) {
-  if (length(x_start) == 0L) {
-    # Just for the data frame structure (return empty interval object `x` here)
-    return(interval_complement(x_start, x_end))
+  force_start <- min(int_min(x_start), int_min(y_start))
+  force_end <- max(int_max(x_end), int_max(y_end))
+
+  x_c <- interval_complement(x_start, x_end, force_start = force_start, force_end = force_end)
+  y_c <- interval_complement(y_start, y_end, force_start = force_start, force_end = force_end)
+
+  u <- interval_union(x_c$start, x_c$end, y_c$start, y_c$end)
+
+  interval_complement(u$start, u$end, force_start = force_start, force_end = force_end)
+}
+
+int_min <- function(x) {
+  if (length(x) == 0L) {
+    .Machine$integer.max
+  } else {
+    min(x)
   }
+}
 
-  force_start <- min(vec_c(x_start, y_start))
-  force_end <- max(vec_c(x_end, y_end))
-
-  out <- interval_complement(y_start, y_end, force_start = force_start, force_end = force_end)
-  out <- interval_setdiff(x_start, x_end, out$start, out$end)
-
-  out
+int_max <- function(x) {
+  if (length(x) == 0L) {
+    -.Machine$integer.max
+  } else {
+    max(x)
+  }
 }
 
 # define parallel intersect, union, and setdiff helpers as well

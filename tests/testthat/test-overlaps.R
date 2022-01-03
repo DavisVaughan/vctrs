@@ -568,14 +568,14 @@ test_that("intersect with contained empty interval doesn't result in values", {
 })
 
 # ------------------------------------------------------------------------------
-# interval_setdiff()
+# interval_difference()
 
 test_that("difference links", {
   x <- data_frame(start = c(1L, 2L), end = c(2L, 3L))
   y <- data_frame(start = integer(), end = integer())
 
   expect_identical(
-    interval_setdiff(x$start, x$end, y$start, y$end),
+    interval_difference(x$start, x$end, y$start, y$end),
     data_frame(start = 1L, end = 3L)
   )
 })
@@ -586,12 +586,12 @@ test_that("difference with empty intervals on either side doesn't drop values", 
   z <- data_frame(start = 2L, end = 2L)
 
   expect_identical(
-    interval_setdiff(x$start, x$end, y$start, y$end),
+    interval_difference(x$start, x$end, y$start, y$end),
     x
   )
 
   expect_identical(
-    interval_setdiff(x$start, x$end, z$start, z$end),
+    interval_difference(x$start, x$end, z$start, z$end),
     x
   )
 })
@@ -601,7 +601,7 @@ test_that("difference with contained empty interval doesn't drop values", {
   y <- data_frame(start = 2L, end = 2L)
 
   expect_identical(
-    interval_setdiff(x$start, x$end, y$start, y$end),
+    interval_difference(x$start, x$end, y$start, y$end),
     x
   )
 })

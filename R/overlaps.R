@@ -91,7 +91,7 @@ interval_union <- function(x_start, x_end, y_start, y_end) {
   interval_link(start, end)
 }
 
-interval_setdiff <- function(x_start, x_end, y_start, y_end) {
+interval_difference <- function(x_start, x_end, y_start, y_end) {
   force_start <- min(int_min(x_start), int_min(y_start))
   force_end <- max(int_max(x_end), int_max(y_end))
 

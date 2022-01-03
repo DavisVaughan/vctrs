@@ -11,14 +11,13 @@ test_that("can link up overlaps", {
   )
 })
 
-test_that("treats intervals as half-open, like `[a, b)`", {
-  # [9, 10) doesn't overlap with [10, 12)
+test_that("`[a, b)` links with `[b, c)`", {
   expect_identical(
     interval_link(
       c(10L, 9L),
       c(12L, 10L)
     ),
-    data_frame(start = c(9L, 10L), end = c(10L, 12L))
+    data_frame(start = 9L, end = 12L)
   )
 })
 
@@ -31,19 +30,19 @@ test_that("empty intervals are merged if they fall fully within another interval
   )
 })
 
-test_that("empty intervals touching another interval on either side are not linked", {
+test_that("empty intervals touching another interval on either side are linked", {
   df <- data_frame(start = c(2L, 2L), end = c(2L, 3L))
 
   expect_identical(
     interval_link(df$start, df$end),
-    data_frame(start = c(2L, 2L), end = c(2L, 3L))
+    data_frame(start = 2L, end = 3L)
   )
 
   df <- data_frame(start = c(2L, 1L), end = c(2L, 2L))
 
   expect_identical(
     interval_link(df$start, df$end),
-    data_frame(start = c(1L, 2L), end = c(2L, 2L))
+    data_frame(start = 1L, end = 2L)
   )
 })
 
@@ -80,15 +79,6 @@ test_that("can link with size one input", {
   )
 })
 
-test_that("can set a maximum gap of `0` to link adjacent intervals", {
-  x <- data_frame(start = c(1L, 2L), end = c(2L, 3L))
-
-  expect_identical(
-    interval_link(x$start, x$end, gap = 0L),
-    data_frame(start = 1L, end = 3L)
-  )
-})
-
 test_that("can set a maximum gap of `>0` to link intervals with gaps", {
   x <- data_frame(start = c(1L, 3L, 4L), end = c(2L, 4L, 5L))
 
@@ -105,22 +95,6 @@ test_that("can set a maximum gap of `>0` to link intervals with gaps", {
   )
 })
 
-test_that("can set a maximum gap of `< -1` to require an amount of overlap", {
-  x <- data_frame(start = c(5L, 8L), end = c(10L, 12L))
-
-  # This overlaps still (8 - 10 > -2 is not true, so link)
-  expect_identical(
-    interval_link(x$start, x$end, gap = -2L),
-    data_frame(start = 5L, end = 12L)
-  )
-
-  # But this doesn't (8 - 10 > -3 is true, so don't link)
-  expect_identical(
-    interval_link(x$start, x$end, gap = -3L),
-    x
-  )
-})
-
 test_that("duplicated empty intervals are deduplicated", {
   x <- data_frame(start = c(5L, 5L), end = c(5L, 5L))
 
@@ -128,6 +102,10 @@ test_that("duplicated empty intervals are deduplicated", {
     interval_link(x$start, x$end),
     data_frame(start = 5L, end = 5L)
   )
+})
+
+test_that("`gap` must be 0 or positive", {
+  expect_snapshot((expect_error(interval_link(1L, 2L, gap = -1L))))
 })
 
 # ------------------------------------------------------------------------------

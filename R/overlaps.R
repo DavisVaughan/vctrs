@@ -11,14 +11,13 @@
 #'   A pair of integer vectors. It is assumed that `start <= end`, but this is
 #'   not checked.
 #'
-#' @param gap `[integer(1) / NULL]`
+#' @param gap `[non-negative integer(1)]`
 #'
 #'   The maximum gap allowed when deciding whether or not two intervals can
-#'   be linked. The default, `NULL`, requires that two intervals must overlap
-#'   to be linked (this is equivalent to a `gap` of `-1L`).
+#'   be linked.
 #'
-#'   Setting this to `0L` will link adjacent intervals. For example, `[1, 3)`
-#'   and `[3, 4)` would be linked together as `[1, 4)`.
+#'   The default, `0L`, links intervals that either overlap or touch. For
+#'   example, `[1, 3)` and `[3, 4)` would be linked together as `[1, 4)`.
 #'
 #'   Setting this to a positive number will link intervals with discrete gaps.
 #'   For example, with `gap = 1L` the intervals `[1, 3)` and `[4, 5)` would be
@@ -41,12 +40,6 @@
 #' # Remove all redundant overlaps
 #' interval_link(start, end)
 #'
-#' # Note that because these are half-open intervals,
-#' # an endpoint of 10) doesn't overlap a startpoint of [10.
-#' # To force this to overlap, set `gap = 0` to allow a maximum gap
-#' # size of 0 to still be linkable.
-#' interval_link(start, end, gap = 0L)
-#'
 #' # You can set also set `gap` to be `>0` to link intervals that have actual
 #' # gaps between them
 #' interval_link(start, end, gap = 1L)
@@ -54,7 +47,7 @@
 #' # Compute locations telling you where to slice the start/end data to
 #' # construct the linked result and how to map each start/end combination
 #' # of the input to its corresponding linked result in the output.
-#' info <- interval_locate_links(start, end)
+#' info <- interval_locate_link_groups(start, end)
 #' info
 #'
 #' old <- vec_slice(df, vec_unchop(info$loc))
@@ -66,21 +59,21 @@
 #' new <- vec_slice(new, vec_rep_each(vec_seq_along(info), list_sizes(info$loc)))
 #'
 #' vec_cbind(old, new)
-interval_link <- function(start, end, ..., gap = NULL) {
+interval_link <- function(start, end, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- FALSE
   groups <- FALSE
   .Call(vctrs_interval_link, start, end, locations, groups, gap)
 }
 
-interval_locate_links <- function(start, end, ..., gap = NULL) {
+interval_locate_links <- function(start, end, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- TRUE
   groups <- FALSE
   .Call(vctrs_interval_link, start, end, locations, groups, gap)
 }
 
-interval_locate_link_groups <- function(start, end, ..., gap = NULL) {
+interval_locate_link_groups <- function(start, end, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- TRUE
   groups <- TRUE

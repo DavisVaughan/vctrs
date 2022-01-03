@@ -18,6 +18,9 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int 
   if (groups && !locations) {
     r_abort("If `groups` is set, then `locations` must also be set.");
   }
+  if (gap < 0) {
+    r_abort("`gap` must be >=0.");
+  }
 
   // Put them in a data frame to compute joint ordering
   r_obj* df = KEEP(r_new_list(2));
@@ -177,7 +180,7 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int 
 r_obj* vctrs_interval_link(r_obj* start, r_obj* end, r_obj* locations, r_obj* groups, r_obj* gap) {
   const bool c_locations = r_as_bool(locations);
   const bool c_groups = r_as_bool(groups);
-  const int c_gap = (gap == r_null) ? -1 : r_as_int(gap);
+  const int c_gap = r_as_int(gap);
   return interval_link(start, end, c_locations, c_groups, c_gap);
 }
 

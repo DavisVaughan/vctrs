@@ -282,7 +282,7 @@ r_obj* interval_complement(r_obj* start, r_obj* end, int force_start, int force_
       const bool has_gap =
         !(use_force_end && set_end >= force_end) &&
         !(use_force_start && set_end < force_start) &&
-        (set_end <= elt_start && elt_end > set_start);
+        (set_end < elt_start && elt_end > set_start);
 
       if (has_gap) {
         const int gap_start = set_end;

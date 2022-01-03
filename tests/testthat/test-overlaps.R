@@ -218,14 +218,30 @@ test_that("treats intervals as half-open like [a, b)", {
   )
 })
 
-test_that("adjacent but non-overlapping intervals like [a, b) [b, c) generate empty gaps", {
+test_that("`[a, b)` and `[b, c)` result in no complement values", {
   start <- c(1L, 5L)
   end <- c(5L, 6L)
 
   expect_identical(
     interval_complement(start, end),
-    data_frame(start = 5L, end = 5L)
+    data_frame(start = integer(), end = integer())
   )
+})
+
+test_that("complement is invertible", {
+  start <- c(1L, 5L)
+  end <- c(5L, 6L)
+
+  force_start <- min(start)
+  force_end <- max(end)
+
+  # Should always be seen as invertible as long as linking is done first
+  x <- interval_link(start, end)
+
+  x_c <- interval_complement(x$start, x$end, force_start = force_start, force_end = force_end)
+  x2 <- interval_complement(x_c$start, x_c$end, force_start = force_start, force_end = force_end)
+
+  expect_identical(x, x2)
 })
 
 test_that("works with `force_start >= force_end`", {

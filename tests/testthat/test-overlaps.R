@@ -72,10 +72,17 @@ test_that("can link with size zero input", {
   )
 })
 
-test_that("can link with size one input", {
+test_that("empty intervals get dropped", {
   expect_identical(
     interval_link(2L, 2L),
-    data_frame(start = 2L, end = 2L)
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("can link with size one input", {
+  expect_identical(
+    interval_link(1L, 2L),
+    data_frame(start = 1L, end = 2L)
   )
 })
 
@@ -92,15 +99,6 @@ test_that("can set a maximum gap of `>0` to link intervals with gaps", {
   expect_identical(
     interval_link(x$start, x$end, gap = 1L),
     data_frame(start = c(1L, 6L), end = c(4L, 7L))
-  )
-})
-
-test_that("duplicated empty intervals are deduplicated", {
-  x <- data_frame(start = c(5L, 5L), end = c(5L, 5L))
-
-  expect_identical(
-    interval_link(x$start, x$end),
-    data_frame(start = 5L, end = 5L)
   )
 })
 
@@ -125,7 +123,7 @@ test_that("can compute link locations", {
 
 test_that("can link with size one input", {
   expect_identical(
-    interval_locate_links(2L, 2L),
+    interval_locate_links(1L, 2L),
     data_frame(start = 1L, end = 1L)
   )
 })
@@ -159,7 +157,7 @@ test_that("can compute link locations and groups", {
 
 test_that("can link with size one input", {
   expect_identical(
-    interval_locate_link_groups(2L, 2L),
+    interval_locate_link_groups(1L, 2L),
     data_frame(
       key = data_frame(start = 1L, end = 1L),
       loc = list(1L)
@@ -402,43 +400,208 @@ test_that("complement of empty interval is correct", {
   )
 })
 
-test_that("complement of empty interval is correct when it isn't the first set", {
-  x <- data_frame(start = c(1L, 5L, 5L), end = c(2L, 5L, 5L))
+test_that("complement isn't affected by contained empty interval", {
+  x <- data_frame(start = c(1L, 3L), end = c(5L, 3L))
 
   expect_identical(
     interval_complement(x$start, x$end),
-    data_frame(start = 2L, end = 5L)
+    data_frame(start = integer(), end = integer())
   )
 })
 
-test_that("complement of empty interval is correct with `force_start` and `force_end`", {
-  x <- data_frame(start = 5L, end = 5L)
+test_that("complement isn't affected by empty interval", {
+  x <- data_frame(start = c(1L, 7L), end = c(5L, 7L))
 
   expect_identical(
-    interval_complement(x$start, x$end, force_start = 4L),
-    data_frame(start = 4L, end = 5L)
+    interval_complement(x$start, x$end),
+    data_frame(start = integer(), end = integer())
   )
-  expect_identical(
-    interval_complement(x$start, x$end, force_end = 6L),
-    data_frame(start = 5L, end = 6L)
-  )
-  expect_identical(
-    interval_complement(x$start, x$end, force_start = 4L, force_end = 6L),
-    data_frame(start = c(4L, 5L), end = c(5L, 6L))
-  )
+})
 
-  x <- data_frame(start = c(5L, 5L), end = c(5L, 5L))
+test_that("complement isn't affected by empty interval when `force_start` is set", {
+  x <- data_frame(start = 3L, end = 3L)
 
   expect_identical(
-    interval_complement(x$start, x$end, force_start = 4L),
-    data_frame(start = 4L, end = 5L)
+    interval_complement(x$start, x$end, force_start = 1L),
+    data_frame(start = integer(), end = integer())
+  )
+
+  x <- data_frame(start = c(3L, 5L), end = c(3L, 6L))
+
+  expect_identical(
+    interval_complement(x$start, x$end, force_start = 1L),
+    data_frame(start = 1L, end = 5L)
+  )
+})
+
+test_that("complement isn't affected by empty interval when `force_end` is set", {
+  x <- data_frame(start = 3L, end = 3L)
+
+  expect_identical(
+    interval_complement(x$start, x$end, force_end = 8L),
+    data_frame(start = integer(), end = integer())
+  )
+
+  x <- data_frame(start = c(3L, 5L), end = c(3L, 6L))
+
+  expect_identical(
+    interval_complement(x$start, x$end, force_end = 8L),
+    data_frame(start = 6L, end = 8L)
+  )
+})
+
+test_that("complement isn't affected by empty interval when `force_start` and `force_end` are set", {
+  x <- data_frame(start = 3L, end = 3L)
+
+  expect_identical(
+    interval_complement(x$start, x$end, force_start = 1L, force_end = 8L),
+    data_frame(start = 1L, end = 8L)
   )
   expect_identical(
-    interval_complement(x$start, x$end, force_end = 6L),
-    data_frame(start = 5L, end = 6L)
+    interval_complement(x$start, x$end, force_start = 3L, force_end = 4L),
+    data_frame(start = 3L, end = 4L)
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_union()
+
+test_that("union links", {
+  x <- data_frame(start = c(1L, 2L), end = c(2L, 3L))
+  y <- data_frame(start = 5L, end = 6L)
+
+  expect_identical(
+    interval_union(x$start, x$end, y$start, y$end),
+    data_frame(start = c(1L, 5L), end = c(3L, 6L))
+  )
+})
+
+test_that("union with empty interval ignores the empty interval", {
+  x <- data_frame(start = c(1L, 2L), end = c(2L, 3L))
+  y <- data_frame(start = 5L, end = 5L)
+
+  expect_identical(
+    interval_union(x$start, x$end, y$start, y$end),
+    data_frame(start = 1L, end = 3L)
   )
   expect_identical(
-    interval_complement(x$start, x$end, force_start = 4L, force_end = 6L),
-    data_frame(start = c(4L, 5L), end = c(5L, 6L))
+    interval_union(y$start, y$end, x$start, x$end),
+    data_frame(start = 1L, end = 3L)
+  )
+})
+
+test_that("union treats intervals as half open `[a, b)`", {
+  x <- data_frame(start = 1L, end = 2L)
+  y <- data_frame(start = 3L, end = 5L)
+
+  expect_identical(
+    interval_union(x$start, x$end, y$start, y$end),
+    data_frame(start = c(1L, 3L), end = c(2L, 5L))
+  )
+})
+
+test_that("union with empty interval works on either side", {
+  x <- data_frame(start = 1L, end = 2L)
+  y <- data_frame(start = 1L, end = 1L)
+  z <- data_frame(start = 2L, end = 2L)
+
+  expect_identical(
+    interval_union(x$start, x$end, y$start, y$end),
+    x
+  )
+
+  expect_identical(
+    interval_union(x$start, x$end, z$start, z$end),
+    x
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_intersect()
+
+test_that("intersect links", {
+  x <- data_frame(start = c(1L, 2L), end = c(2L, 3L))
+
+  expect_identical(
+    interval_intersect(x$start, x$end, x$start, x$end),
+    data_frame(start = 1L, end = 3L)
+  )
+})
+
+test_that("intersect with empty intervals on either side doesn't result in values", {
+  x <- data_frame(start = 1L, end = 2L)
+  y <- data_frame(start = 1L, end = 1L)
+  z <- data_frame(start = 2L, end = 2L)
+
+  expect_identical(
+    interval_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = integer(), end = integer())
+  )
+  expect_identical(
+    interval_intersect(y$start, y$end, x$start, x$end),
+    data_frame(start = integer(), end = integer())
+  )
+
+  expect_identical(
+    interval_intersect(x$start, x$end, z$start, z$end),
+    data_frame(start = integer(), end = integer())
+  )
+  expect_identical(
+    interval_intersect(z$start, z$end, x$start, x$end),
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("intersect with contained empty interval doesn't result in values", {
+  x <- data_frame(start = 1L, end = 3L)
+  y <- data_frame(start = 2L, end = 2L)
+
+  expect_identical(
+    interval_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = integer(), end = integer())
+  )
+
+  expect_identical(
+    interval_intersect(y$start, y$end, x$start, x$end),
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_setdiff()
+
+test_that("difference links", {
+  x <- data_frame(start = c(1L, 2L), end = c(2L, 3L))
+  y <- data_frame(start = integer(), end = integer())
+
+  expect_identical(
+    interval_setdiff(x$start, x$end, y$start, y$end),
+    data_frame(start = 1L, end = 3L)
+  )
+})
+
+test_that("difference with empty intervals on either side doesn't drop values", {
+  x <- data_frame(start = 1L, end = 2L)
+  y <- data_frame(start = 1L, end = 1L)
+  z <- data_frame(start = 2L, end = 2L)
+
+  expect_identical(
+    interval_setdiff(x$start, x$end, y$start, y$end),
+    x
+  )
+
+  expect_identical(
+    interval_setdiff(x$start, x$end, z$start, z$end),
+    x
+  )
+})
+
+test_that("difference with contained empty interval doesn't drop values", {
+  x <- data_frame(start = 1L, end = 3L)
+  y <- data_frame(start = 2L, end = 2L)
+
+  expect_identical(
+    interval_setdiff(x$start, x$end, y$start, y$end),
+    x
   )
 })

@@ -620,3 +620,68 @@ test_that("difference with contained empty interval doesn't drop values", {
     x
   )
 })
+
+# ------------------------------------------------------------------------------
+# interval_parallel_intersect()
+
+test_that("can take parallel intersection", {
+  x <- data_frame(start = 1L, end = 4L)
+  y <- data_frame(start = 0L, end = 3L)
+
+  expect_identical(
+    interval_parallel_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = 1L, end = 3L)
+  )
+})
+
+test_that("can recycle inputs", {
+  x <- data_frame(start = c(1L, 2L), end = c(4L, 5L))
+  y <- data_frame(start = 0L, end = 3L)
+
+  expect_identical(
+    interval_parallel_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = c(1L, 2L), end = c(3L, 3L))
+  )
+})
+
+test_that("can take parallel intersection resulting in empty ranges", {
+  x <- data_frame(start = 1L, end = 4L)
+  y <- data_frame(start = 4L, end = 5L)
+
+  expect_identical(
+    interval_parallel_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = 4L, end = 4L)
+  )
+
+  x <- data_frame(start = 1L, end = 4L)
+  y <- data_frame(start = 5L, end = 6L)
+
+  expect_identical(
+    interval_parallel_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = 5L, end = 4L)
+  )
+})
+
+test_that("can take parallel intersection of empty ranges", {
+  x <- data_frame(start = 1L, end = 1L)
+  y <- data_frame(start = 2L, end = 2L)
+
+  # Results in another empty range
+  # [1, 1) == [2, 2) == [2, 1) == {empty interval}
+  expect_identical(
+    interval_parallel_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = 2L, end = 1L)
+  )
+})
+
+test_that("can take parallel intersection when empty range is contained in another range", {
+  x <- data_frame(start = 1L, end = 1L)
+  y <- data_frame(start = 0L, end = 3L)
+
+  # There is no intersection between these, so we get an empty range
+  expect_identical(
+    interval_parallel_intersect(x$start, x$end, y$start, y$end),
+    data_frame(start = 1L, end = 1L)
+  )
+})
+

@@ -59,6 +59,40 @@ r_obj* interval_detect_empty(r_obj* start, r_obj* end) {
 }
 
 static
+r_obj* interval_which_non_empty(r_obj* start, r_obj* end) {
+  const r_ssize size = r_length(start);
+
+  if (r_typeof(start) != R_TYPE_integer) {
+    r_abort("`start` must be an integer.");
+  }
+  if (r_typeof(end) != R_TYPE_integer) {
+    r_abort("`end` must be an integer.");
+  }
+  if (size != r_length(end)) {
+    r_abort("`start` must be the same length as `end`.");
+  }
+
+  const int* v_start = r_int_cbegin(start);
+  const int* v_end = r_int_cbegin(end);
+
+  r_ssize j = 0;
+  r_obj* out = KEEP(r_new_integer(size));
+  int* v_out = r_int_begin(out);
+
+  for (r_ssize i = 0; i < size; ++i) {
+    if (v_end[i] - v_start[i] > 0) {
+      v_out[j] = i + 1;
+      ++j;
+    }
+  }
+
+  out = r_int_resize(out, j);
+
+  FREE(1);
+  return out;
+}
+
+static
 r_obj* interval_drop_empty(r_obj* start, r_obj* end) {
   r_obj* out = KEEP(r_new_list(2));
 
@@ -104,9 +138,31 @@ r_obj* interval_drop_empty(r_obj* start, r_obj* end) {
 
 static
 r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int gap) {
-  r_obj* args = KEEP(interval_drop_empty(start, end));
-  start = r_list_get(args, 0);
-  end = r_list_get(args, 1);
+  r_keep_t start_shelter;
+  KEEP_HERE(start, &start_shelter);
+
+  r_keep_t end_shelter;
+  KEEP_HERE(end, &end_shelter);
+
+  r_obj* non_empty_map = r_null;
+  const int* v_non_empty_map = NULL;
+
+  r_keep_t non_empty_map_shelter;
+  KEEP_HERE(non_empty_map, &non_empty_map_shelter);
+
+  const bool any_empty = interval_any_empty(start, end);
+
+  if (any_empty) {
+    non_empty_map = interval_which_non_empty(start, end);
+    KEEP_AT(non_empty_map, non_empty_map_shelter);
+    v_non_empty_map = r_int_cbegin(non_empty_map);
+
+    start = vec_slice_impl(start, non_empty_map);
+    KEEP_AT(start, start_shelter);
+
+    end = vec_slice_impl(end, non_empty_map);
+    KEEP_AT(end, end_shelter);
+  }
 
   const r_ssize size = r_length(start);
 
@@ -184,8 +240,13 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int 
           const r_ssize loc_order_end = i - 1;
           const r_ssize loc_size = loc_order_end - loc_order_start + 1;
 
-          const int loc_start = v_order[loc_order_start];
-          const int loc_end = v_order[loc_order_end];
+          int loc_start = v_order[loc_order_start];
+          int loc_end = v_order[loc_order_end];
+
+          if (any_empty) {
+            loc_start = v_non_empty_map[loc_start - 1];
+            loc_end = v_non_empty_map[loc_end - 1];
+          }
 
           r_int_push_back(p_starts, loc_start);
           r_int_push_back(p_ends, loc_end);
@@ -195,8 +256,14 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int 
             r_list_push_back(p_loc, loc);
             int* v_loc = r_int_begin(loc);
 
-            const int* v_order_start = v_order + loc_order_start;
-            memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+            if (any_empty) {
+              for (r_ssize k = 0; k < loc_size; ++k) {
+                v_loc[k] = v_non_empty_map[v_order[loc_order_start + k] - 1];
+              }
+            } else {
+              const int* v_order_start = v_order + loc_order_start;
+              memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+            }
           }
 
           loc_order_start = loc_order_end + 1;
@@ -216,8 +283,13 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int 
       const r_ssize loc_order_end = size - 1;
       const r_ssize loc_size = loc_order_end - loc_order_start + 1;
 
-      const int loc_start = v_order[loc_order_start];
-      const int loc_end = v_order[loc_order_end];
+      int loc_start = v_order[loc_order_start];
+      int loc_end = v_order[loc_order_end];
+
+      if (any_empty) {
+        loc_start = v_non_empty_map[loc_start - 1];
+        loc_end = v_non_empty_map[loc_end - 1];
+      }
 
       r_int_push_back(p_starts, loc_start);
       r_int_push_back(p_ends, loc_end);
@@ -227,8 +299,14 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int 
         r_list_push_back(p_loc, loc);
         int* v_loc = r_int_begin(loc);
 
-        const int* v_order_start = v_order + loc_order_start;
-        memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+        if (any_empty) {
+          for (r_ssize k = 0; k < loc_size; ++k) {
+            v_loc[k] = v_non_empty_map[v_order[loc_order_start + k] - 1];
+          }
+        } else {
+          const int* v_order_start = v_order + loc_order_start;
+          memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+        }
       }
     } else {
       r_int_push_back(p_starts, set_start);
@@ -267,7 +345,7 @@ r_obj* interval_link(r_obj* start, r_obj* end, bool locations, bool groups, int 
   }
   KEEP(out);
 
-  FREE(10);
+  FREE(12);
   return out;
 }
 

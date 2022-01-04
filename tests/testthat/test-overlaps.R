@@ -193,6 +193,21 @@ test_that("locations are ordered by both `start` and `end`", {
   )
 })
 
+test_that("works with ignored empty intervals", {
+  x <- data_frame(start = c(2L, 2L, 6L, 1L), end = c(3L, 2L, 7L, 2L))
+
+  out <- interval_locate_link_groups(x$start, x$end)
+
+  expect_identical(
+    out$key,
+    data_frame(start = c(4L, 3L), end = c(1L, 3L))
+  )
+  expect_identical(
+    out$loc,
+    list(c(4L, 1L), 3L)
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_complement()
 

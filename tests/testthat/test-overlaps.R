@@ -1,9 +1,9 @@
 # ------------------------------------------------------------------------------
-# interval_link()
+# interval_minimize()
 
-test_that("can link up overlaps", {
+test_that("can minimize overlaps", {
   expect_identical(
-    interval_link(
+    interval_minimize(
       c(1L, 10L,  2L, 2L, 9L),
       c(5L, 12L, 6L, 8L, 11L)
     ),
@@ -11,9 +11,9 @@ test_that("can link up overlaps", {
   )
 })
 
-test_that("`[a, b)` links with `[b, c)`", {
+test_that("`[a, b)` combines with `[b, c)`", {
   expect_identical(
-    interval_link(
+    interval_minimize(
       c(10L, 9L),
       c(12L, 10L)
     ),
@@ -25,23 +25,23 @@ test_that("empty intervals are merged if they fall fully within another interval
   df <- data_frame(start = c(2L, 1L), end = c(2L, 3L))
 
   expect_identical(
-    interval_link(df$start, df$end),
+    interval_minimize(df$start, df$end),
     data_frame(start = 1L, end = 3L)
   )
 })
 
-test_that("empty intervals touching another interval on either side are linked", {
+test_that("empty intervals touching another interval on either side are combined", {
   df <- data_frame(start = c(2L, 2L), end = c(2L, 3L))
 
   expect_identical(
-    interval_link(df$start, df$end),
+    interval_minimize(df$start, df$end),
     data_frame(start = 2L, end = 3L)
   )
 
   df <- data_frame(start = c(2L, 1L), end = c(2L, 2L))
 
   expect_identical(
-    interval_link(df$start, df$end),
+    interval_minimize(df$start, df$end),
     data_frame(start = 1L, end = 2L)
   )
 })
@@ -50,7 +50,7 @@ test_that("keys are returned ordered", {
   x <- data_frame(start = c(4L, 3L, 1L), end = c(6L, 5L, 2L))
 
   expect_identical(
-    interval_link(x$start, x$end),
+    interval_minimize(x$start, x$end),
     data_frame(start = c(1L, 3L), end = c(2L, 6L))
   )
 })
@@ -60,57 +60,57 @@ test_that("max endpoint is retained even if it isn't the last in the group", {
   x <- data_frame(start = c(1L, 2L, 12L), end = c(10L, 5L, 15L))
 
   expect_identical(
-    interval_link(x$start, x$end),
+    interval_minimize(x$start, x$end),
     data_frame(start = c(1L, 12L), end = c(10L, 15L))
   )
 })
 
-test_that("can link with size zero input", {
+test_that("can minimize with size zero input", {
   expect_identical(
-    interval_link(integer(), integer()),
+    interval_minimize(integer(), integer()),
     data_frame(start = integer(), end = integer())
   )
 })
 
 test_that("empty intervals get dropped", {
   expect_identical(
-    interval_link(2L, 2L),
+    interval_minimize(2L, 2L),
     data_frame(start = integer(), end = integer())
   )
 })
 
-test_that("can link with size one input", {
+test_that("can minimize with size one input", {
   expect_identical(
-    interval_link(1L, 2L),
+    interval_minimize(1L, 2L),
     data_frame(start = 1L, end = 2L)
   )
 })
 
-test_that("can set a maximum gap of `>0` to link intervals with gaps", {
+test_that("can set a maximum gap of `>0` to combine intervals with gaps", {
   x <- data_frame(start = c(1L, 3L, 4L), end = c(2L, 4L, 5L))
 
   expect_identical(
-    interval_link(x$start, x$end, gap = 1L),
+    interval_minimize(x$start, x$end, gap = 1L),
     data_frame(start = 1L, end = 5L)
   )
 
   x <- data_frame(start = c(1L, 3L, 6L), end = c(2L, 4L, 7L))
 
   expect_identical(
-    interval_link(x$start, x$end, gap = 1L),
+    interval_minimize(x$start, x$end, gap = 1L),
     data_frame(start = c(1L, 6L), end = c(4L, 7L))
   )
 })
 
 test_that("`gap` must be 0 or positive", {
-  expect_snapshot((expect_error(interval_link(1L, 2L, gap = -1L))))
+  expect_snapshot((expect_error(interval_minimize(1L, 2L, gap = -1L))))
 })
 
 # ------------------------------------------------------------------------------
-# interval_locate_links()
+# interval_locate_minimal()
 
-test_that("can compute link locations", {
-  out <- interval_locate_links(
+test_that("can compute minimal locations", {
+  out <- interval_locate_minimal(
     c(1L, 9L,  2L, 2L, 10L),
     c(5L, 11L, 6L, 8L, 12L)
   )
@@ -121,25 +121,25 @@ test_that("can compute link locations", {
   )
 })
 
-test_that("can link with size one input", {
+test_that("can minimize with size one input", {
   expect_identical(
-    interval_locate_links(1L, 2L),
+    interval_locate_minimal(1L, 2L),
     data_frame(start = 1L, end = 1L)
   )
 })
 
-test_that("can link with size zero input", {
+test_that("can minimize with size zero input", {
   expect_identical(
-    interval_locate_links(integer(), integer()),
+    interval_locate_minimal(integer(), integer()),
     data_frame(start = integer(), end = integer())
   )
 })
 
 # ------------------------------------------------------------------------------
-# interval_locate_link_groups()
+# interval_locate_minimal_groups()
 
-test_that("can compute link locations and groups", {
-  out <- interval_locate_link_groups(
+test_that("can compute minimal locations and groups", {
+  out <- interval_locate_minimal_groups(
     c(1L, 9L,  2L, 2L, 10L),
     c(5L, 11L, 6L, 8L, 12L)
   )
@@ -155,9 +155,9 @@ test_that("can compute link locations and groups", {
   )
 })
 
-test_that("can link with size one input", {
+test_that("can minimize with size one input", {
   expect_identical(
-    interval_locate_link_groups(1L, 2L),
+    interval_locate_minimal_groups(1L, 2L),
     data_frame(
       key = data_frame(start = 1L, end = 1L),
       loc = list(1L)
@@ -165,9 +165,9 @@ test_that("can link with size one input", {
   )
 })
 
-test_that("can link with size zero input", {
+test_that("can minimize with size zero input", {
   expect_identical(
-    interval_locate_link_groups(integer(), integer()),
+    interval_locate_minimal_groups(integer(), integer()),
     data_frame(
       key = data_frame(start = integer(), end = integer()),
       loc = list()
@@ -178,7 +178,7 @@ test_that("can link with size zero input", {
 test_that("locations are ordered by both `start` and `end`", {
   x <- data_frame(start = c(4L, 4L, 1L), end = c(6L, 5L, 2L))
 
-  out <- interval_locate_link_groups(x$start, x$end)
+  out <- interval_locate_minimal_groups(x$start, x$end)
 
   # Ties of `start = 4` are broken by `end` values and reordered
   expect_identical(
@@ -196,7 +196,7 @@ test_that("locations are ordered by both `start` and `end`", {
 test_that("works with ignored empty intervals", {
   x <- data_frame(start = c(2L, 2L, 6L, 1L), end = c(3L, 2L, 7L, 2L))
 
-  out <- interval_locate_link_groups(x$start, x$end)
+  out <- interval_locate_minimal_groups(x$start, x$end)
 
   expect_identical(
     out$key,
@@ -249,7 +249,7 @@ test_that("complement is invertible", {
   force_end <- max(end)
 
   # Should always be seen as invertible as long as linking is done first
-  x <- interval_link(start, end)
+  x <- interval_minimize(start, end)
 
   x_c <- interval_complement(x$start, x$end, force_start = force_start, force_end = force_end)
   x2 <- interval_complement(x_c$start, x_c$end, force_start = force_start, force_end = force_end)

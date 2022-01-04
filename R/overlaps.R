@@ -1,31 +1,40 @@
-#' Link up overlapping ranges
+#' Minimize an interval
 #'
-#' `interval_link()` collapses overlapping information in `start` and
-#' `end`, resulting in new `start` and `end` values that are non-overlapping
-#' and contain no redundant information.
+#' @description
+#' `interval_minimize()` collapses redundant information in `start` and
+#' `end`, resulting in new `start` and `end` values that represent the interval
+#' in the most minimal form.
+#'
+#' A minimal interval:
+#' - Has no empty intervals
+#' - Has no overlapping intervals
+#' - Has no adjacent intervals
+#'
+#' An empty interval is one where `start >= end`. Two intervals are adjacent
+#' if the open endpoint of one is equivalent to the closed startpoint of
+#' the other. For example, `[a, b)` and `[b, c)` are adjacent.
 #'
 #' @inheritParams ellipsis::dots_empty
 #'
 #' @param start,end `[integer]`
 #'
-#'   A pair of integer vectors. It is assumed that `start <= end`, but this is
-#'   not checked.
+#'   A pair of integer vectors.
 #'
 #' @param gap `[non-negative integer(1)]`
 #'
 #'   The maximum gap allowed when deciding whether or not two intervals can
-#'   be linked.
+#'   be combined.
 #'
-#'   The default, `0L`, links intervals that either overlap or touch. For
-#'   example, `[1, 3)` and `[3, 4)` would be linked together as `[1, 4)`.
+#'   The default, `0L`, links intervals that either overlap or are adjacent. For
+#'   example, `[1, 3)` and `[3, 4)` would become `[1, 4)`.
 #'
-#'   Setting this to a positive number will link intervals with discrete gaps.
-#'   For example, with `gap = 1L` the intervals `[1, 3)` and `[4, 5)` would be
-#'   linked together as `[1, 5)`.
+#'   Setting this to a positive number will combine intervals with discrete
+#'   gaps. For example, with `gap = 1L` the intervals `[1, 3)` and `[4, 5)`
+#'   would become `[1, 5)`.
 #'
 #' @return
-#' A data frame with `start` and `end` integer columns containing the collapsed
-#' ranges.
+#' A data frame with `start` and `end` integer columns containing the minimized
+#' interval.
 #'
 #' @noRd
 #'
@@ -38,46 +47,46 @@
 #' df
 #'
 #' # Remove all redundant overlaps
-#' interval_link(start, end)
+#' interval_minimize(start, end)
 #'
 #' # You can set also set `gap` to be `>0` to link intervals that have actual
 #' # gaps between them
-#' interval_link(start, end, gap = 1L)
+#' interval_minimize(start, end, gap = 1L)
 #'
 #' # Compute locations telling you where to slice the start/end data to
-#' # construct the linked result and how to map each start/end combination
-#' # of the input to its corresponding linked result in the output.
-#' info <- interval_locate_link_groups(start, end)
+#' # construct the minimal result and how to map each start/end combination
+#' # of the input to its corresponding minimal result in the output.
+#' info <- interval_locate_minimal_groups(start, end)
 #' info
 #'
 #' old <- vec_slice(df, vec_unchop(info$loc))
 #'
 #' new <- data_frame(
-#'   start_link = vec_slice(df$start, info$key$start),
-#'   end_link = vec_slice(df$end, info$key$end)
+#'   start_minimal = vec_slice(df$start, info$key$start),
+#'   end_minimal = vec_slice(df$end, info$key$end)
 #' )
 #' new <- vec_slice(new, vec_rep_each(vec_seq_along(info), list_sizes(info$loc)))
 #'
 #' vec_cbind(old, new)
-interval_link <- function(start, end, ..., gap = 0L) {
+interval_minimize <- function(start, end, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- FALSE
   groups <- FALSE
-  .Call(vctrs_interval_link, start, end, locations, groups, gap)
+  .Call(vctrs_interval_minimize, start, end, locations, groups, gap)
 }
 
-interval_locate_links <- function(start, end, ..., gap = 0L) {
+interval_locate_minimal <- function(start, end, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- TRUE
   groups <- FALSE
-  .Call(vctrs_interval_link, start, end, locations, groups, gap)
+  .Call(vctrs_interval_minimize, start, end, locations, groups, gap)
 }
 
-interval_locate_link_groups <- function(start, end, ..., gap = 0L) {
+interval_locate_minimal_groups <- function(start, end, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- TRUE
   groups <- TRUE
-  .Call(vctrs_interval_link, start, end, locations, groups, gap)
+  .Call(vctrs_interval_minimize, start, end, locations, groups, gap)
 }
 
 interval_complement <- function(start, end, ..., force_start = NULL, force_end = NULL) {
@@ -88,7 +97,7 @@ interval_complement <- function(start, end, ..., force_start = NULL, force_end =
 interval_union <- function(x_start, x_end, y_start, y_end) {
   start <- vec_c(x_start, y_start)
   end <- vec_c(x_end, y_end)
-  interval_link(start, end)
+  interval_minimize(start, end)
 }
 
 interval_difference <- function(x_start, x_end, y_start, y_end) {

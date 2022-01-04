@@ -1,3 +1,80 @@
+new_interval <- function(start, end, ..., class = character()) {
+  fields <- list(start = start, end = end)
+  new_rcrd(fields, ..., class = c("vctrs_interval", class))
+}
+
+interval <- function(start = integer(), end = integer()) {
+  args <- vec_cast_common(start = start, end = end, .to = integer())
+  args <- vec_recycle_common(!!!args)
+  start <- args$start
+  end <- args$end
+
+  if (any(vec_equal_na(start)) || any(vec_equal_na(end))) {
+    abort("`start` and `end` can't contain missing values.")
+  }
+
+  out <- new_interval(start, end)
+  out <- interval_standardize(out)
+
+  out
+}
+
+#' @export
+format.vctrs_interval <- function(x, ...) {
+  start <- interval_start(x)
+  end <- interval_end(x)
+  empty <- interval_empty(x)
+
+  start <- as.character(start)
+  end <- as.character(end)
+
+  out <- as.character(glue::glue("{start}, {end}"))
+  out[empty] <- ""
+  out <- as.character(glue::glue("[{out})"))
+
+  out
+}
+
+interval_maximum <- function() {
+  .Machine$integer.max
+}
+interval_minimum <- function() {
+  -.Machine$integer.max
+}
+
+interval_standardize <- function(x) {
+  start <- interval_start(x)
+  end <- interval_end(x)
+
+  empty <- start >= end
+
+  if (any(empty)) {
+    start[empty] <- interval_maximum()
+    end[empty] <- interval_minimum()
+  }
+
+  new_interval(start, end)
+}
+
+interval_start <- function(x) {
+  field(x, "start")
+}
+interval_end <- function(x) {
+  field(x, "end")
+}
+
+interval_empty <- function(x) {
+  (interval_start(x) == interval_maximum()) & (interval_end(x) == interval_minimum())
+}
+
+interval_range <- function(x) {
+  if (length(x) == 0L) {
+    interval(start = interval_maximum(), end = interval_minimum())
+  } else {
+    interval(start = min(interval_start(x)), end = max(interval_end(x)))
+  }
+}
+
 #' Minimize an interval
 #'
 #' @description
@@ -69,94 +146,90 @@
 #' new <- vec_slice(new, vec_rep_each(vec_seq_along(info), list_sizes(info$loc)))
 #'
 #' vec_cbind(old, new)
-interval_minimize <- function(start, end, ..., gap = 0L) {
+interval_minimize <- function(x, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- FALSE
   groups <- FALSE
-  .Call(vctrs_interval_minimize, start, end, locations, groups, gap)
+  start <- interval_start(x)
+  end <- interval_end(x)
+  fields <- .Call(vctrs_interval_minimize, start, end, locations, groups, gap)
+  new_interval(fields$start, fields$end)
 }
 
-interval_locate_minimal <- function(start, end, ..., gap = 0L) {
+interval_locate_minimal <- function(x, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- TRUE
   groups <- FALSE
+  start <- interval_start(x)
+  end <- interval_end(x)
   .Call(vctrs_interval_minimize, start, end, locations, groups, gap)
 }
 
-interval_locate_minimal_groups <- function(start, end, ..., gap = 0L) {
+interval_locate_minimal_groups <- function(x, ..., gap = 0L) {
   check_dots_empty0(...)
   locations <- TRUE
   groups <- TRUE
+  start <- interval_start(x)
+  end <- interval_end(x)
   .Call(vctrs_interval_minimize, start, end, locations, groups, gap)
 }
 
-interval_complement <- function(start, end, ..., force_start = NULL, force_end = NULL) {
+interval_complement <- function(x, ..., force_start = NULL, force_end = NULL) {
   check_dots_empty0(...)
-  .Call(vctrs_interval_complement, start, end, force_start, force_end)
+  start <- interval_start(x)
+  end <- interval_end(x)
+  out <- .Call(vctrs_interval_complement, start, end, force_start, force_end)
+  new_interval(out$start, out$end)
 }
 
-interval_union <- function(x_start, x_end, y_start, y_end) {
-  start <- vec_c(x_start, y_start)
-  end <- vec_c(x_end, y_end)
-  interval_minimize(start, end)
+interval_union <- function(x, y) {
+  out <- vec_c(x, y)
+  interval_minimize(out)
 }
 
-interval_difference <- function(x_start, x_end, y_start, y_end) {
-  force_start <- min(int_min(x_start), int_min(y_start))
-  force_end <- max(int_max(x_end), int_max(y_end))
+interval_difference <- function(x, y) {
+  x_range <- interval_range(x)
+  y_range <- interval_range(y)
 
-  x_c <- interval_complement(x_start, x_end, force_start = force_start, force_end = force_end)
+  force_start <- min(interval_start(x_range), interval_start(y_range))
+  force_end <- max(interval_end(x_range), interval_end(y_range))
 
-  u <- interval_union(x_c$start, x_c$end, y_start, y_end)
+  x_c <- interval_complement(x, force_start = force_start, force_end = force_end)
 
-  interval_complement(u$start, u$end, force_start = force_start, force_end = force_end)
+  u <- interval_union(x_c, y)
+
+  interval_complement(u, force_start = force_start, force_end = force_end)
 }
 
-interval_intersect <- function(x_start, x_end, y_start, y_end) {
-  force_start <- min(int_min(x_start), int_min(y_start))
-  force_end <- max(int_max(x_end), int_max(y_end))
+interval_intersect <- function(x, y) {
+  x_range <- interval_range(x)
+  y_range <- interval_range(y)
 
-  x_c <- interval_complement(x_start, x_end, force_start = force_start, force_end = force_end)
-  y_c <- interval_complement(y_start, y_end, force_start = force_start, force_end = force_end)
+  force_start <- min(interval_start(x_range), interval_start(y_range))
+  force_end <- max(interval_end(x_range), interval_end(y_range))
 
-  u <- interval_union(x_c$start, x_c$end, y_c$start, y_c$end)
+  x_c <- interval_complement(x, force_start = force_start, force_end = force_end)
+  y_c <- interval_complement(y, force_start = force_start, force_end = force_end)
 
-  interval_complement(u$start, u$end, force_start = force_start, force_end = force_end)
+  u <- interval_union(x_c, y_c)
+
+  interval_complement(u, force_start = force_start, force_end = force_end)
 }
 
-interval_parallel_union <- function(x_start, x_end, y_start, y_end, ..., fill_gap = FALSE) {
+interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {
   if (!is_bool(fill_gap)) {
     abort("`fill_gap` must be a single `TRUE` or `FALSE`.")
   }
 
-  args <- vec_recycle_common(x_start = x_start, x_end = x_end, y_start = y_start, y_end = y_end)
-  args <- vec_cast_common(!!!args)
-  x_start <- args$x_start
-  x_end <- args$x_end
-  y_start <- args$y_start
-  y_end <- args$y_end
-
-  x_empty <- interval_empty(x_start, x_end)
-  if (any(x_empty)) {
-    replace <- y_start[x_empty]
-    x_start[x_empty] <- replace
-    x_end[x_empty] <- replace
-  }
-
-  y_empty <- interval_empty(y_start, y_end)
-  if (any(y_empty)) {
-    replace <- x_start[y_empty]
-    y_start[y_empty] <- replace
-    y_end[y_empty] <- replace
-  }
-
   if (!fill_gap) {
-    gap <- vec_parallel_max(x_start, y_start) - vec_parallel_min(x_end, y_end)
-    has_gap <- gap > 0L
+    complement <- interval_parallel_complement(x, y)
+    has_gap <- !interval_empty(complement)
 
     if (any(has_gap)) {
       loc <- which(has_gap)[[1]]
-      gap <- gap[[loc]]
+
+      gap <- vec_slice(complement, loc)
+      gap <- interval_end(gap) - interval_start(gap)
 
       abort(c(
         "Can't take the union of intervals containing a gap.",
@@ -166,48 +239,36 @@ interval_parallel_union <- function(x_start, x_end, y_start, y_end, ..., fill_ga
     }
   }
 
-  start <- vec_parallel_min(x_start, y_start)
-  end <- vec_parallel_max(x_end, y_end)
+  start <- vec_parallel_min(interval_start(x), interval_start(y))
+  end <- vec_parallel_max(interval_end(x), interval_end(y))
 
-  data_frame(start = start, end = end)
+  new_interval(start, end)
 }
 
-interval_parallel_intersect <- function(x_start, x_end, y_start, y_end) {
-  start <- vec_parallel_max(x_start, y_start)
-  end <- vec_parallel_min(x_end, y_end)
+interval_parallel_intersect <- function(x, y) {
+  start <- vec_parallel_max(interval_start(x), interval_start(y))
+  end <- vec_parallel_min(interval_end(x), interval_end(y))
 
-  data_frame(start = start, end = end)
+  out <- new_interval(start, end)
+  out <- interval_standardize(out)
+
+  out
 }
 
-interval_parallel_difference <- function(x_start, x_end, y_start, y_end) {
-  args <- vec_recycle_common(x_start = x_start, x_end = x_end, y_start = y_start, y_end = y_end)
-  args <- vec_cast_common(!!!args)
-  x_start <- args$x_start
-  x_end <- args$x_end
-  y_start <- args$y_start
-  y_end <- args$y_end
+interval_parallel_difference <- function(x, y) {
+  x_start <- interval_start(x)
+  x_end <- interval_end(x)
 
-  x_empty <- interval_empty(x_start, x_end)
-  if (any(x_empty)) {
-    replace <- y_start[x_empty]
-    x_start[x_empty] <- replace
-    x_end[x_empty] <- replace
-  }
+  y_start <- interval_start(y)
+  y_end <- interval_end(y)
 
-  y_empty <- interval_empty(y_start, y_end)
-  if (any(y_empty)) {
-    replace <- x_start[y_empty]
-    y_start[y_empty] <- replace
-    y_end[y_empty] <- replace
-  }
+  y_contained <- (y_start > x_start) & (y_end < x_end) & !interval_empty(y)
 
-  x_contained <- (x_start < y_start) & (x_end > y_end)
-
-  if (any(x_contained)) {
-    loc <- which(x_contained)[[1]]
+  if (any(y_contained)) {
+    loc <- which(y_contained)[[1]]
 
     abort(c(
-      "Can't subtract ranges when `x` is completely contained in `y`.",
+      "Can't subtract ranges when `y` is completely contained within `x`.",
       i = glue::glue("This occurs at location {loc}.")
     ))
   }
@@ -231,27 +292,25 @@ interval_parallel_difference <- function(x_start, x_end, y_start, y_end) {
     start[clamp_start] <- min_end[clamp_start]
   }
 
-  data_frame(start = start, end = end)
+  out <- new_interval(start, end)
+  out <- interval_standardize(out)
+
+  out
 }
 
-interval_parallel_complement <- function(x_start, x_end, y_start, y_end) {
-  end <- vec_parallel_max(x_start, y_start)
-  start <- vec_parallel_min(x_end, y_end)
+interval_parallel_complement <- function(x, y) {
+  end <- vec_parallel_max(interval_start(x), interval_start(y))
+  start <- vec_parallel_min(interval_end(x), interval_end(y))
 
-  empty <- interval_empty(x_start, x_end) | interval_empty(y_start, y_end)
+  empty <- interval_empty(x) | interval_empty(y)
   if (any(empty)) {
-    start[empty] <- end[empty]
+    end[empty] <- start[empty]
   }
 
-  data_frame(start = start, end = end)
-}
+  out <- new_interval(start = start, end = end)
+  out <- interval_standardize(out)
 
-interval_width <- function(x_start, x_end) {
-  x_end - x_start
-}
-
-interval_empty <- function(x_start, x_end) {
-  interval_width(x_start, x_end) <= 0L
+  out
 }
 
 
@@ -286,21 +345,3 @@ vec_parallel_summary <- function(x, y, type) {
 
   out
 }
-
-int_min <- function(x) {
-  if (length(x) == 0L) {
-    .Machine$integer.max
-  } else {
-    min(x)
-  }
-}
-
-int_max <- function(x) {
-  if (length(x) == 0L) {
-    -.Machine$integer.max
-  } else {
-    max(x)
-  }
-}
-
-# define parallel intersect, union, and setdiff helpers as well

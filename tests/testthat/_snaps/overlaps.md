@@ -51,5 +51,10 @@
 # parallel complement can't result in an empty set
 
     Code
-      expect_error(interval_parallel_complement(interval(1, 2), interval(1, 2)))
+      (expect_error(interval_parallel_complement(interval(1, 2), interval(1, 2))))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Complement between `x` and `y` can't result in an empty interval.
+      i Complement is empty at location 1.
 

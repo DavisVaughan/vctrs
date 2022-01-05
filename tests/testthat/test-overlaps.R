@@ -747,7 +747,7 @@ test_that("can parallel complement", {
 
 test_that("parallel complement can't result in an empty set", {
   expect_snapshot(
-    expect_error(interval_parallel_complement(interval(1, 2), interval(1, 2)))
+    (expect_error(interval_parallel_complement(interval(1, 2), interval(1, 2))))
   )
 })
 

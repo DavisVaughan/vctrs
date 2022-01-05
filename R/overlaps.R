@@ -55,6 +55,7 @@ interval_end <- function(x) {
 #' in the most minimal form.
 #'
 #' A minimal set of intervals:
+#' - Has no missing intervals
 #' - Has no overlapping intervals
 #' - Has no adjacent intervals
 #' - Is ordered from left to right

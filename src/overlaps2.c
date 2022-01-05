@@ -70,13 +70,13 @@ r_obj* vec_locate_minimal_interval(r_obj* start, r_obj* end, bool groups) {
   r_obj* start_proxy_equal = KEEP_N(vec_proxy_equal(start), &n_prot);
   start_proxy_equal = KEEP_N(vec_normalize_encoding(start_proxy_equal), &n_prot);
 
-  const enum vctrs_type type_proxy_equal = vec_proxy_typeof(start_proxy_equal);
+  const enum vctrs_type type_equal = vec_proxy_typeof(start_proxy_equal);
 
-  struct poly_vec* p_start_missing = new_poly_vec(start_proxy_equal, type_proxy_equal);
-  PROTECT_POLY_VEC(p_start_missing, &n_prot);
-  const void* p_start_missing_vec = p_start_missing->p_vec;
+  struct poly_vec* p_start_missing_shelter = new_poly_vec(start_proxy_equal, type_equal);
+  PROTECT_POLY_VEC(p_start_missing_shelter, &n_prot);
+  const void* p_start_missing = p_start_missing_shelter->p_vec;
 
-  const poly_unary_bool_fn_ptr fn_p_is_missing = new_poly_p_is_missing2(type_proxy_equal);
+  const poly_unary_bool_fn_ptr fn_is_missing = new_poly_p_is_missing2(type_equal);
 
   r_obj* start_proxy_compare = KEEP_N(vec_proxy_compare(start), &n_prot);
   start_proxy_compare = KEEP_N(vec_normalize_encoding(start_proxy_compare), &n_prot);
@@ -84,17 +84,17 @@ r_obj* vec_locate_minimal_interval(r_obj* start, r_obj* end, bool groups) {
   r_obj* end_proxy_compare = KEEP_N(vec_proxy_compare(end), &n_prot);
   end_proxy_compare = KEEP_N(vec_normalize_encoding(end_proxy_compare), &n_prot);
 
-  const enum vctrs_type type_proxy_compare = vec_proxy_typeof(start_proxy_compare);
+  const enum vctrs_type type_compare = vec_proxy_typeof(start_proxy_compare);
 
-  struct poly_vec* p_start_compare = new_poly_vec(start_proxy_compare, type_proxy_compare);
-  PROTECT_POLY_VEC(p_start_compare, &n_prot);
-  const void* p_start_compare_vec = p_start_compare->p_vec;
+  struct poly_vec* p_start_compare_shelter = new_poly_vec(start_proxy_compare, type_compare);
+  PROTECT_POLY_VEC(p_start_compare_shelter, &n_prot);
+  const void* p_start_compare = p_start_compare_shelter->p_vec;
 
-  struct poly_vec* p_end_compare = new_poly_vec(end_proxy_compare, type_proxy_compare);
-  PROTECT_POLY_VEC(p_end_compare, &n_prot);
-  const void* p_end_compare_vec = p_end_compare->p_vec;
+  struct poly_vec* p_end_compare_shelter = new_poly_vec(end_proxy_compare, type_compare);
+  PROTECT_POLY_VEC(p_end_compare_shelter, &n_prot);
+  const void* p_end_compare = p_end_compare_shelter->p_vec;
 
-  const poly_binary_int_fn_ptr fn_p_compare = new_poly_p_compare_na_equal(type_proxy_compare);
+  const poly_binary_int_fn_ptr fn_compare = new_poly_p_compare_na_equal(type_compare);
 
   r_obj* order = KEEP_N(interval_order(start, end), &n_prot);
   const int* v_order = r_int_cbegin(order);
@@ -126,7 +126,7 @@ r_obj* vec_locate_minimal_interval(r_obj* start, r_obj* end, bool groups) {
   for (; i < size; ++i) {
     const r_ssize loc = v_order[i] - 1;
 
-    if (!fn_p_is_missing(p_start_missing_vec, loc)) {
+    if (!fn_is_missing(p_start_missing, loc)) {
       loc_set_start = loc;
       loc_set_end = loc;
       ++i;
@@ -137,12 +137,12 @@ r_obj* vec_locate_minimal_interval(r_obj* start, r_obj* end, bool groups) {
   for (; i < size; ++i) {
     const r_ssize loc = v_order[i] - 1;
 
-    if (fn_p_is_missing(p_start_missing_vec, loc)) {
+    if (fn_is_missing(p_start_missing, loc)) {
       // NA intervals are always at the end
       break;
     }
 
-    if (fn_p_compare(p_end_compare_vec, loc_set_end, p_start_compare_vec, loc) == -1) {
+    if (fn_compare(p_end_compare, loc_set_end, p_start_compare, loc) == -1) {
       const r_ssize loc_order_end = i - 1;
 
       r_int_push_back(p_starts, loc_set_start + 1);
@@ -163,7 +163,7 @@ r_obj* vec_locate_minimal_interval(r_obj* start, r_obj* end, bool groups) {
 
       loc_set_start = loc;
       loc_set_end = loc;
-    } else if (fn_p_compare(p_end_compare_vec, loc_set_end, p_end_compare_vec, loc) == -1) {
+    } else if (fn_compare(p_end_compare, loc_set_end, p_end_compare, loc) == -1) {
       loc_set_end = loc;
     }
   }
@@ -243,8 +243,8 @@ r_obj* vec_interval_complement(r_obj* start,
                                r_obj* force_end) {
   int n_prot = 0;
 
-  bool use_forced_start = (force_start != r_null);
-  bool use_forced_end = (force_end != r_null);
+  bool use_force_start = (force_start != r_null);
+  bool use_force_end = (force_end != r_null);
 
   const r_ssize size = vec_size(start);
   const enum vctrs_type type = vec_typeof(start);
@@ -262,25 +262,25 @@ r_obj* vec_interval_complement(r_obj* start,
     );
   }
 
-  if (use_forced_start && vec_size(force_start) != 1) {
+  if (use_force_start && vec_size(force_start) != 1) {
     r_stop_internal(
       "vec_interval_complement",
       "`force_start` must be size 1."
     );
   }
-  if (use_forced_end && vec_size(force_end) != 1) {
+  if (use_force_end && vec_size(force_end) != 1) {
     r_stop_internal(
       "vec_interval_complement",
       "`force_end` must be size 1."
     );
   }
-  if (use_forced_start && type != vec_typeof(force_start)) {
+  if (use_force_start && type != vec_typeof(force_start)) {
     r_stop_internal(
       "vec_interval_complement",
       "`force_start` must have the same type as `start`."
     );
   }
-  if (use_forced_end && type != vec_typeof(force_end)) {
+  if (use_force_end && type != vec_typeof(force_end)) {
     r_stop_internal(
       "vec_interval_complement",
       "`force_end` must have the same type as `start`."
@@ -290,13 +290,13 @@ r_obj* vec_interval_complement(r_obj* start,
   r_obj* start_proxy_equal = KEEP_N(vec_proxy_equal(start), &n_prot);
   start_proxy_equal = KEEP_N(vec_normalize_encoding(start_proxy_equal), &n_prot);
 
-  const enum vctrs_type type_proxy_equal = vec_proxy_typeof(start_proxy_equal);
+  const enum vctrs_type type_equal = vec_proxy_typeof(start_proxy_equal);
 
-  struct poly_vec* p_start_missing = new_poly_vec(start_proxy_equal, type_proxy_equal);
-  PROTECT_POLY_VEC(p_start_missing, &n_prot);
-  const void* p_start_missing_vec = p_start_missing->p_vec;
+  struct poly_vec* p_start_missing_shelter = new_poly_vec(start_proxy_equal, type_equal);
+  PROTECT_POLY_VEC(p_start_missing_shelter, &n_prot);
+  const void* p_start_missing = p_start_missing_shelter->p_vec;
 
-  const poly_unary_bool_fn_ptr fn_p_is_missing = new_poly_p_is_missing2(type_proxy_equal);
+  const poly_unary_bool_fn_ptr fn_is_missing = new_poly_p_is_missing2(type_equal);
 
   r_obj* start_proxy_compare = KEEP_N(vec_proxy_compare(start), &n_prot);
   start_proxy_compare = KEEP_N(vec_normalize_encoding(start_proxy_compare), &n_prot);
@@ -304,40 +304,40 @@ r_obj* vec_interval_complement(r_obj* start,
   r_obj* end_proxy_compare = KEEP_N(vec_proxy_compare(end), &n_prot);
   end_proxy_compare = KEEP_N(vec_normalize_encoding(end_proxy_compare), &n_prot);
 
-  const enum vctrs_type type_proxy_compare = vec_proxy_typeof(start_proxy_compare);
+  const enum vctrs_type type_compare = vec_proxy_typeof(start_proxy_compare);
 
-  struct poly_vec* p_start_compare = new_poly_vec(start_proxy_compare, type_proxy_compare);
-  PROTECT_POLY_VEC(p_start_compare, &n_prot);
-  const void* p_start_compare_vec = p_start_compare->p_vec;
+  struct poly_vec* p_start_compare_shelter = new_poly_vec(start_proxy_compare, type_compare);
+  PROTECT_POLY_VEC(p_start_compare_shelter, &n_prot);
+  const void* p_start_compare = p_start_compare_shelter->p_vec;
 
-  struct poly_vec* p_end_compare = new_poly_vec(end_proxy_compare, type_proxy_compare);
-  PROTECT_POLY_VEC(p_end_compare, &n_prot);
-  const void* p_end_compare_vec = p_end_compare->p_vec;
+  struct poly_vec* p_end_compare_shelter = new_poly_vec(end_proxy_compare, type_compare);
+  PROTECT_POLY_VEC(p_end_compare_shelter, &n_prot);
+  const void* p_end_compare = p_end_compare_shelter->p_vec;
 
-  const poly_binary_int_fn_ptr fn_p_compare = new_poly_p_compare_na_equal(type_proxy_compare);
+  const poly_binary_int_fn_ptr fn_compare = new_poly_p_compare_na_equal(type_compare);
 
   bool used_force_start = false;
   bool used_force_end = false;
   const r_ssize loc_forced_bound = size;
 
-  const void* p_force_start_compare_vec = NULL;
-  if (use_forced_start) {
+  const void* p_force_start_compare = NULL;
+  if (use_force_start) {
     r_obj* force_start_proxy_compare = KEEP_N(vec_proxy_compare(force_start), &n_prot);
     force_start_proxy_compare = KEEP_N(vec_normalize_encoding(force_start_proxy_compare), &n_prot);
 
-    struct poly_vec* p_force_start_compare = new_poly_vec(force_start_proxy_compare, type_proxy_compare);
-    PROTECT_POLY_VEC(p_force_start_compare, &n_prot);
-    p_force_start_compare_vec = p_force_start_compare->p_vec;
+    struct poly_vec* p_force_start_compare_shelter = new_poly_vec(force_start_proxy_compare, type_compare);
+    PROTECT_POLY_VEC(p_force_start_compare_shelter, &n_prot);
+    p_force_start_compare = p_force_start_compare_shelter->p_vec;
   }
 
-  const void* p_force_end_compare_vec = NULL;
-  if (use_forced_end) {
+  const void* p_force_end_compare = NULL;
+  if (use_force_end) {
     r_obj* force_end_proxy_compare = KEEP_N(vec_proxy_compare(force_end), &n_prot);
     force_end_proxy_compare = KEEP_N(vec_normalize_encoding(force_end_proxy_compare), &n_prot);
 
-    struct poly_vec* p_force_end_compare = new_poly_vec(force_end_proxy_compare, type_proxy_compare);
-    PROTECT_POLY_VEC(p_force_end_compare, &n_prot);
-    p_force_end_compare_vec = p_force_end_compare->p_vec;
+    struct poly_vec* p_force_end_compare_shelter = new_poly_vec(force_end_proxy_compare, type_compare);
+    PROTECT_POLY_VEC(p_force_end_compare_shelter, &n_prot);
+    p_force_end_compare = p_force_end_compare_shelter->p_vec;
   }
 
   r_obj* order = KEEP_N(interval_order(start, end), &n_prot);
@@ -361,7 +361,7 @@ r_obj* vec_interval_complement(r_obj* start,
   for (; i < size; ++i) {
     const r_ssize loc = v_order[i] - 1;
 
-    if (!fn_p_is_missing(p_start_missing_vec, loc)) {
+    if (!fn_is_missing(p_start_missing, loc)) {
       loc_set_start = loc;
       loc_set_end = loc;
       ++i;
@@ -369,12 +369,12 @@ r_obj* vec_interval_complement(r_obj* start,
     }
   }
 
-  if (use_forced_start &&
-      !use_forced_end &&
+  if (use_force_start &&
+      !use_force_end &&
       loc_set_start != r_globals.na_int &&
-      fn_p_compare(p_force_start_compare_vec, 0, p_start_compare_vec, loc_set_start) == -1) {
+      fn_compare(p_force_start_compare, 0, p_start_compare, loc_set_start) == -1) {
     used_force_start = true;
-    use_forced_start = false;
+    use_force_start = false;
 
     const int gap_start = loc_forced_bound;
     const int gap_end = loc_set_start;
@@ -382,17 +382,17 @@ r_obj* vec_interval_complement(r_obj* start,
     r_int_push_back(p_starts, gap_start + 1);
     r_int_push_back(p_ends, gap_end + 1);
   }
-  if (use_forced_start &&
-      use_forced_end &&
-      (loc_set_start == r_globals.na_int || fn_p_compare(p_force_start_compare_vec, 0, p_start_compare_vec, loc_set_start) == -1) &&
-      fn_p_compare(p_force_start_compare_vec, 0, p_force_end_compare_vec, 0) == -1) {
+  if (use_force_start &&
+      use_force_end &&
+      (loc_set_start == r_globals.na_int || fn_compare(p_force_start_compare, 0, p_start_compare, loc_set_start) == -1) &&
+      fn_compare(p_force_start_compare, 0, p_force_end_compare, 0) == -1) {
     used_force_start = true;
-    use_forced_start = false;
+    use_force_start = false;
 
     const int gap_start = loc_forced_bound;
 
     int gap_end = loc_set_start;
-    if (loc_set_start == r_globals.na_int || fn_p_compare(p_start_compare_vec, loc_set_start, p_force_end_compare_vec, 0) == 1) {
+    if (loc_set_start == r_globals.na_int || fn_compare(p_start_compare, loc_set_start, p_force_end_compare, 0) == 1) {
       used_force_end = true;
       gap_end = loc_forced_bound;
     }
@@ -404,15 +404,15 @@ r_obj* vec_interval_complement(r_obj* start,
   for (; i < size; ++i) {
     const r_ssize loc = v_order[i] - 1;
 
-    if (fn_p_is_missing(p_start_missing_vec, loc)) {
+    if (fn_is_missing(p_start_missing, loc)) {
       // NA intervals are always at the end
       break;
     }
 
     const bool has_gap =
-      !(use_forced_end && fn_p_compare(p_end_compare_vec, loc_set_end, p_force_end_compare_vec, 0) >= 0) &&
-      !(use_forced_start && fn_p_compare(p_end_compare_vec, loc_set_end, p_force_start_compare_vec, 0) == -1) &&
-      (fn_p_compare(p_end_compare_vec, loc_set_end, p_start_compare_vec, loc) == -1);
+      !(use_force_end && fn_compare(p_end_compare, loc_set_end, p_force_end_compare, 0) >= 0) &&
+      !(use_force_start && fn_compare(p_end_compare, loc_set_end, p_force_start_compare, 0) == -1) &&
+      (fn_compare(p_end_compare, loc_set_end, p_start_compare, loc) == -1);
 
     if (has_gap) {
       const int gap_start = loc_set_end;
@@ -423,17 +423,17 @@ r_obj* vec_interval_complement(r_obj* start,
 
       loc_set_start = loc;
       loc_set_end = loc;
-    } else if (fn_p_compare(p_end_compare_vec, loc_set_end, p_end_compare_vec, loc) == -1) {
+    } else if (fn_compare(p_end_compare, loc_set_end, p_end_compare, loc) == -1) {
       loc_set_end = loc;
     }
   }
 
-  if (use_forced_end &&
-      !use_forced_start &&
+  if (use_force_end &&
+      !use_force_start &&
       loc_set_end != r_globals.na_int &&
-      fn_p_compare(p_force_end_compare_vec, 0, p_end_compare_vec, loc_set_end) == 1) {
+      fn_compare(p_force_end_compare, 0, p_end_compare, loc_set_end) == 1) {
     used_force_end = true;
-    use_forced_end = false;
+    use_force_end = false;
 
     const int gap_start = loc_set_end;
     const int gap_end = loc_forced_bound;
@@ -441,15 +441,15 @@ r_obj* vec_interval_complement(r_obj* start,
     r_int_push_back(p_starts, gap_start + 1);
     r_int_push_back(p_ends, gap_end + 1);
   }
-  if (use_forced_end &&
-      use_forced_start &&
-      (loc_set_end == r_globals.na_int || fn_p_compare(p_force_end_compare_vec, 0, p_end_compare_vec, loc_set_end) == 1) &&
-      fn_p_compare(p_force_end_compare_vec, 0, p_force_start_compare_vec, 0) == 1) {
+  if (use_force_end &&
+      use_force_start &&
+      (loc_set_end == r_globals.na_int || fn_compare(p_force_end_compare, 0, p_end_compare, loc_set_end) == 1) &&
+      fn_compare(p_force_end_compare, 0, p_force_start_compare, 0) == 1) {
     used_force_end = true;
-    use_forced_end = false;
+    use_force_end = false;
 
     int gap_start = loc_set_end;
-    if (loc_set_end == r_globals.na_int || fn_p_compare(p_end_compare_vec, loc_set_end, p_force_start_compare_vec, 0) == -1) {
+    if (loc_set_end == r_globals.na_int || fn_compare(p_end_compare, loc_set_end, p_force_start_compare, 0) == -1) {
       used_force_start = true;
       gap_start = loc_forced_bound;
     }
@@ -499,6 +499,7 @@ r_obj* vec_interval_complement(r_obj* start,
   r_obj* loc_starts = KEEP_N(r_arr_unwrap(p_starts), &n_prot);
   r_obj* loc_ends = KEEP_N(r_arr_unwrap(p_ends), &n_prot);
 
+  // Slice end to get new starts and starts to get new ends!
   r_obj* out_start = KEEP_N(vec_slice_impl(end, loc_starts), &n_prot);
   r_obj* out_end = KEEP_N(vec_slice_impl(start, loc_ends), &n_prot);
 

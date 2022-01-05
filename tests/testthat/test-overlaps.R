@@ -137,6 +137,16 @@ test_that("missing intervals don't affect the result", {
   )
 })
 
+test_that("max endpoint is retained even if it isn't the last in the group", {
+  # 10 is max end of first group, but 5 is last value in that group
+  x <- interval(start = c(1L, 2L, 12L), end = c(10L, 5L, 15L))
+
+  expect_identical(
+    interval_locate_minimal(x),
+    data_frame(start = c(1L, 3L), end = c(1L, 3L))
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_locate_minimal_groups()
 

@@ -166,6 +166,8 @@ r_obj* interval_locate_minimal(r_obj* x, int gap, bool groups) {
   r_ssize i = 0;
   int set_start = r_globals.na_int;
   int set_end = r_globals.na_int;
+  r_ssize loc_set_start = r_globals.na_int;
+  r_ssize loc_set_end = r_globals.na_int;
 
   // Find first non-NA interval
   for (; i < size; ++i) {
@@ -177,6 +179,8 @@ r_obj* interval_locate_minimal(r_obj* x, int gap, bool groups) {
     if (elt_start != r_globals.na_int) {
       set_start = elt_start;
       set_end = elt_end;
+      loc_set_start = loc;
+      loc_set_end = loc;
       ++i;
       break;
     }
@@ -195,15 +199,13 @@ r_obj* interval_locate_minimal(r_obj* x, int gap, bool groups) {
 
     if (set_end < elt_start - gap) {
       const r_ssize loc_order_end = i - 1;
-      const r_ssize loc_size = loc_order_end - loc_order_start + 1;
 
-      int loc_start = v_order[loc_order_start];
-      int loc_end = v_order[loc_order_end];
-
-      r_int_push_back(p_starts, loc_start);
-      r_int_push_back(p_ends, loc_end);
+      r_int_push_back(p_starts, loc_set_start + 1);
+      r_int_push_back(p_ends, loc_set_end + 1);
 
       if (groups) {
+        const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+
         r_obj* loc = r_new_integer(loc_size);
         r_list_push_back(p_loc, loc);
         int* v_loc = r_int_begin(loc);
@@ -216,22 +218,23 @@ r_obj* interval_locate_minimal(r_obj* x, int gap, bool groups) {
 
       set_start = elt_start;
       set_end = elt_end;
+      loc_set_start = loc;
+      loc_set_end = loc;
     } else if (set_end < elt_end) {
       set_end = elt_end;
+      loc_set_end = loc;
     }
   }
 
   if (set_start != r_globals.na_int) {
     const r_ssize loc_order_end = i - 1;
-    const r_ssize loc_size = loc_order_end - loc_order_start + 1;
 
-    int loc_start = v_order[loc_order_start];
-    int loc_end = v_order[loc_order_end];
-
-    r_int_push_back(p_starts, loc_start);
-    r_int_push_back(p_ends, loc_end);
+    r_int_push_back(p_starts, loc_set_start + 1);
+    r_int_push_back(p_ends, loc_set_end + 1);
 
     if (groups) {
+      const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+
       r_obj* loc = r_new_integer(loc_size);
       r_list_push_back(p_loc, loc);
       int* v_loc = r_int_begin(loc);

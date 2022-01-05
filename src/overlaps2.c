@@ -144,15 +144,13 @@ r_obj* vec_locate_minimal_interval(r_obj* start, r_obj* end, bool groups) {
 
     if (fn_p_compare(p_end_compare_vec, loc_set_end, p_start_compare_vec, loc) == -1) {
       const r_ssize loc_order_end = i - 1;
-      const r_ssize loc_size = loc_order_end - loc_order_start + 1;
 
-      int loc_start = v_order[loc_order_start];
-      int loc_end = v_order[loc_order_end];
-
-      r_int_push_back(p_starts, loc_start);
-      r_int_push_back(p_ends, loc_end);
+      r_int_push_back(p_starts, loc_set_start + 1);
+      r_int_push_back(p_ends, loc_set_end + 1);
 
       if (groups) {
+        const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+
         r_obj* loc = r_new_integer(loc_size);
         r_list_push_back(p_loc, loc);
         int* v_loc = r_int_begin(loc);
@@ -172,15 +170,13 @@ r_obj* vec_locate_minimal_interval(r_obj* start, r_obj* end, bool groups) {
 
   if (loc_set_start != r_globals.na_int) {
     const r_ssize loc_order_end = i - 1;
-    const r_ssize loc_size = loc_order_end - loc_order_start + 1;
 
-    int loc_start = v_order[loc_order_start];
-    int loc_end = v_order[loc_order_end];
-
-    r_int_push_back(p_starts, loc_start);
-    r_int_push_back(p_ends, loc_end);
+    r_int_push_back(p_starts, loc_set_start + 1);
+    r_int_push_back(p_ends, loc_set_end + 1);
 
     if (groups) {
+      const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+
       r_obj* loc = r_new_integer(loc_size);
       r_list_push_back(p_loc, loc);
       int* v_loc = r_int_begin(loc);

@@ -371,11 +371,261 @@ int_max <- function(x) {
   }
 }
 
-vec_locate_minimal_interval <- function(start, end) {
-  .Call(vctrs_locate_minimal_interval, start, end)
+# ------------------------------------------------------------------------------
+
+vec_interval <- function(start, end) {
+  args <- list(start = start, end = end)
+  args <- vec_cast_common(!!!args)
+  args <- vec_recycle_common(!!!args)
+  start <- args$start
+  end <- args$end
+
+  missing_start <- vec_equal_na(start)
+  missing_end <- vec_equal_na(end)
+
+  if (any(missing_start)) {
+    end <- vec_assign(end, missing_start, NA)
+  }
+  if (any(missing_end)) {
+    start <- vec_assign(start, missing_end, NA)
+  }
+
+  if (any(vec_compare(start, end) >= 0L, na.rm = TRUE)) {
+    abort("`start` must be less than `end`.")
+  }
+
+  new_interval(start, end)
 }
 
-vec_locate_minimal_interval_groups <- function(start, end) {
-  .Call(vctrs_locate_minimal_interval_groups, start, end)
+vec_locate_minimal_interval <- function(x) {
+  .Call(vctrs_locate_minimal_interval, interval_start(x), interval_end(x))
 }
 
+vec_locate_minimal_interval_groups <- function(x) {
+  .Call(vctrs_locate_minimal_interval_groups, interval_start(x), interval_end(x))
+}
+
+vec_interval_complement <- function(x, ..., start = NULL, end = NULL) {
+  check_dots_empty0(...)
+  out <- .Call(vctrs_interval_complement2, interval_start(x), interval_end(x), start, end)
+  new_interval(out$start, out$end)
+}
+
+vec_interval_minimize <- function(x) {
+  loc <- vec_locate_minimal_interval(x)
+  new_interval(
+    start = vec_slice(interval_start(x), loc$start),
+    end = vec_slice(interval_end(x), loc$end)
+  )
+}
+
+vec_interval_union <- function(x, y) {
+  out <- vec_c(x, y)
+  vec_interval_minimize(out)
+}
+
+vec_interval_difference <- function(x, y) {
+  args <- vec_cast_common(x = x, y = y)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  if (vec_size(x) == 0L || all(vec_equal_na(x))) {
+    return(vec_interval_minimize(x))
+  }
+  if (vec_size(y) == 0L || all(vec_equal_na(y))) {
+    return(vec_interval_minimize(x))
+  }
+
+  start <- min(
+    min(interval_start(x), na.rm = TRUE),
+    min(interval_start(y), na.rm = TRUE)
+  )
+  end <- max(
+    max(interval_end(x), na.rm = TRUE),
+    max(interval_end(y), na.rm = TRUE)
+  )
+
+  x_c <- vec_interval_complement(x, start = start, end = end)
+
+  u <- vec_interval_union(x_c, y)
+
+  vec_interval_complement(u, start = start, end = end)
+}
+
+vec_interval_intersect <- function(x, y) {
+  args <- vec_cast_common(x = x, y = y)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  if (vec_size(x) == 0L || all(vec_equal_na(x))) {
+    return(vec_interval_minimize(x))
+  }
+  if (vec_size(y) == 0L || all(vec_equal_na(y))) {
+    return(vec_interval_minimize(x))
+  }
+
+  start <- min(
+    min(interval_start(x), na.rm = TRUE),
+    min(interval_start(y), na.rm = TRUE)
+  )
+  end <- max(
+    max(interval_end(x), na.rm = TRUE),
+    max(interval_end(y), na.rm = TRUE)
+  )
+
+  x_c <- vec_interval_complement(x, start = start, end = end)
+  y_c <- vec_interval_complement(y, start = start, end = end)
+
+  u <- vec_interval_union(x_c, y_c)
+
+  vec_interval_complement(u, start = start, end = end)
+}
+
+vec_interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {
+  if (!is_bool(fill_gap)) {
+    abort("`fill_gap` must be a single `TRUE` or `FALSE`.")
+  }
+
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  x_start <- interval_start(x)
+  x_end <- interval_end(x)
+
+  y_start <- interval_start(y)
+  y_end <- interval_end(y)
+
+  if (!fill_gap) {
+    max_start <- vec_parallel_max(x_start, y_start)
+    min_end <- vec_parallel_min(x_end, y_end)
+    has_gap <- vec_compare(max_start, min_end) == 1L
+
+    if (any(has_gap, na.rm = TRUE)) {
+      loc <- which(has_gap)[[1]]
+
+      abort(c(
+        "Can't take the union of intervals containing a gap.",
+        i = glue::glue("Location {loc} contains a gap."),
+        i = "Set `fill_gap = TRUE` to force a union anyways."
+      ))
+    }
+  }
+
+  start <- vec_parallel_min(x_start, y_start)
+  end <- vec_parallel_max(x_end, y_end)
+
+  new_interval(start, end)
+}
+
+interval_parallel_intersect <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  start <- vec_parallel_max(interval_start(x), interval_start(y))
+  end <- vec_parallel_min(interval_end(x), interval_end(y))
+
+  empty <- vec_compare(start, end) >= 0L
+  if (any(empty, na.rm = TRUE)) {
+    loc <- which(empty)[[1]]
+
+    abort(c(
+      "Intersection between `x` and `y` can't result in an empty interval.",
+      i = glue::glue("Intersection is empty at location {loc}.")
+    ))
+  }
+
+  new_interval(start, end)
+}
+
+vec_interval_parallel_difference <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  x_start <- interval_start(x)
+  x_end <- interval_end(x)
+
+  y_start <- interval_start(y)
+  y_end <- interval_end(y)
+
+  y_contained <-
+    (vec_compare(y_start, x_start) == 1L) &&
+    (vec_compare(y_end, x_end) == -1L)
+
+  if (any(y_contained, na.rm = TRUE)) {
+    loc <- which(y_contained)[[1]]
+
+    abort(c(
+      "Can't subtract ranges when `y` is completely contained within `x`.",
+      i = glue::glue("This occurs at location {loc}.")
+    ))
+  }
+
+  start <- x_start
+  end <- x_end
+
+  max_start <- vec_parallel_max(x_start, y_start)
+  min_end <- vec_parallel_min(x_end, y_end)
+
+  update <- vec_compare(max_start, min_end) <= 0L
+  direction <- vec_equal(min_end, x_end)
+
+  clamp_end <- update & direction
+  if (any(clamp_end, na.rm = TRUE)) {
+    end <- vec_assign(end, clamp_end, vec_slice(max_start, clamp_end))
+  }
+
+  clamp_start <- update & !direction
+  if (any(clamp_start, na.rm = TRUE)) {
+    start <- vec_assign(start, clamp_start, vec_slice(min_end, clamp_start))
+  }
+
+  missing <- vec_equal_na(x) | vec_equal_na(y)
+  if (any(missing)) {
+    start <- vec_assign(start, missing, NA)
+    end <- vec_assign(end, missing, NA)
+  }
+
+  empty <- vec_compare(start, end) >= 0L
+  if (any(empty, na.rm = TRUE)) {
+    loc <- which(empty)[[1]]
+
+    abort(c(
+      "Difference between `x` and `y` can't result in an empty interval.",
+      i = glue::glue("Difference is empty at location {loc}.")
+    ))
+  }
+
+  new_interval(start, end)
+}
+
+vec_interval_parallel_complement <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  end <- vec_parallel_max(interval_start(x), interval_start(y))
+  start <- vec_parallel_min(interval_end(x), interval_end(y))
+
+  empty <- vec_compare(start, end) >= 0L
+  if (any(empty, na.rm = TRUE)) {
+    loc <- which(empty)[[1]]
+
+    abort(c(
+      "Complement between `x` and `y` can't result in an empty interval.",
+      i = glue::glue("Complement is empty at location {loc}.")
+    ))
+  }
+
+  new_interval(start, end)
+}

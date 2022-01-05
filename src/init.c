@@ -143,6 +143,7 @@ extern r_obj* vctrs_interval_locate_minimal(r_obj*, r_obj*, r_obj*);
 extern r_obj* vctrs_interval_complement(r_obj*, r_obj*, r_obj*);
 extern r_obj* vctrs_locate_minimal_interval(r_obj*, r_obj*);
 extern r_obj* vctrs_locate_minimal_interval_groups(r_obj*, r_obj*);
+extern r_obj* vctrs_interval_complement2(r_obj*, r_obj*, r_obj*, r_obj*);
 
 
 // Maturing
@@ -306,6 +307,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_interval_complement",            (DL_FUNC) &vctrs_interval_complement, 3},
   {"vctrs_locate_minimal_interval",        (DL_FUNC) &vctrs_locate_minimal_interval, 2},
   {"vctrs_locate_minimal_interval_groups", (DL_FUNC) &vctrs_locate_minimal_interval_groups, 2},
+  {"vctrs_interval_complement2",           (DL_FUNC) &vctrs_interval_complement2, 4},
   {NULL, NULL, 0}
 };
 

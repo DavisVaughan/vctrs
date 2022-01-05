@@ -370,3 +370,12 @@ int_max <- function(x) {
     max(x)
   }
 }
+
+vec_locate_minimal_interval <- function(start, end) {
+  .Call(vctrs_locate_minimal_interval, start, end)
+}
+
+vec_locate_minimal_interval_groups <- function(start, end) {
+  .Call(vctrs_locate_minimal_interval_groups, start, end)
+}
+

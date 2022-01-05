@@ -309,7 +309,7 @@ vec_parallel_summary <- function(x, y, type) {
 
 int_min <- function(x) {
   if (is_empty(x)) {
-    -.Machine$integer.max
+    .Machine$integer.max
   } else {
     min(x)
   }
@@ -317,7 +317,7 @@ int_min <- function(x) {
 
 int_max <- function(x) {
   if (is_empty(x)) {
-    .Machine$integer.max
+    -.Machine$integer.max
   } else {
     max(x)
   }

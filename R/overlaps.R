@@ -520,7 +520,7 @@ vec_interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {
   new_interval(start, end)
 }
 
-interval_parallel_intersect <- function(x, y) {
+vec_interval_parallel_intersect <- function(x, y) {
   args <- list(x = x, y = y)
   args <- vec_recycle_common(!!!args)
   args <- vec_cast_common(!!!args)

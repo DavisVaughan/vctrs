@@ -40,6 +40,12 @@ format.vctrs_interval <- function(x, ...) {
   out
 }
 
+#' @export
+vec_ptype_full.vctrs_interval <- function(x, ...) {
+  inner <- vec_ptype_full(interval_start(x))
+  paste0("interval<", inner, ">")
+}
+
 interval_start <- function(x) {
   field(x, "start")
 }

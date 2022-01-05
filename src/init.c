@@ -138,8 +138,9 @@ extern r_obj* vctrs_integer64_proxy(r_obj*);
 extern r_obj* vctrs_integer64_restore(r_obj*);
 extern r_obj* vctrs_list_drop_empty(r_obj*);
 extern r_obj* vctrs_is_altrep(r_obj* x);
-extern r_obj* vctrs_interval_minimize(r_obj*, r_obj*, r_obj*, r_obj*, r_obj*);
-extern r_obj* vctrs_interval_complement(r_obj*, r_obj*, r_obj*, r_obj*);
+extern r_obj* vctrs_interval_minimize(r_obj*, r_obj*);
+extern r_obj* vctrs_interval_locate_minimal(r_obj*, r_obj*, r_obj*);
+extern r_obj* vctrs_interval_complement(r_obj*, r_obj*, r_obj*);
 
 
 // Maturing
@@ -298,8 +299,9 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_integer64_restore",          (DL_FUNC) &vctrs_integer64_restore, 1},
   {"vctrs_list_drop_empty",            (DL_FUNC) &vctrs_list_drop_empty, 1},
   {"vctrs_is_altrep",                  (DL_FUNC) &vctrs_is_altrep, 1},
-  {"vctrs_interval_minimize",          (DL_FUNC) &vctrs_interval_minimize, 5},
-  {"vctrs_interval_complement",        (DL_FUNC) &vctrs_interval_complement, 4},
+  {"vctrs_interval_minimize",          (DL_FUNC) &vctrs_interval_minimize, 2},
+  {"vctrs_interval_locate_minimal",    (DL_FUNC) &vctrs_interval_locate_minimal, 3},
+  {"vctrs_interval_complement",        (DL_FUNC) &vctrs_interval_complement, 3},
   {NULL, NULL, 0}
 };
 

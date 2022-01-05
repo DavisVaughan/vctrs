@@ -10,10 +10,17 @@ interval <- function(start = integer(), end = integer()) {
   start <- args$start
   end <- args$end
 
-  if (any(vec_equal_na(start)) || any(vec_equal_na(end))) {
-    abort("`start` and `end` can't contain missing values.")
+  missing_start <- vec_equal_na(start)
+  missing_end <- vec_equal_na(end)
+
+  if (any(missing_start)) {
+    end <- vec_assign(end, missing_start, NA)
   }
-  if (any(start >= end)) {
+  if (any(missing_end)) {
+    start <- vec_assign(start, missing_end, NA)
+  }
+
+  if (any(start >= end, na.rm = TRUE)) {
     abort("`start` must be less than `end`.")
   }
 
@@ -164,6 +171,12 @@ interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {
     abort("`fill_gap` must be a single `TRUE` or `FALSE`.")
   }
 
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
   x_start <- interval_start(x)
   x_end <- interval_end(x)
 
@@ -174,7 +187,7 @@ interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {
     gap <- vec_parallel_max(x_start, y_start) - vec_parallel_min(x_end, y_end)
     has_gap <- gap > 0L
 
-    if (any(has_gap)) {
+    if (any(has_gap, na.rm = TRUE)) {
       loc <- which(has_gap)[[1]]
       gap <- gap[[loc]]
 
@@ -193,11 +206,17 @@ interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {
 }
 
 interval_parallel_intersect <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
   start <- vec_parallel_max(interval_start(x), interval_start(y))
   end <- vec_parallel_min(interval_end(x), interval_end(y))
 
   empty <- start >= end
-  if (any(empty)) {
+  if (any(empty, na.rm = TRUE)) {
     loc <- which(empty)[[1]]
 
     abort(c(
@@ -210,6 +229,12 @@ interval_parallel_intersect <- function(x, y) {
 }
 
 interval_parallel_difference <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
   x_start <- interval_start(x)
   x_end <- interval_end(x)
 
@@ -217,7 +242,7 @@ interval_parallel_difference <- function(x, y) {
   y_end <- interval_end(y)
 
   y_contained <- (y_start > x_start) & (y_end < x_end)
-  if (any(y_contained)) {
+  if (any(y_contained, na.rm = TRUE)) {
     loc <- which(y_contained)[[1]]
 
     abort(c(
@@ -236,17 +261,23 @@ interval_parallel_difference <- function(x, y) {
   direction <- min_end == x_end
 
   clamp_end <- update & direction
-  if (any(clamp_end)) {
-    end[clamp_end] <- max_start[clamp_end]
+  if (any(clamp_end, na.rm = TRUE)) {
+    end <- vec_assign(end, clamp_end, vec_slice(max_start, clamp_end))
   }
 
   clamp_start <- update & !direction
-  if (any(clamp_start)) {
-    start[clamp_start] <- min_end[clamp_start]
+  if (any(clamp_start, na.rm = TRUE)) {
+    start <- vec_assign(start, clamp_start, vec_slice(min_end, clamp_start))
+  }
+
+  missing <- vec_equal_na(x) | vec_equal_na(y)
+  if (any(missing)) {
+    start <- vec_assign(start, missing, NA)
+    end <- vec_assign(end, missing, NA)
   }
 
   empty <- start >= end
-  if (any(empty)) {
+  if (any(empty, na.rm = TRUE)) {
     loc <- which(empty)[[1]]
 
     abort(c(
@@ -259,11 +290,17 @@ interval_parallel_difference <- function(x, y) {
 }
 
 interval_parallel_complement <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
   end <- vec_parallel_max(interval_start(x), interval_start(y))
   start <- vec_parallel_min(interval_end(x), interval_end(y))
 
   empty <- start >= end
-  if (any(empty)) {
+  if (any(empty, na.rm = TRUE)) {
     loc <- which(empty)[[1]]
 
     abort(c(
@@ -308,6 +345,11 @@ vec_parallel_summary <- function(x, y, type) {
 }
 
 int_min <- function(x) {
+  empty <- vec_equal_na(x)
+  if (any(empty)) {
+    x <- vec_slice(x, !empty)
+  }
+
   if (is_empty(x)) {
     .Machine$integer.max
   } else {
@@ -316,10 +358,14 @@ int_min <- function(x) {
 }
 
 int_max <- function(x) {
+  empty <- vec_equal_na(x)
+  if (any(empty)) {
+    x <- vec_slice(x, !empty)
+  }
+
   if (is_empty(x)) {
     -.Machine$integer.max
   } else {
     max(x)
   }
 }
-

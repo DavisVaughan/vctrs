@@ -74,6 +74,16 @@ test_that("can set a maximum gap of `>0` to combine intervals with gaps", {
   )
 })
 
+test_that("missing intervals are removed", {
+  x <- interval(NA, NA)
+  expect_identical(interval_minimize(x), interval())
+})
+
+test_that("missing intervals don't affect the result", {
+  x <- interval(c(3, NA, 2, NA), c(5, NA, 3, NA))
+  expect_identical(interval_minimize(x), interval(2, 5))
+})
+
 test_that("`gap` must be 0 or positive", {
   expect_snapshot((expect_error(interval_minimize(interval(1L, 2L), gap = -1L))))
 })
@@ -108,6 +118,22 @@ test_that("can minimize with size zero input", {
   expect_identical(
     interval_locate_minimal(x),
     data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("missing intervals are removed", {
+  x <- interval(NA, NA)
+  expect_identical(
+    interval_locate_minimal(x),
+    data_frame(start = integer(), end = integer())
+  )
+})
+
+test_that("missing intervals don't affect the result", {
+  x <- interval(c(3, NA, 2, NA), c(5, NA, 3, NA))
+  expect_identical(
+    interval_locate_minimal(x),
+    data_frame(start = 3L, end = 1L)
   )
 })
 
@@ -171,6 +197,36 @@ test_that("locations are ordered by both `start` and `end`", {
   )
 })
 
+test_that("missing intervals are removed", {
+  x <- interval(NA, NA)
+
+  out <- interval_locate_minimal_groups(x)
+
+  expect_identical(
+    out$key,
+    data_frame(start = integer(), end = integer())
+  )
+  expect_identical(
+    out$loc,
+    list()
+  )
+})
+
+test_that("missing intervals don't affect the result", {
+  x <- interval(c(3, NA, 2, NA), c(5, NA, 3, NA))
+
+  out <- interval_locate_minimal_groups(x)
+
+  expect_identical(
+    out$key,
+    data_frame(start = 3L, end = 1L)
+  )
+  expect_identical(
+    out$loc,
+    list(c(3L, 1L))
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_complement()
 
@@ -230,8 +286,8 @@ test_that("complement is invertible", {
 
 test_that("works with `start >= end`", {
   x <- interval(
-    c(1L, 2L, 12L),
-    c(10L, 5L, 15L)
+    c(1L, 2L, 12L, NA),
+    c(10L, 5L, 15L, NA)
   )
 
   expect_identical(
@@ -246,8 +302,8 @@ test_that("works with `start >= end`", {
 
 test_that("works with `start >= end` before any values", {
   x <- interval(
-    c(1L, 2L, 12L),
-    c(10L, 5L, 15L)
+    c(1L, 2L, 12L, NA),
+    c(10L, 5L, 15L, NA)
   )
 
   expect_identical(
@@ -262,8 +318,8 @@ test_that("works with `start >= end` before any values", {
 
 test_that("works with `start >= end` after any values", {
   x <- interval(
-    c(1L, 2L, 12L),
-    c(10L, 5L, 15L)
+    c(1L, 2L, 12L, NA),
+    c(10L, 5L, 15L, NA)
   )
 
   expect_identical(
@@ -278,8 +334,8 @@ test_that("works with `start >= end` after any values", {
 
 test_that("works with `start` before any values", {
   x <- interval(
-    c(1L, 2L, 12L),
-    c(10L, 5L, 15L)
+    c(1L, 2L, 12L, NA),
+    c(10L, 5L, 15L, NA)
   )
 
   expect_identical(
@@ -290,8 +346,8 @@ test_that("works with `start` before any values", {
 
 test_that("works if both `start` and `end` are before any values", {
   x <- interval(
-    c(2L, 1L, 12L),
-    c(5L, 10L, 15L)
+    c(2L, 1L, 12L, NA),
+    c(5L, 10L, 15L, NA)
   )
 
   expect_identical(
@@ -302,8 +358,8 @@ test_that("works if both `start` and `end` are before any values", {
 
 test_that("works with `end` after any values", {
   x <- interval(
-    c(2L, 1L, 13L, 12L),
-    c(5L, 10L, 17L, 15L)
+    c(2L, 1L, 13L, 12L, NA),
+    c(5L, 10L, 17L, 15L, NA)
   )
 
   expect_identical(
@@ -314,14 +370,30 @@ test_that("works with `end` after any values", {
 
 test_that("works if both `start` and `end` are after any values", {
   x <- interval(
-    c(2L, 1L, 12L),
-    c(5L, 10L, 15L)
+    c(2L, 1L, 12L, NA),
+    c(5L, 10L, 15L, NA)
   )
 
   expect_identical(
     interval_complement(x, start = 17L, end = 19L),
     interval(start = 17L, end = 19L)
   )
+})
+
+test_that("works with only NA and `start`", {
+  x <- interval(NA, NA)
+  expect_identical(interval_complement(x, start = 5L), interval())
+})
+
+test_that("works with only NA and `end`", {
+  x <- interval(NA, NA)
+  expect_identical(interval_complement(x, end = 5L), interval())
+})
+
+test_that("works with only NA and both `start` and `end`", {
+  x <- interval(NA, NA)
+  expect_identical(interval_complement(x, start = 2L, end = 5L), interval(2, 5))
+  expect_identical(interval_complement(x, start = 2L, end = -5L), interval())
 })
 
 test_that("works with `start` that is on the max set value", {
@@ -411,6 +483,16 @@ test_that("union treats intervals as half open `[a, b)`", {
   )
 })
 
+test_that("union drops NAs", {
+  x <- interval(c(1, NA), c(2, NA))
+  y <- interval(2, 3)
+
+  expect_identical(
+    interval_union(x, y),
+    interval(1, 3)
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_intersect()
 
@@ -441,6 +523,16 @@ test_that("intersect works", {
 test_that("intersect works with size zero inputs", {
   x <- interval()
   expect_identical(interval_intersect(x, x), x)
+})
+
+test_that("intersect drops NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(c(1, NA), c(4, NA))
+
+  expect_identical(
+    interval_intersect(x, y),
+    interval(1, 2)
+  )
 })
 
 # ------------------------------------------------------------------------------
@@ -474,6 +566,20 @@ test_that("difference works", {
 test_that("difference works with size zero inputs", {
   x <- interval()
   expect_identical(interval_difference(x, x), x)
+})
+
+test_that("difference drops NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_difference(x, y),
+    interval(0, 1)
+  )
+  expect_identical(
+    interval_difference(y, x),
+    interval(2, 4)
+  )
 })
 
 # ------------------------------------------------------------------------------
@@ -513,6 +619,20 @@ test_that("can force gaps to be filled", {
   )
 })
 
+test_that("parallel union propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_parallel_union(x, y),
+    interval(c(0, NA), c(4, NA))
+  )
+  expect_identical(
+    interval_parallel_union(y, x),
+    interval(c(0, NA), c(4, NA))
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_parallel_intersect()
 
@@ -545,6 +665,20 @@ test_that("parallel intersection resulting in empty ranges errors", {
   )
 })
 
+test_that("parallel intersection propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_parallel_intersect(x, y),
+    interval(c(1, NA), c(2, NA))
+  )
+  expect_identical(
+    interval_parallel_intersect(y, x),
+    interval(c(1, NA), c(2, NA))
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_parallel_difference()
 
@@ -572,6 +706,20 @@ test_that("throws error when `y` is contained within `x`", {
   )
 })
 
+test_that("parallel difference propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(c(0, NA), c(1, NA))
+  )
+  expect_identical(
+    interval_parallel_difference(y, x),
+    interval(c(2, NA), c(4, NA))
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_parallel_complement()
 
@@ -590,5 +738,19 @@ test_that("can parallel complement", {
 test_that("parallel complement can't result in an empty set", {
   expect_snapshot(
     expect_error(interval_parallel_complement(interval(1, 2), interval(1, 2)))
+  )
+})
+
+test_that("parallel complement propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(4, 5)
+
+  expect_identical(
+    interval_parallel_complement(x, y),
+    interval(c(2, NA), c(4, NA))
+  )
+  expect_identical(
+    interval_parallel_complement(y, x),
+    interval(c(2, NA), c(4, NA))
   )
 })

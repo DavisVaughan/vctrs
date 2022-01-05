@@ -65,27 +65,48 @@ r_obj* interval_minimize(r_obj* x, int gap) {
   struct r_dyn_array* p_ends = r_new_dyn_vector(R_TYPE_integer, initial_size);
   KEEP(p_ends->shelter);
 
-  if (size > 0) {
-    int set_start = v_start[v_order[0] - 1];
-    int set_end = v_end[v_order[0] - 1];
+  r_ssize i = 0;
+  int set_start = r_globals.na_int;
+  int set_end = r_globals.na_int;
 
-    for (r_ssize i = 1; i < size; ++i) {
-      const r_ssize loc = v_order[i] - 1;
+  // Find first non-NA interval
+  for (; i < size; ++i) {
+    const r_ssize loc = v_order[i] - 1;
 
-      const int elt_start = v_start[loc];
-      const int elt_end = v_end[loc];
+    const int elt_start = v_start[loc];
+    const int elt_end = v_end[loc];
 
-      if (set_end < elt_start - gap) {
-        r_int_push_back(p_starts, set_start);
-        r_int_push_back(p_ends, set_end);
+    if (elt_start != r_globals.na_int) {
+      set_start = elt_start;
+      set_end = elt_end;
+      ++i;
+      break;
+    }
+  }
 
-        set_start = elt_start;
-        set_end = elt_end;
-      } else if (set_end < elt_end) {
-        set_end = elt_end;
-      }
+  for (; i < size; ++i) {
+    const r_ssize loc = v_order[i] - 1;
+
+    const int elt_start = v_start[loc];
+    const int elt_end = v_end[loc];
+
+    if (elt_start == r_globals.na_int) {
+      // NA intervals are always at the end
+      break;
     }
 
+    if (set_end < elt_start - gap) {
+      r_int_push_back(p_starts, set_start);
+      r_int_push_back(p_ends, set_end);
+
+      set_start = elt_start;
+      set_end = elt_end;
+    } else if (set_end < elt_end) {
+      set_end = elt_end;
+    }
+  }
+
+  if (set_start != r_globals.na_int) {
     r_int_push_back(p_starts, set_start);
     r_int_push_back(p_ends, set_end);
   }
@@ -142,45 +163,66 @@ r_obj* interval_locate_minimal(r_obj* x, int gap, bool groups) {
   struct r_dyn_array* p_loc = r_new_dyn_vector(R_TYPE_list, initial_size);
   KEEP(p_loc->shelter);
 
-  if (size > 0) {
-    int set_start = v_start[v_order[0] - 1];
-    int set_end = v_end[v_order[0] - 1];
+  r_ssize i = 0;
+  int set_start = r_globals.na_int;
+  int set_end = r_globals.na_int;
 
-    for (r_ssize i = 1; i < size; ++i) {
-      const r_ssize loc = v_order[i] - 1;
+  // Find first non-NA interval
+  for (; i < size; ++i) {
+    const r_ssize loc = v_order[i] - 1;
 
-      const int elt_start = v_start[loc];
-      const int elt_end = v_end[loc];
+    const int elt_start = v_start[loc];
+    const int elt_end = v_end[loc];
 
-      if (set_end < elt_start - gap) {
-        const r_ssize loc_order_end = i - 1;
-        const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+    if (elt_start != r_globals.na_int) {
+      set_start = elt_start;
+      set_end = elt_end;
+      ++i;
+      break;
+    }
+  }
 
-        int loc_start = v_order[loc_order_start];
-        int loc_end = v_order[loc_order_end];
+  for (; i < size; ++i) {
+    const r_ssize loc = v_order[i] - 1;
 
-        r_int_push_back(p_starts, loc_start);
-        r_int_push_back(p_ends, loc_end);
+    const int elt_start = v_start[loc];
+    const int elt_end = v_end[loc];
 
-        if (groups) {
-          r_obj* loc = r_new_integer(loc_size);
-          r_list_push_back(p_loc, loc);
-          int* v_loc = r_int_begin(loc);
-
-          const int* v_order_start = v_order + loc_order_start;
-          memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
-        }
-
-        loc_order_start = loc_order_end + 1;
-
-        set_start = elt_start;
-        set_end = elt_end;
-      } else if (set_end < elt_end) {
-        set_end = elt_end;
-      }
+    if (elt_start == r_globals.na_int) {
+      // NA intervals are always at the end
+      break;
     }
 
-    const r_ssize loc_order_end = size - 1;
+    if (set_end < elt_start - gap) {
+      const r_ssize loc_order_end = i - 1;
+      const r_ssize loc_size = loc_order_end - loc_order_start + 1;
+
+      int loc_start = v_order[loc_order_start];
+      int loc_end = v_order[loc_order_end];
+
+      r_int_push_back(p_starts, loc_start);
+      r_int_push_back(p_ends, loc_end);
+
+      if (groups) {
+        r_obj* loc = r_new_integer(loc_size);
+        r_list_push_back(p_loc, loc);
+        int* v_loc = r_int_begin(loc);
+
+        const int* v_order_start = v_order + loc_order_start;
+        memcpy(v_loc, v_order_start, loc_size * sizeof(*v_loc));
+      }
+
+      loc_order_start = loc_order_end + 1;
+
+      set_start = elt_start;
+      set_end = elt_end;
+    } else if (set_end < elt_end) {
+      set_end = elt_end;
+    }
+  }
+
+  if (set_start != r_globals.na_int) {
+    const r_ssize loc_order_end = i - 1;
     const r_ssize loc_size = loc_order_end - loc_order_start + 1;
 
     int loc_start = v_order[loc_order_start];
@@ -269,84 +311,92 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
   struct r_dyn_array* p_ends = r_new_dyn_vector(R_TYPE_integer, initial_size);
   KEEP(p_ends->shelter);
 
-  if (size == 0 && use_forced_start && use_forced_end && start < end) {
+  r_ssize i = 0;
+  int set_start = r_globals.na_int;
+  int set_end = r_globals.na_int;
+
+  // Find first non-NA interval
+  for (; i < size; ++i) {
+    const r_ssize loc = v_order[i] - 1;
+
+    const int elt_start = v_start[loc];
+    const int elt_end = v_end[loc];
+
+    if (elt_start != r_globals.na_int) {
+      set_start = elt_start;
+      set_end = elt_end;
+      ++i;
+      break;
+    }
+  }
+
+  if (use_forced_start && !use_forced_end && set_start != r_globals.na_int && start < set_start) {
     use_forced_start = false;
-    use_forced_end = false;
 
     const int gap_start = start;
-    const int gap_end = end;
+    const int gap_end = set_start;
+
+    r_int_push_back(p_starts, gap_start);
+    r_int_push_back(p_ends, gap_end);
+  }
+  if (use_forced_start && use_forced_end && (set_start == r_globals.na_int || start < set_start) && start < end) {
+    use_forced_start = false;
+
+    const int gap_start = start;
+    const int gap_end = (set_start != r_globals.na_int && set_start < end) ? set_start : end;
 
     r_int_push_back(p_starts, gap_start);
     r_int_push_back(p_ends, gap_end);
   }
 
-  if (size > 0) {
-    int set_start = v_start[v_order[0] - 1];
-    int set_end = v_end[v_order[0] - 1];
+  for (; i < size; ++i) {
+    const r_ssize loc = v_order[i] - 1;
 
-    if (use_forced_start && !use_forced_end && start < set_start) {
-      use_forced_start = false;
+    const int elt_start = v_start[loc];
+    const int elt_end = v_end[loc];
 
-      const int gap_start = start;
-      const int gap_end = set_start;
-
-      r_int_push_back(p_starts, gap_start);
-      r_int_push_back(p_ends, gap_end);
-    }
-    if (use_forced_start && use_forced_end && start < set_start && start < end) {
-      use_forced_start = false;
-
-      const int gap_start = start;
-      const int gap_end = (set_start < end) ? set_start : end;
-
-      r_int_push_back(p_starts, gap_start);
-      r_int_push_back(p_ends, gap_end);
+    if (elt_start == r_globals.na_int) {
+      // NA intervals are always at the end
+      break;
     }
 
-    for (r_ssize i = 1; i < size; ++i) {
-      const r_ssize loc = v_order[i] - 1;
+    const bool has_gap =
+      !(use_forced_end && set_end >= end) &&
+      !(use_forced_start && set_end < start) &&
+      (set_end < elt_start);
 
-      const int elt_start = v_start[loc];
-      const int elt_end = v_end[loc];
-
-      const bool has_gap =
-        !(use_forced_end && set_end >= end) &&
-        !(use_forced_start && set_end < start) &&
-        (set_end < elt_start);
-
-      if (has_gap) {
-        const int gap_start = set_end;
-        const int gap_end = elt_start;
-
-        r_int_push_back(p_starts, gap_start);
-        r_int_push_back(p_ends, gap_end);
-
-        set_start = elt_start;
-        set_end = elt_end;
-      } else if (set_end < elt_end) {
-        set_end = elt_end;
-      }
-    }
-
-    if (use_forced_end && !use_forced_start && end > set_end) {
-      use_forced_end = false;
-
+    if (has_gap) {
       const int gap_start = set_end;
-      const int gap_end = end;
+      const int gap_end = elt_start;
 
       r_int_push_back(p_starts, gap_start);
       r_int_push_back(p_ends, gap_end);
-    }
-    if (use_forced_end && use_forced_start && end > set_end && end > start) {
-      use_forced_end = false;
-      use_forced_start = false;
 
-      const int gap_start = (set_end > start) ? set_end : start;
-      const int gap_end = end;
-
-      r_int_push_back(p_starts, gap_start);
-      r_int_push_back(p_ends, gap_end);
+      set_start = elt_start;
+      set_end = elt_end;
+    } else if (set_end < elt_end) {
+      set_end = elt_end;
     }
+  }
+
+  if (use_forced_end && !use_forced_start && set_end != r_globals.na_int && end > set_end) {
+    use_forced_end = false;
+
+    const int gap_start = set_end;
+    const int gap_end = end;
+
+    r_int_push_back(p_starts, gap_start);
+    r_int_push_back(p_ends, gap_end);
+  }
+  if (use_forced_end && use_forced_start && (set_end == r_globals.na_int || end > set_end) && end > start) {
+    use_forced_end = false;
+    use_forced_start = false;
+
+    const int gap_start = (set_end != r_globals.na_int && set_end > start) ? set_end : start;
+    const int gap_end = end;
+
+    r_int_push_back(p_starts, gap_start);
+    r_int_push_back(p_ends, gap_end);
   }
 
   r_obj* out = KEEP(r_new_list(2));

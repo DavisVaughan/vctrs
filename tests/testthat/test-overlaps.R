@@ -359,126 +359,126 @@ test_that("complement is invertible", {
     c(5L, 6L)
   )
 
-  start <- min(interval_start(x))
-  end <- max(interval_end(x))
+  lower <- min(interval_start(x))
+  upper <- max(interval_end(x))
 
   # Should always be seen as invertible as long as linking is done first
   x <- interval_minimize(x)
 
-  x_c <- interval_complement(x, start = start, end = end)
-  x2 <- interval_complement(x_c, start = start, end = end)
+  x_c <- interval_complement(x, lower = lower, upper = upper)
+  x2 <- interval_complement(x_c, lower = lower, upper = upper)
 
   expect_identical(x, x2)
 })
 
-test_that("works with `start == end`", {
+test_that("works with `lower == upper`", {
   x <- interval(
     c(1L, 2L, 12L, NA),
     c(10L, 5L, 15L, NA)
   )
 
   expect_identical(
-    interval_complement(x, start = 10L, end = 10L),
+    interval_complement(x, lower = 10L, upper = 10L),
     interval(start = integer(), end = integer())
   )
   expect_identical(
-    interval_complement(x, start = -1L, end = -1L),
+    interval_complement(x, lower = -1L, upper = -1L),
     interval(start = integer(), end = integer())
   )
   expect_identical(
-    interval_complement(x, start = 20L, end = 20L),
+    interval_complement(x, lower = 20L, upper = 20L),
     interval(start = integer(), end = integer())
   )
 })
 
-test_that("works with `start` before any values", {
+test_that("works with `lower` before any values", {
   x <- interval(
     c(1L, 2L, 12L, NA),
     c(10L, 5L, 15L, NA)
   )
 
   expect_identical(
-    interval_complement(x, start = -1L),
+    interval_complement(x, lower = -1L),
     interval(start = c(-1L, 10L), end = c(1L, 12L))
   )
 })
 
-test_that("works if both `start` and `end` are before any values", {
+test_that("works if both `lower` and `upper` are before any values", {
   x <- interval(
     c(2L, 1L, 12L, NA),
     c(5L, 10L, 15L, NA)
   )
 
   expect_identical(
-    interval_complement(x, start = -5L, end = -2L),
+    interval_complement(x, lower = -5L, upper = -2L),
     interval(start = -5L, end = -2L)
   )
 })
 
-test_that("works with `end` after any values", {
+test_that("works with `upper` after any values", {
   x <- interval(
     c(2L, 1L, 13L, 12L, NA),
     c(5L, 10L, 17L, 15L, NA)
   )
 
   expect_identical(
-    interval_complement(x, end = 20L),
+    interval_complement(x, upper = 20L),
     interval(start = c(10L, 17L), end = c(12L, 20L))
   )
 })
 
-test_that("works if both `start` and `end` are after any values", {
+test_that("works if both `lower` and `upper` are after any values", {
   x <- interval(
     c(2L, 1L, 12L, NA),
     c(5L, 10L, 15L, NA)
   )
 
   expect_identical(
-    interval_complement(x, start = 17L, end = 19L),
+    interval_complement(x, lower = 17L, upper = 19L),
     interval(start = 17L, end = 19L)
   )
 })
 
-test_that("works with only NA and `start`", {
+test_that("works with only NA and `lower`", {
   x <- interval(NA, NA)
-  expect_identical(interval_complement(x, start = 5L), interval())
+  expect_identical(interval_complement(x, lower = 5L), interval())
 })
 
-test_that("works with only NA and `end`", {
+test_that("works with only NA and `upper`", {
   x <- interval(NA, NA)
-  expect_identical(interval_complement(x, end = 5L), interval())
+  expect_identical(interval_complement(x, upper = 5L), interval())
 })
 
-test_that("works with only NA and both `start` and `end`", {
+test_that("works with only NA and both `lower` and `upper`", {
   x <- interval(NA, NA)
-  expect_identical(interval_complement(x, start = 2L, end = 5L), interval(2, 5))
+  expect_identical(interval_complement(x, lower = 2L, upper = 5L), interval(2, 5))
 })
 
-test_that("works with `start` that is on the max set value", {
+test_that("works with `lower` that is on the max set value", {
   x <- interval(
     c(1L, 12L),
     c(9L, 13L)
   )
 
   expect_identical(
-    interval_complement(x, start = 9L),
+    interval_complement(x, lower = 9L),
     interval(start = 9L, end = 12L)
   )
 })
 
-test_that("works with `end` that is on the max set value", {
+test_that("works with `upper` that is on the max set value", {
   x <- interval(
     c(-5L, 1L, 2L, 12L),
     c(0L, 10L, 5L, 15L)
   )
 
   expect_identical(
-    interval_complement(x, end = 10L),
+    interval_complement(x, upper = 10L),
     interval(start = 0L, end = 1L)
   )
 
   expect_identical(
-    interval_complement(x, start = 10L, end = 10L),
+    interval_complement(x, lower = 10L, upper = 10L),
     interval(start = integer(), end = integer())
   )
 })
@@ -490,69 +490,69 @@ test_that("size zero case generally returns nothing", {
   )
 
   expect_identical(
-    interval_complement(interval(integer(), integer()), start = 5L),
+    interval_complement(interval(integer(), integer()), lower = 5L),
     interval(start = integer(), end = integer())
   )
 
   expect_identical(
-    interval_complement(interval(integer(), integer()), end = 5L),
+    interval_complement(interval(integer(), integer()), upper = 5L),
     interval(start = integer(), end = integer())
   )
 })
 
-test_that("size zero case with both `start` and `end` returns an interval", {
+test_that("size zero case with both `lower` and `upper` returns an interval", {
   expect_identical(
-    interval_complement(interval(integer(), integer()), start = 5L, end = 10L),
+    interval_complement(interval(integer(), integer()), lower = 5L, upper = 10L),
     interval(start = 5L, end = 10L)
   )
 })
 
-test_that("size zero case with `start == end` doesn't return anything", {
+test_that("size zero case with `lower == upper` doesn't return anything", {
   expect_identical(
-    interval_complement(interval(integer(), integer()), start = 5L, end = 5L),
+    interval_complement(interval(integer(), integer()), lower = 5L, upper = 5L),
     interval(start = integer(), end = integer())
   )
 })
 
-test_that("works when `start` is contained in an interval", {
+test_that("works when `lower` is contained in an interval", {
   expect_identical(
-    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), start = 3L),
+    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), lower = 3L),
     interval(5, 10)
   )
 })
 
-test_that("works when `start` is in a gap between intervals", {
+test_that("works when `lower` is in a gap between intervals", {
   expect_identical(
-    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), start = 7L),
+    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), lower = 7L),
     interval(7, 10)
   )
 })
 
-test_that("works when `end` is in a gap between intervals", {
+test_that("works when `upper` is in a gap between intervals", {
   expect_identical(
-    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), end = 7L),
+    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), upper = 7L),
     interval(c(-3L, 5L), c(1L, 7L))
   )
 })
 
-test_that("works when `start` and `end` are in a gap between intervals", {
+test_that("works when `lower` and `upper` are in a gap between intervals", {
   expect_identical(
-    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), start = 6L, end = 7L),
+    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), lower = 6L, upper = 7L),
     interval(6L, 7L)
   )
   expect_identical(
-    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), start = 7L, end = 7L),
+    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), lower = 7L, upper = 7L),
     interval(integer(), integer())
   )
 })
 
-test_that("works when `start` and `end` have an interval between them", {
+test_that("works when `lower` and `upper` have an interval between them", {
   expect_identical(
-    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), start = 0L, end = 7L),
+    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), lower = 0L, upper = 7L),
     interval(c(0, 5), c(1, 7))
   )
   expect_identical(
-    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), start = -6L, end = 7L),
+    interval_complement(interval(c(-5, 1, 10), c(-3, 5, 15)), lower = -6L, upper = 7L),
     interval(c(-6, -3, 5), c(-5, 1, 7))
   )
 })
@@ -564,7 +564,7 @@ test_that("bounds of empty intervals don't affect complement", {
   )
 
   expect_identical(
-    interval_complement(interval(5L, 5L), start = 1L, end = 7L),
+    interval_complement(interval(5L, 5L), lower = 1L, upper = 7L),
     interval(1L, 7L)
   )
 
@@ -574,10 +574,10 @@ test_that("bounds of empty intervals don't affect complement", {
   )
 })
 
-test_that("allow `start > end` which returns an empty interval", {
+test_that("allow `lower > upper` which returns an empty interval", {
   x <- interval(c(1, 2), c(5, 12))
   expect_identical(
-    interval_complement(x, start = 10L, end = 9L),
+    interval_complement(x, lower = 10L, upper = 9L),
     interval(integer(), integer())
   )
 })

@@ -140,9 +140,9 @@ interval_locate_minimal_groups <- function(x, ..., keep_empty = FALSE, keep_miss
   .Call(vctrs_interval_locate_minimal, interval_start(x), interval_end(x), keep_empty, keep_missing, groups)
 }
 
-interval_complement <- function(x, ..., start = NULL, end = NULL) {
+interval_complement <- function(x, ..., lower = NULL, upper = NULL) {
   check_dots_empty0(...)
-  out <- .Call(vctrs_interval_complement, x, start, end)
+  out <- .Call(vctrs_interval_complement, x, lower, upper)
   new_interval(out$start, out$end)
 }
 
@@ -152,26 +152,26 @@ interval_union <- function(x, y) {
 }
 
 interval_difference <- function(x, y) {
-  start <- min(int_min(interval_start(x)), int_min(interval_start(y)))
-  end <- max(int_max(interval_end(x)), int_max(interval_end(y)))
+  lower <- min(int_min(interval_start(x)), int_min(interval_start(y)))
+  upper <- max(int_max(interval_end(x)), int_max(interval_end(y)))
 
-  x_c <- interval_complement(x, start = start, end = end)
+  x_c <- interval_complement(x, lower = lower, upper = upper)
 
   u <- interval_union(x_c, y)
 
-  interval_complement(u, start = start, end = end)
+  interval_complement(u, lower = lower, upper = upper)
 }
 
 interval_intersect <- function(x, y) {
-  start <- min(int_min(interval_start(x)), int_min(interval_start(y)))
-  end <- max(int_max(interval_end(x)), int_max(interval_end(y)))
+  lower <- min(int_min(interval_start(x)), int_min(interval_start(y)))
+  upper <- max(int_max(interval_end(x)), int_max(interval_end(y)))
 
-  x_c <- interval_complement(x, start = start, end = end)
-  y_c <- interval_complement(y, start = start, end = end)
+  x_c <- interval_complement(x, lower = lower, upper = upper)
+  y_c <- interval_complement(y, lower = lower, upper = upper)
 
   u <- interval_union(x_c, y_c)
 
-  interval_complement(u, start = start, end = end)
+  interval_complement(u, lower = lower, upper = upper)
 }
 
 interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {

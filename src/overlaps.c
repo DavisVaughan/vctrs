@@ -278,7 +278,7 @@ r_obj* vctrs_interval_locate_minimal(r_obj* start,
 // -----------------------------------------------------------------------------
 
 static
-r_obj* interval_complement(r_obj* x, int start, int end) {
+r_obj* interval_complement(r_obj* x, int lower, int upper) {
   r_obj* x_start = r_list_get(x, 0);
   const int* v_start = r_int_cbegin(x_start);
 
@@ -293,11 +293,11 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
 
   r_ssize size = vec_size(key);
 
-  bool use_forced_start = (start != r_globals.na_int);
-  bool use_forced_end = (end != r_globals.na_int);
+  bool use_lower = (lower != r_globals.na_int);
+  bool use_upper = (upper != r_globals.na_int);
 
-  if (use_forced_start && use_forced_end && start > end) {
-    // Handle the one special case of `start > end` up front.
+  if (use_lower && use_upper && lower > upper) {
+    // Handle the one special case of `lower > upper` up front.
     // This is an invalid interval, but we try and be a little flexible here.
     r_obj* out = KEEP(r_new_list(2));
     r_list_poke(out, 0, vctrs_shared_empty_int);
@@ -327,17 +327,17 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
   r_ssize loc_lower_after_start_of = -1;
   r_ssize loc_lower_before_end_of = 0;
 
-  if (use_forced_start) {
-    // Shift `i` forward to the first interval completely past `start`.
-    // Track information about where `start` is in relation to the intervals.
+  if (use_lower) {
+    // Shift `i` forward to the first interval completely past `lower`.
+    // Track information about where `lower` is in relation to the intervals.
     for (; i < size; ++i) {
       const int elt_start = v_start[v_loc_start[i] - 1];
       const int elt_end = v_end[v_loc_end[i] - 1];
 
-      if (start > elt_end) {
+      if (lower > elt_end) {
         ++loc_lower_before_end_of;
         ++loc_lower_after_start_of;
-      } else if (start >= elt_start) {
+      } else if (lower >= elt_start) {
         ++loc_lower_after_start_of;
       } else {
         break;
@@ -348,17 +348,17 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
   r_ssize loc_upper_after_start_of = size - 1;
   r_ssize loc_upper_before_end_of = size;
 
-  if (use_forced_end) {
-    // Shift `size` backwards to the first interval that is completely before `end`.
-    // Track information about where `end` is in relation to the intervals.
+  if (use_upper) {
+    // Shift `size` backwards to the first interval that is completely before `upper`.
+    // Track information about where `upper` is in relation to the intervals.
     for (; size - 1 >= 0; --size) {
       const int elt_start = v_start[v_loc_start[size - 1] - 1];
       const int elt_end = v_end[v_loc_end[size - 1] - 1];
 
-      if (end < elt_start) {
+      if (upper < elt_start) {
         --loc_upper_before_end_of;
         --loc_upper_after_start_of;
-      } else if (end <= elt_end) {
+      } else if (upper <= elt_end) {
         --loc_upper_before_end_of;
       } else {
         break;
@@ -368,17 +368,17 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
 
   const bool has_intervals_between = i < size;
 
-  if (use_forced_start && has_intervals_between) {
-    // If `start` lands in the middle of an interval, then we use the end
-    // of that interval, otherwise we use the `start` value.
+  if (use_lower && has_intervals_between) {
+    // If `lower` lands in the middle of an interval, then we use the end
+    // of that interval, otherwise we use the `lower` value.
     const int gap_start =
       (loc_lower_before_end_of == loc_lower_after_start_of) ?
       v_end[v_loc_end[loc_lower_before_end_of] - 1] :
-      start;
+      lower;
 
     // End of the gap is the next interval start. No need to worry about
-    // `end` here since `has_intervals_between` told us there is an interval
-    // between `start` and `end`.
+    // `upper` here since `has_intervals_between` told us there is an interval
+    // between `lower` and `upper`.
     const int gap_end = v_start[v_loc_start[loc_lower_after_start_of + 1] - 1];
 
     r_int_push_back(p_starts, gap_start);
@@ -416,37 +416,37 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
     }
   }
 
-  if (use_forced_end && has_intervals_between) {
+  if (use_upper && has_intervals_between) {
     // Start of the gap is the previous interval end. No need to worry about
-    // `start` here since `has_intervals_between` told us there is an interval
-    // between `start` and `end`.
+    // `lower` here since `has_intervals_between` told us there is an interval
+    // between `lower` and `upper`.
     const int gap_start = v_end[v_loc_end[loc_upper_before_end_of - 1] - 1];
 
-    // If `end` lands in the middle of an interval, then we use the start
-    // of that interval, otherwise we use the `end` value.
+    // If `upper` lands in the middle of an interval, then we use the start
+    // of that interval, otherwise we use the `upper` value.
     const int gap_end =
       (loc_upper_before_end_of == loc_upper_after_start_of) ?
       v_start[v_loc_start[loc_upper_before_end_of] - 1] :
-      end;
+      upper;
 
     r_int_push_back(p_starts, gap_start);
     r_int_push_back(p_ends, gap_end);
   }
 
-  if (use_forced_start && use_forced_end && !has_intervals_between) {
-    // Handle the case where `start` and `end` have no full intervals between
-    // them. However, `start` and `end` may still fall inside an interval, so
-    // we have to be careful about the bounds to use. If `start` and `end` are
+  if (use_lower && use_upper && !has_intervals_between) {
+    // Handle the case where `lower` and `upper` have no full intervals between
+    // them. However, `lower` and `upper` may still fall inside an interval, so
+    // we have to be careful about the bounds to use. If `lower` and `upper` are
     // in the same interval, we are careful to not log anything.
     const int gap_start =
       (loc_lower_before_end_of == loc_lower_after_start_of) ?
       v_end[v_loc_end[loc_lower_before_end_of] - 1] :
-      start;
+      lower;
 
     const int gap_end =
       (loc_upper_before_end_of == loc_upper_after_start_of) ?
       v_start[v_loc_start[loc_upper_before_end_of] - 1] :
-      end;
+      upper;
 
     if (gap_start < gap_end) {
       r_int_push_back(p_starts, gap_start);
@@ -468,8 +468,8 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
 }
 
 // [[ register() ]]
-r_obj* vctrs_interval_complement(r_obj* x, r_obj* start, r_obj* end) {
-  const int c_start = (start == r_null) ? r_globals.na_int : r_as_int(start);
-  const int c_end = (end == r_null) ? r_globals.na_int : r_as_int(end);
-  return interval_complement(x, c_start, c_end);
+r_obj* vctrs_interval_complement(r_obj* x, r_obj* lower, r_obj* upper) {
+  const int c_lower = (lower == r_null) ? r_globals.na_int : r_as_int(lower);
+  const int c_upper = (upper == r_null) ? r_globals.na_int : r_as_int(upper);
+  return interval_complement(x, c_lower, c_upper);
 }

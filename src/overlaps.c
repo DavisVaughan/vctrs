@@ -5,6 +5,15 @@
 
 // -----------------------------------------------------------------------------
 
+/*
+ * `interval_order()` orders the `start` and `end` values of a vector of
+ * intervals, but also groups them by their `compare` value. We sort in
+ * ascending order and make NAs the smallest value, so we end up with:
+ *
+ * - Missing intervals first (`compare == NA`)
+ * - Then empty intervals if `keep_empty = false` (since empty is `compare == 0`)
+ * - Then typical intervals (with `compare == 1`)
+ */
 static inline
 r_obj* interval_order(r_obj* compare, r_obj* start, r_obj* end) {
   // Put them in a data frame to compute joint ordering
@@ -21,7 +30,6 @@ r_obj* interval_order(r_obj* compare, r_obj* start, r_obj* end) {
 
   r_init_data_frame(df, vec_size(start));
 
-  // Could be a callback to R here instead if this lived in another package
   r_obj* direction = KEEP(r_chr("asc"));
   r_obj* na_value = KEEP(r_chr("smallest"));
   bool nan_distinct = false;
@@ -56,6 +64,9 @@ r_obj* interval_locate_minimal(r_obj* x, bool keep_empty, bool keep_missing, boo
    * -1 == (start >  end), not allowed
    *  0 == (start == end), empty interval
    *  1 == (start <  end), typical case
+   *
+   *  Note that we put `end` before `start` in the call here to get the
+   *  comparison order above
    */
   r_obj* compare = KEEP(vec_compare(end, start, false));
   int* v_compare = r_int_begin(compare);
@@ -67,7 +78,7 @@ r_obj* interval_locate_minimal(r_obj* x, bool keep_empty, bool keep_missing, boo
   }
 
   if (keep_empty) {
-    // With `keep_empty`, we only care about using `equal` to order missing
+    // With `keep_empty`, we only care about using `compare` to order missing
     // values at the end. Empty intervals shouldn't be grouped separately.
     for (r_ssize i = 0; i < size; ++i) {
       if (v_compare[i] == 0) {
@@ -183,6 +194,7 @@ r_obj* interval_locate_minimal(r_obj* x, bool keep_empty, bool keep_missing, boo
   }
 
   if (set_start != r_globals.na_int) {
+    // Log last interval
     r_int_push_back(p_starts, loc_set_start + 1);
     r_int_push_back(p_ends, loc_set_end + 1);
 
@@ -199,6 +211,7 @@ r_obj* interval_locate_minimal(r_obj* x, bool keep_empty, bool keep_missing, boo
   }
 
   if (keep_missing && loc_order_missing_end != r_globals.na_int) {
+    // Log missing interval
     r_int_push_back(p_starts, r_globals.na_int);
     r_int_push_back(p_ends, r_globals.na_int);
 
@@ -270,8 +283,9 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
   r_ssize size = vec_size(key);
 
   r_obj* x_start = r_list_get(x, 0);
-  r_obj* x_end = r_list_get(x, 1);
   const int* v_start = r_int_cbegin(x_start);
+
+  r_obj* x_end = r_list_get(x, 1);
   const int* v_end = r_int_cbegin(x_end);
 
   bool use_forced_start = (start != r_globals.na_int);

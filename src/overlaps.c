@@ -6,39 +6,7 @@
 // -----------------------------------------------------------------------------
 
 static inline
-r_obj* interval_order(r_obj* start, r_obj* end) {
-  // Put them in a data frame to compute joint ordering
-  r_obj* df = KEEP(r_new_list(2));
-  r_list_poke(df, 0, start);
-  r_list_poke(df, 1, end);
-
-  r_obj* df_names = r_new_character(2);
-  r_poke_names(df, df_names);
-  r_chr_poke(df_names, 0, r_str("start"));
-  r_chr_poke(df_names, 1, r_str("end"));
-
-  r_init_data_frame(df, r_length(start));
-
-  // Could be a callback to R here instead if this lived in another package
-  r_obj* direction = KEEP(r_chr("asc"));
-  r_obj* na_value = KEEP(r_chr("largest"));
-  bool nan_distinct = false;
-  r_obj* chr_proxy_collate = r_null;
-
-  r_obj* out = KEEP(vec_order(
-    df,
-    direction,
-    na_value,
-    nan_distinct,
-    chr_proxy_collate
-  ));
-
-  FREE(4);
-  return out;
-}
-
-static inline
-r_obj* interval_order2(r_obj* compare, r_obj* start, r_obj* end) {
+r_obj* interval_order(r_obj* compare, r_obj* start, r_obj* end) {
   // Put them in a data frame to compute joint ordering
   r_obj* df = KEEP(r_new_list(3));
   r_list_poke(df, 0, compare);
@@ -51,7 +19,7 @@ r_obj* interval_order2(r_obj* compare, r_obj* start, r_obj* end) {
   r_chr_poke(df_names, 1, r_str("start"));
   r_chr_poke(df_names, 2, r_str("end"));
 
-  r_init_data_frame(df, r_length(start));
+  r_init_data_frame(df, vec_size(start));
 
   // Could be a callback to R here instead if this lived in another package
   r_obj* direction = KEEP(r_chr("asc"));
@@ -69,100 +37,6 @@ r_obj* interval_order2(r_obj* compare, r_obj* start, r_obj* end) {
 
   FREE(4);
   return out;
-}
-
-// -----------------------------------------------------------------------------
-
-static
-r_obj* interval_minimize(r_obj* x, int gap) {
-  r_obj* x_start = r_list_get(x, 0);
-  r_obj* x_end = r_list_get(x, 1);
-
-  const r_ssize size = r_length(x_start);
-
-  if (gap < 0) {
-    r_abort("`gap` must be >=0.");
-  }
-
-  const int* v_start = r_int_cbegin(x_start);
-  const int* v_end = r_int_cbegin(x_end);
-
-  r_obj* order = KEEP(interval_order(x_start, x_end));
-  const int* v_order = r_int_cbegin(order);
-
-  // Assume the data can be collapsed in half to start with.
-  // Apply a minimum size to avoid a size of zero.
-  const r_ssize initial_size = r_ssize_max(size / 2, 1);
-
-  struct r_dyn_array* p_starts = r_new_dyn_vector(R_TYPE_integer, initial_size);
-  KEEP(p_starts->shelter);
-
-  struct r_dyn_array* p_ends = r_new_dyn_vector(R_TYPE_integer, initial_size);
-  KEEP(p_ends->shelter);
-
-  r_ssize i = 0;
-  int set_start = r_globals.na_int;
-  int set_end = r_globals.na_int;
-
-  // Find first non-NA interval
-  for (; i < size; ++i) {
-    const r_ssize loc = v_order[i] - 1;
-
-    const int elt_start = v_start[loc];
-    const int elt_end = v_end[loc];
-
-    if (elt_start != r_globals.na_int) {
-      set_start = elt_start;
-      set_end = elt_end;
-      ++i;
-      break;
-    }
-  }
-
-  for (; i < size; ++i) {
-    const r_ssize loc = v_order[i] - 1;
-
-    const int elt_start = v_start[loc];
-    const int elt_end = v_end[loc];
-
-    if (elt_start == r_globals.na_int) {
-      // NA intervals are always at the end
-      break;
-    }
-
-    if (set_end < elt_start - gap) {
-      r_int_push_back(p_starts, set_start);
-      r_int_push_back(p_ends, set_end);
-
-      set_start = elt_start;
-      set_end = elt_end;
-    } else if (set_end < elt_end) {
-      set_end = elt_end;
-    }
-  }
-
-  if (set_start != r_globals.na_int) {
-    r_int_push_back(p_starts, set_start);
-    r_int_push_back(p_ends, set_end);
-  }
-
-  r_obj* out = KEEP(r_new_list(2));
-  r_list_poke(out, 0, r_arr_unwrap(p_starts));
-  r_list_poke(out, 1, r_arr_unwrap(p_ends));
-
-  r_obj* out_names = r_new_character(2);
-  r_poke_names(out, out_names);
-  r_chr_poke(out_names, 0, r_str("start"));
-  r_chr_poke(out_names, 1, r_str("end"));
-
-  FREE(4);
-  return out;
-}
-
-// [[ register() ]]
-r_obj* vctrs_interval_minimize(r_obj* x, r_obj* gap) {
-  const int c_gap = r_as_int(gap);
-  return interval_minimize(x, c_gap);
 }
 
 // -----------------------------------------------------------------------------
@@ -202,7 +76,7 @@ r_obj* interval_locate_minimal(r_obj* x, bool keep_empty, bool keep_missing, boo
     }
   }
 
-  r_obj* order = KEEP(interval_order2(compare, start, end));
+  r_obj* order = KEEP(interval_order(compare, start, end));
   const int* v_order = r_int_cbegin(order);
 
   // Assume the data can be collapsed in half to start with.

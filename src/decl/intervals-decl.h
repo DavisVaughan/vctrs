@@ -12,3 +12,4 @@ static r_obj* vec_interval_locate_minimal(r_obj* start,
                                           bool groups);
 
 static inline r_obj* interval_order(r_obj* compare, r_obj* start, r_obj* end);
+static inline r_obj* interval_detect_complete(r_obj* start, r_obj* end);

@@ -239,6 +239,22 @@ test_that("can set `keep_missing = TRUE` without any missings", {
   expect_identical(out$loc, list(c(1L, 2L)))
 })
 
+test_that("`keep_missing = true` recognizes incomplete rows", {
+  start <- data_frame(year = c(2019, NA, 2019, 2019, 2019), month = c(12, 11, NA, 12, 12))
+  end <- data_frame(year = c(2020, 2020, 2020, NA, 2020), month = c(2, 11, 11, 11, NA))
+  x <- data_frame(start = start, end = end)
+
+  out <- vec_interval_locate_minimal_groups(x$start, x$end)
+
+  expect_identical(out$key, data_frame(start = 1L, end = 1L))
+  expect_identical(out$loc, list(1L))
+
+  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_missing = TRUE)
+
+  expect_identical(out$key, data_frame(start = c(1L, NA), end = c(1L, NA)))
+  expect_identical(out$loc, list(1L, 2:5))
+})
+
 test_that("can't have `start > end`", {
   x <- data_frame(start = 1L, end = 0L)
   expect_snapshot((expect_error(vec_interval_locate_minimal_groups(x$start, x$end))))

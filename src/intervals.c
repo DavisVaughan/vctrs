@@ -2,6 +2,7 @@
 #include "vctrs.h"
 #include "order.h"
 #include "compare.h"
+#include "complete.h"
 #include "translate.h"
 #include "poly-op.h"
 
@@ -97,6 +98,18 @@ r_obj* vec_interval_locate_minimal(r_obj* start,
    */
   r_obj* compare = KEEP_N(vec_compare(end, start, false), &n_prot);
   int* v_compare = r_int_begin(compare);
+
+  // While `vec_compare(na_equal = false)` will propagate `NA`s, it will only
+  // do so if it hits a missing value before it knows the comparison value.
+  // We need to propagate any missing values, regardless of where they are.
+  r_obj* complete = KEEP_N(interval_detect_complete(start, end), &n_prot);
+  const int* v_complete = r_lgl_cbegin(complete);
+
+  for (r_ssize i = 0; i < size; ++i) {
+    if (!v_complete[i]) {
+      v_compare[i] = r_globals.na_int;
+    }
+  }
 
   for (r_ssize i = 0; i < size; ++i) {
     if (v_compare[i] == -1) {
@@ -319,6 +332,26 @@ r_obj* interval_order(r_obj* compare, r_obj* start, r_obj* end) {
   ));
 
   FREE(4);
+  return out;
+}
+
+static inline
+r_obj* interval_detect_complete(r_obj* start, r_obj* end) {
+  // Put them in a data frame to compute joint completeness
+  r_obj* df = KEEP(r_new_list(2));
+  r_list_poke(df, 0, start);
+  r_list_poke(df, 1, end);
+
+  r_obj* df_names = r_new_character(2);
+  r_poke_names(df, df_names);
+  r_chr_poke(df_names, 0, r_str("start"));
+  r_chr_poke(df_names, 1, r_str("end"));
+
+  r_init_data_frame(df, vec_size(start));
+
+  r_obj* out = vec_detect_complete(df);
+
+  FREE(1);
   return out;
 }
 

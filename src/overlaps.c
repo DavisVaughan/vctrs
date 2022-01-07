@@ -387,21 +387,39 @@ r_obj* vctrs_interval_locate_minimal(r_obj* x, r_obj* keep_empty, r_obj* keep_mi
 
 static
 r_obj* interval_complement(r_obj* x, int start, int end) {
+  // Minimize to sort, remove all missings, remove all empty intervals,
+  // and merge all abutting intervals
+  r_obj* key = KEEP(interval_locate_minimal(x, false, false, false));
+  const int* v_loc_start = r_int_cbegin(r_list_get(key, 0));
+  const int* v_loc_end = r_int_cbegin(r_list_get(key, 1));
+
+  r_ssize size = vec_size(key);
+
   r_obj* x_start = r_list_get(x, 0);
   r_obj* x_end = r_list_get(x, 1);
-
-  const r_ssize size = r_length(x_start);
+  const int* v_start = r_int_cbegin(x_start);
+  const int* v_end = r_int_cbegin(x_end);
 
   bool use_forced_start = (start != r_globals.na_int);
   bool use_forced_end = (end != r_globals.na_int);
 
-  const int* v_start = r_int_cbegin(x_start);
-  const int* v_end = r_int_cbegin(x_end);
+  if (use_forced_start && use_forced_end && start > end) {
+    // Handle the one special case of `start > end` up front.
+    // This is an invalid interval, but we try and be a little flexible here.
+    r_obj* out = KEEP(r_new_list(2));
+    r_list_poke(out, 0, vctrs_shared_empty_int);
+    r_list_poke(out, 1, vctrs_shared_empty_int);
 
-  r_obj* order = KEEP(interval_order(x_start, x_end));
-  const int* v_order = r_int_cbegin(order);
+    r_obj* out_names = r_new_character(2);
+    r_poke_names(out, out_names);
+    r_chr_poke(out_names, 0, r_str("start"));
+    r_chr_poke(out_names, 1, r_str("end"));
 
-  // Assume the data can be collapsed in half to start with.
+    FREE(2);
+    return out;
+  }
+
+  // Assume the complement will take roughly half current size.
   // Apply a minimum size to avoid a size of zero.
   const r_ssize initial_size = r_ssize_max(size / 2, 1);
 
@@ -412,60 +430,86 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
   KEEP(p_ends->shelter);
 
   r_ssize i = 0;
+
+  r_ssize loc_lower_after_start_of = -1;
+  r_ssize loc_lower_before_end_of = 0;
+
+  if (use_forced_start) {
+    // Shift `i` forward to the first interval completely past `start`.
+    // Track information about where `start` is in relation to the intervals.
+    for (; i < size; ++i) {
+      const int elt_start = v_start[v_loc_start[i] - 1];
+      const int elt_end = v_end[v_loc_end[i] - 1];
+
+      if (start > elt_end) {
+        ++loc_lower_before_end_of;
+        ++loc_lower_after_start_of;
+      } else if (start >= elt_start) {
+        ++loc_lower_after_start_of;
+      } else {
+        break;
+      }
+    }
+  }
+
+  r_ssize loc_upper_after_start_of = size - 1;
+  r_ssize loc_upper_before_end_of = size;
+
+  if (use_forced_end) {
+    // Shift `size` backwards to the first interval that is completely before `end`.
+    // Track information about where `end` is in relation to the intervals.
+    for (; size - 1 >= 0; --size) {
+      const int elt_start = v_start[v_loc_start[size - 1] - 1];
+      const int elt_end = v_end[v_loc_end[size - 1] - 1];
+
+      if (end < elt_start) {
+        --loc_upper_before_end_of;
+        --loc_upper_after_start_of;
+      } else if (end <= elt_end) {
+        --loc_upper_before_end_of;
+      } else {
+        break;
+      }
+    }
+  }
+
+  const bool has_intervals_between = i < size;
+
+  if (use_forced_start && has_intervals_between) {
+    // If `start` lands in the middle of an interval, then we use the end
+    // of that interval, otherwise we use the `start` value.
+    const int gap_start =
+      (loc_lower_before_end_of == loc_lower_after_start_of) ?
+      v_end[v_loc_end[loc_lower_before_end_of] - 1] :
+      start;
+
+    // End of the gap is the next interval start. No need to worry about
+    // `end` here since `has_intervals_between` told us there is an interval
+    // between `start` and `end`.
+    const int gap_end = v_start[v_loc_start[loc_lower_after_start_of + 1] - 1];
+
+    r_int_push_back(p_starts, gap_start);
+    r_int_push_back(p_ends, gap_end);
+  }
+
   int set_start = r_globals.na_int;
   int set_end = r_globals.na_int;
 
-  // Find first non-NA interval
-  for (; i < size; ++i) {
-    const r_ssize loc = v_order[i] - 1;
+  if (i < size) {
+    // Set information about first usable interval
+    const int elt_start = v_start[v_loc_start[i] - 1];
+    const int elt_end = v_end[v_loc_end[i] - 1];
 
-    const int elt_start = v_start[loc];
-    const int elt_end = v_end[loc];
-
-    if (elt_start != r_globals.na_int) {
-      set_start = elt_start;
-      set_end = elt_end;
-      ++i;
-      break;
-    }
-  }
-
-  if (use_forced_start && !use_forced_end && set_start != r_globals.na_int && start < set_start) {
-    use_forced_start = false;
-
-    const int gap_start = start;
-    const int gap_end = set_start;
-
-    r_int_push_back(p_starts, gap_start);
-    r_int_push_back(p_ends, gap_end);
-  }
-  if (use_forced_start && use_forced_end && (set_start == r_globals.na_int || start < set_start) && start < end) {
-    use_forced_start = false;
-
-    const int gap_start = start;
-    const int gap_end = (set_start != r_globals.na_int && set_start < end) ? set_start : end;
-
-    r_int_push_back(p_starts, gap_start);
-    r_int_push_back(p_ends, gap_end);
+    set_start = elt_start;
+    set_end = elt_end;
+    ++i;
   }
 
   for (; i < size; ++i) {
-    const r_ssize loc = v_order[i] - 1;
+    const int elt_start = v_start[v_loc_start[i] - 1];
+    const int elt_end = v_end[v_loc_end[i] - 1];
 
-    const int elt_start = v_start[loc];
-    const int elt_end = v_end[loc];
-
-    if (elt_start == r_globals.na_int) {
-      // NA intervals are always at the end
-      break;
-    }
-
-    const bool has_gap =
-      !(use_forced_end && set_end >= end) &&
-      !(use_forced_start && set_end < start) &&
-      (set_end < elt_start);
-
-    if (has_gap) {
+    if (set_end < elt_start) {
       const int gap_start = set_end;
       const int gap_end = elt_start;
 
@@ -479,24 +523,42 @@ r_obj* interval_complement(r_obj* x, int start, int end) {
     }
   }
 
-  if (use_forced_end && !use_forced_start && set_end != r_globals.na_int && end > set_end) {
-    use_forced_end = false;
+  if (use_forced_end && has_intervals_between) {
+    // Start of the gap is the previous interval end. No need to worry about
+    // `start` here since `has_intervals_between` told us there is an interval
+    // between `start` and `end`.
+    const int gap_start = v_end[v_loc_end[loc_upper_before_end_of - 1] - 1];
 
-    const int gap_start = set_end;
-    const int gap_end = end;
+    // If `end` lands in the middle of an interval, then we use the start
+    // of that interval, otherwise we use the `end` value.
+    const int gap_end =
+      (loc_upper_before_end_of == loc_upper_after_start_of) ?
+      v_start[v_loc_start[loc_upper_before_end_of] - 1] :
+      end;
 
     r_int_push_back(p_starts, gap_start);
     r_int_push_back(p_ends, gap_end);
   }
-  if (use_forced_end && use_forced_start && (set_end == r_globals.na_int || end > set_end) && end > start) {
-    use_forced_end = false;
-    use_forced_start = false;
 
-    const int gap_start = (set_end != r_globals.na_int && set_end > start) ? set_end : start;
-    const int gap_end = end;
+  if (use_forced_start && use_forced_end && !has_intervals_between) {
+    // Handle the case where `start` and `end` have no full intervals between
+    // them. However, `start` and `end` may still fall inside an interval, so
+    // we have to be careful about the bounds to use. If `start` and `end` are
+    // in the same interval, we are careful to not log anything.
+    const int gap_start =
+      (loc_lower_before_end_of == loc_lower_after_start_of) ?
+      v_end[v_loc_end[loc_lower_before_end_of] - 1] :
+      start;
 
-    r_int_push_back(p_starts, gap_start);
-    r_int_push_back(p_ends, gap_end);
+    const int gap_end =
+      (loc_upper_before_end_of == loc_upper_after_start_of) ?
+      v_start[v_loc_start[loc_upper_before_end_of] - 1] :
+      end;
+
+    if (gap_start < gap_end) {
+      r_int_push_back(p_starts, gap_start);
+      r_int_push_back(p_ends, gap_end);
+    }
   }
 
   r_obj* out = KEEP(r_new_list(2));

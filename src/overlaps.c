@@ -263,18 +263,6 @@ r_obj* interval_locate_minimal(r_obj* start,
   return out;
 }
 
-// [[ register() ]]
-r_obj* vctrs_interval_locate_minimal(r_obj* start,
-                                     r_obj* end,
-                                     r_obj* keep_empty,
-                                     r_obj* keep_missing,
-                                     r_obj* groups) {
-  const bool c_keep_empty = r_as_bool(keep_empty);
-  const bool c_keep_missing = r_as_bool(keep_missing);
-  const bool c_groups = r_as_bool(groups);
-  return interval_locate_minimal(start, end, c_keep_empty, c_keep_missing, c_groups);
-}
-
 // -----------------------------------------------------------------------------
 
 static

@@ -17,3 +17,12 @@ vec_interval_locate_minimal_groups <- function(start,
   groups <- TRUE
   .Call(vctrs_interval_locate_minimal, start, end, keep_empty, keep_missing, groups)
 }
+
+vec_interval_complement <- function(start,
+                                    end,
+                                    ...,
+                                    lower = NULL,
+                                    upper = NULL) {
+  check_dots_empty0(...)
+  .Call(vctrs_interval_complement, start, end, lower, upper)
+}

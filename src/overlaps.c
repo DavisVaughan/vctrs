@@ -454,13 +454,3 @@ r_obj* interval_complement(r_obj* start,
   FREE(4);
   return out;
 }
-
-// [[ register() ]]
-r_obj* vctrs_interval_complement(r_obj* start,
-                                 r_obj* end,
-                                 r_obj* lower,
-                                 r_obj* upper) {
-  const int c_lower = (lower == r_null) ? r_globals.na_int : r_as_int(lower);
-  const int c_upper = (upper == r_null) ? r_globals.na_int : r_as_int(upper);
-  return interval_complement(start, end, c_lower, c_upper);
-}

@@ -142,7 +142,7 @@ interval_locate_minimal_groups <- function(x, ..., keep_empty = FALSE, keep_miss
 
 interval_complement <- function(x, ..., lower = NULL, upper = NULL) {
   check_dots_empty0(...)
-  out <- .Call(vctrs_interval_complement, x, lower, upper)
+  out <- .Call(vctrs_interval_complement, interval_start(x), interval_end(x), lower, upper)
   new_interval(out$start, out$end)
 }
 

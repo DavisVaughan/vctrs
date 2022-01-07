@@ -278,16 +278,16 @@ r_obj* vctrs_interval_locate_minimal(r_obj* start,
 // -----------------------------------------------------------------------------
 
 static
-r_obj* interval_complement(r_obj* x, int lower, int upper) {
-  r_obj* x_start = r_list_get(x, 0);
-  const int* v_start = r_int_cbegin(x_start);
-
-  r_obj* x_end = r_list_get(x, 1);
-  const int* v_end = r_int_cbegin(x_end);
+r_obj* interval_complement(r_obj* start,
+                           r_obj* end,
+                           int lower,
+                           int upper) {
+  const int* v_start = r_int_cbegin(start);
+  const int* v_end = r_int_cbegin(end);
 
   // Minimize to sort, remove all missings, remove all empty intervals,
   // and merge all abutting intervals
-  r_obj* key = KEEP(interval_locate_minimal(x_start, x_end, false, false, false));
+  r_obj* key = KEEP(interval_locate_minimal(start, end, false, false, false));
   const int* v_loc_start = r_int_cbegin(r_list_get(key, 0));
   const int* v_loc_end = r_int_cbegin(r_list_get(key, 1));
 
@@ -468,8 +468,11 @@ r_obj* interval_complement(r_obj* x, int lower, int upper) {
 }
 
 // [[ register() ]]
-r_obj* vctrs_interval_complement(r_obj* x, r_obj* lower, r_obj* upper) {
+r_obj* vctrs_interval_complement(r_obj* start,
+                                 r_obj* end,
+                                 r_obj* lower,
+                                 r_obj* upper) {
   const int c_lower = (lower == r_null) ? r_globals.na_int : r_as_int(lower);
   const int c_upper = (upper == r_null) ? r_globals.na_int : r_as_int(upper);
-  return interval_complement(x, c_lower, c_upper);
+  return interval_complement(start, end, c_lower, c_upper);
 }

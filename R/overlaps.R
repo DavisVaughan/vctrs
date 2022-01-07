@@ -131,13 +131,13 @@ interval_minimize <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) 
 interval_locate_minimal <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
   check_dots_empty0(...)
   groups <- FALSE
-  .Call(vctrs_interval_locate_minimal, x, keep_empty, keep_missing, groups)
+  .Call(vctrs_interval_locate_minimal, interval_start(x), interval_end(x), keep_empty, keep_missing, groups)
 }
 
 interval_locate_minimal_groups <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
   check_dots_empty0(...)
   groups <- TRUE
-  .Call(vctrs_interval_locate_minimal, x, keep_empty, keep_missing, groups)
+  .Call(vctrs_interval_locate_minimal, interval_start(x), interval_end(x), keep_empty, keep_missing, groups)
 }
 
 interval_complement <- function(x, ..., start = NULL, end = NULL) {

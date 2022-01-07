@@ -50,11 +50,12 @@ r_obj* interval_order(r_obj* compare, r_obj* start, r_obj* end) {
 // -----------------------------------------------------------------------------
 
 static
-r_obj* interval_locate_minimal(r_obj* x, bool keep_empty, bool keep_missing, bool groups) {
-  r_obj* start = r_list_get(x, 0);
+r_obj* interval_locate_minimal(r_obj* start,
+                               r_obj* end,
+                               bool keep_empty,
+                               bool keep_missing,
+                               bool groups) {
   const int* v_start = r_int_cbegin(start);
-
-  r_obj* end = r_list_get(x, 1);
   const int* v_end = r_int_cbegin(end);
 
   const r_ssize size = vec_size(start);
@@ -263,30 +264,34 @@ r_obj* interval_locate_minimal(r_obj* x, bool keep_empty, bool keep_missing, boo
 }
 
 // [[ register() ]]
-r_obj* vctrs_interval_locate_minimal(r_obj* x, r_obj* keep_empty, r_obj* keep_missing, r_obj* groups) {
+r_obj* vctrs_interval_locate_minimal(r_obj* start,
+                                     r_obj* end,
+                                     r_obj* keep_empty,
+                                     r_obj* keep_missing,
+                                     r_obj* groups) {
   const bool c_keep_empty = r_as_bool(keep_empty);
   const bool c_keep_missing = r_as_bool(keep_missing);
   const bool c_groups = r_as_bool(groups);
-  return interval_locate_minimal(x, c_keep_empty, c_keep_missing, c_groups);
+  return interval_locate_minimal(start, end, c_keep_empty, c_keep_missing, c_groups);
 }
 
 // -----------------------------------------------------------------------------
 
 static
 r_obj* interval_complement(r_obj* x, int start, int end) {
-  // Minimize to sort, remove all missings, remove all empty intervals,
-  // and merge all abutting intervals
-  r_obj* key = KEEP(interval_locate_minimal(x, false, false, false));
-  const int* v_loc_start = r_int_cbegin(r_list_get(key, 0));
-  const int* v_loc_end = r_int_cbegin(r_list_get(key, 1));
-
-  r_ssize size = vec_size(key);
-
   r_obj* x_start = r_list_get(x, 0);
   const int* v_start = r_int_cbegin(x_start);
 
   r_obj* x_end = r_list_get(x, 1);
   const int* v_end = r_int_cbegin(x_end);
+
+  // Minimize to sort, remove all missings, remove all empty intervals,
+  // and merge all abutting intervals
+  r_obj* key = KEEP(interval_locate_minimal(x_start, x_end, false, false, false));
+  const int* v_loc_start = r_int_cbegin(r_list_get(key, 0));
+  const int* v_loc_end = r_int_cbegin(r_list_get(key, 1));
+
+  r_ssize size = vec_size(key);
 
   bool use_forced_start = (start != r_globals.na_int);
   bool use_forced_end = (end != r_globals.na_int);

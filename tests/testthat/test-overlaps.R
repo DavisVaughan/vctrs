@@ -58,23 +58,7 @@ test_that("can minimize with size one input", {
   )
 })
 
-test_that("can set a maximum gap of `>0` to combine intervals with gaps", {
-  x <- interval(start = c(1L, 3L, 4L), end = c(2L, 4L, 5L))
-
-  expect_identical(
-    interval_minimize(x, gap = 1L),
-    interval(start = 1L, end = 5L)
-  )
-
-  x <- interval(start = c(1L, 3L, 6L), end = c(2L, 4L, 7L))
-
-  expect_identical(
-    interval_minimize(x, gap = 1L),
-    interval(start = c(1L, 6L), end = c(4L, 7L))
-  )
-})
-
-test_that("missing intervals are removed", {
+test_that("missing intervals are removed by default", {
   x <- interval(NA, NA)
   expect_identical(interval_minimize(x), interval())
 })
@@ -82,10 +66,6 @@ test_that("missing intervals are removed", {
 test_that("missing intervals don't affect the result", {
   x <- interval(c(3, NA, 2, NA), c(5, NA, 3, NA))
   expect_identical(interval_minimize(x), interval(2, 5))
-})
-
-test_that("`gap` must be 0 or positive", {
-  expect_snapshot((expect_error(interval_minimize(interval(1L, 2L), gap = -1L))))
 })
 
 # ------------------------------------------------------------------------------
@@ -207,7 +187,7 @@ test_that("locations are ordered by both `start` and `end`", {
   )
 })
 
-test_that("missing intervals are removed", {
+test_that("missing intervals are removed by default", {
   x <- interval(NA, NA)
 
   out <- interval_locate_minimal_groups(x)
@@ -222,7 +202,76 @@ test_that("missing intervals are removed", {
   )
 })
 
-test_that("missing intervals don't affect the result", {
+test_that("missing intervals can be retained", {
+  x <- interval(NA, NA)
+
+  out <- interval_locate_minimal_groups(x, keep_missing = TRUE)
+
+  expect_identical(
+    out$key,
+    data_frame(start = NA_integer_, end = NA_integer_)
+  )
+  expect_identical(
+    out$loc,
+    list(1L)
+  )
+})
+
+test_that("empty intervals can be retained", {
+  x <- interval(1, 1)
+
+  out <- interval_locate_minimal_groups(x, keep_empty = TRUE)
+
+  expect_identical(
+    out$key,
+    data_frame(start = 1L, end = 1L)
+  )
+  expect_identical(
+    out$loc,
+    list(1L)
+  )
+})
+
+test_that("all combinations of `keep_empty` and `keep_missing` work", {
+  x <- interval(
+    c(1, NA, 2, 1, 7, NA, 9),
+    c(1, NA, 3, 5, 8, NA, 9)
+  )
+
+  expect_identical(
+    interval_locate_minimal_groups(x, keep_empty = FALSE, keep_missing = FALSE),
+    data_frame(
+      key = data_frame(start = c(4L, 5L), end = c(4L, 5L)),
+      loc = list(c(4L, 3L), 5L)
+    )
+  )
+
+  expect_identical(
+    interval_locate_minimal_groups(x, keep_empty = TRUE, keep_missing = FALSE),
+    data_frame(
+      key = data_frame(start = c(1L, 5L, 7L), end = c(4L, 5L, 7L)),
+      loc = list(c(1L, 4L, 3L), 5L, 7L)
+    )
+  )
+
+  expect_identical(
+    interval_locate_minimal_groups(x, keep_empty = FALSE, keep_missing = TRUE),
+    data_frame(
+      key = data_frame(start = c(4L, 5L, NA), end = c(4L, 5L, NA)),
+      loc = list(c(4L, 3L), 5L, c(2L, 6L))
+    )
+  )
+
+  expect_identical(
+    interval_locate_minimal_groups(x, keep_empty = TRUE, keep_missing = TRUE),
+    data_frame(
+      key = data_frame(start = c(1L, 5L, 7L, NA), end = c(4L, 5L, 7L, NA)),
+      loc = list(c(1L, 4L, 3L), 5L, 7L, c(2L, 6L))
+    )
+  )
+})
+
+test_that("missing intervals don't affect the result by default", {
   x <- interval(c(3, NA, 2, NA), c(5, NA, 3, NA))
 
   out <- interval_locate_minimal_groups(x)
@@ -235,6 +284,34 @@ test_that("missing intervals don't affect the result", {
     out$loc,
     list(c(3L, 1L))
   )
+})
+
+test_that("can have missings in either input", {
+  x <- new_interval(c(1L, NA, 1L), c(NA, 1L, 2L))
+
+  out <- interval_locate_minimal_groups(x)
+
+  expect_identical(out$key, data_frame(start = 3L, end = 3L))
+  expect_identical(out$loc, list(3L))
+
+  out <- interval_locate_minimal_groups(x, keep_missing = TRUE)
+
+  expect_identical(out$key, data_frame(start = c(3L, NA), end = c(3L, NA)))
+  expect_identical(out$loc, list(3L, c(2L, 1L)))
+})
+
+test_that("can set `keep_missing = TRUE` without any missings", {
+  x <- interval(c(1, 3), c(3, 5))
+
+  out <- interval_locate_minimal_groups(x, keep_missing = TRUE)
+
+  expect_identical(out$key, data_frame(start = 1L, end = 2L))
+  expect_identical(out$loc, list(c(1L, 2L)))
+})
+
+test_that("can't have `start > end`", {
+  x <- new_interval(1L, 0L)
+  expect_snapshot((expect_error(interval_locate_minimal_groups(x))))
 })
 
 # ------------------------------------------------------------------------------

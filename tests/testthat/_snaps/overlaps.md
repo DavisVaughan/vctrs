@@ -1,11 +1,11 @@
-# `gap` must be 0 or positive
+# can't have `start > end`
 
     Code
-      (expect_error(interval_minimize(interval(1L, 2L), gap = -1L)))
+      (expect_error(interval_locate_minimal_groups(x)))
     Output
       <error/rlang_error>
       Error:
-      ! `gap` must be >=0.
+      ! `start` must be less than or equal to `end`.
 
 # errors on gaps
 

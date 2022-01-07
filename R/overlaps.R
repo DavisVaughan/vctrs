@@ -20,8 +20,8 @@ interval <- function(start = integer(), end = integer()) {
     start <- vec_assign(start, missing_end, NA)
   }
 
-  if (any(start >= end, na.rm = TRUE)) {
-    abort("`start` must be less than `end`.")
+  if (any(start > end, na.rm = TRUE)) {
+    abort("`start` must be less than or equal to `end`.")
   }
 
   new_interval(start, end)
@@ -121,22 +121,23 @@ interval_end <- function(x) {
 #' new <- vec_slice(new, vec_rep_each(vec_seq_along(info), list_sizes(info$loc)))
 #'
 #' data_frame(old = old, new = new)
-interval_minimize <- function(x, ..., gap = 0L) {
-  check_dots_empty0(...)
-  out <- .Call(vctrs_interval_minimize, x, gap)
-  new_interval(out$start, out$end)
+interval_minimize <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
+  loc <- interval_locate_minimal(x, ..., keep_empty = keep_empty, keep_missing = keep_missing)
+  start <- vec_slice(interval_start(x), loc$start)
+  end <- vec_slice(interval_end(x), loc$end)
+  new_interval(start, end)
 }
 
-interval_locate_minimal <- function(x, ..., gap = 0L) {
+interval_locate_minimal <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
   check_dots_empty0(...)
   groups <- FALSE
-  .Call(vctrs_interval_locate_minimal, x, gap, groups)
+  .Call(vctrs_interval_locate_minimal, x, keep_empty, keep_missing, groups)
 }
 
-interval_locate_minimal_groups <- function(x, ..., gap = 0L) {
+interval_locate_minimal_groups <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
   check_dots_empty0(...)
   groups <- TRUE
-  .Call(vctrs_interval_locate_minimal, x, gap, groups)
+  .Call(vctrs_interval_locate_minimal, x, keep_empty, keep_missing, groups)
 }
 
 interval_complement <- function(x, ..., start = NULL, end = NULL) {

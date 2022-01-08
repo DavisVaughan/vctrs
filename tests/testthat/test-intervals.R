@@ -679,6 +679,16 @@ test_that("union drops NAs", {
   )
 })
 
+test_that("union is the union of minimal interval vectors", {
+  x <- interval(1, 1)
+  y <- interval(2, 2)
+  z <- interval(1, 3)
+
+  expect_identical(interval_set_union(x, x), interval(double(), double()))
+  expect_identical(interval_set_union(x, y), interval(double(), double()))
+  expect_identical(interval_set_union(x, z), z)
+})
+
 # ------------------------------------------------------------------------------
 # interval_set_intersect()
 
@@ -719,6 +729,50 @@ test_that("intersect drops NAs", {
     interval_set_intersect(x, y),
     interval(1, 2)
   )
+})
+
+test_that("intersect is the intersection of minimal interval vectors", {
+  x <- interval(1, 5)
+
+  a <- interval(1, 1)
+  b <- interval(2, 2)
+  c <- interval(5, 5)
+  d <- interval(6, 6)
+  e <- interval(0, 0)
+
+  empty <- interval(double(), double())
+
+  expect_identical(interval_set_intersect(x, a), empty)
+  expect_identical(interval_set_intersect(a, x), empty)
+
+  expect_identical(interval_set_intersect(x, b), empty)
+  expect_identical(interval_set_intersect(b, x), empty)
+
+  expect_identical(interval_set_intersect(x, c), empty)
+  expect_identical(interval_set_intersect(c, x), empty)
+
+  expect_identical(interval_set_intersect(x, d), empty)
+  expect_identical(interval_set_intersect(d, x), empty)
+
+  expect_identical(interval_set_intersect(x, e), empty)
+  expect_identical(interval_set_intersect(e, x), empty)
+
+  # Empty interval with itself
+  expect_identical(interval_set_intersect(a, a), empty)
+  expect_identical(interval_set_intersect(a, a), empty)
+})
+
+test_that("takes ptype on early exits", {
+  x <- interval(integer(), integer())
+  y <- interval(c(1L, 3L), c(3L, 4L))
+
+  expect_identical(interval_set_intersect(x, y), x)
+  expect_identical(interval_set_intersect(y, x), x)
+
+  z <- interval(NA_integer_, NA_integer_)
+
+  expect_identical(interval_set_intersect(z, y), x)
+  expect_identical(interval_set_intersect(y, z), x)
 })
 
 # ------------------------------------------------------------------------------
@@ -766,4 +820,48 @@ test_that("difference drops NAs", {
     interval_set_difference(y, x),
     interval(2, 4)
   )
+})
+
+test_that("difference is the difference of minimal interval vectors", {
+  x <- interval(1, 5)
+
+  a <- interval(1, 1)
+  b <- interval(2, 2)
+  c <- interval(5, 5)
+  d <- interval(6, 6)
+  e <- interval(0, 0)
+
+  empty <- interval(double(), double())
+
+  expect_identical(interval_set_difference(x, a), x)
+  expect_identical(interval_set_difference(a, x), empty)
+
+  expect_identical(interval_set_difference(x, b), x)
+  expect_identical(interval_set_difference(b, x), empty)
+
+  expect_identical(interval_set_difference(x, c), x)
+  expect_identical(interval_set_difference(c, x), empty)
+
+  expect_identical(interval_set_difference(x, d), x)
+  expect_identical(interval_set_difference(d, x), empty)
+
+  expect_identical(interval_set_difference(x, e), x)
+  expect_identical(interval_set_difference(e, x), empty)
+
+  # Empty interval with itself
+  expect_identical(interval_set_difference(a, a), empty)
+  expect_identical(interval_set_difference(a, a), empty)
+})
+
+test_that("minimizes on early exits", {
+  x <- interval(integer(), integer())
+  y <- interval(c(1L, 3L), c(3L, 4L))
+
+  expect_identical(interval_set_difference(x, y), x)
+  expect_identical(interval_set_difference(y, x), interval(1L, 4L))
+
+  z <- interval(NA_integer_, NA_integer_)
+
+  expect_identical(interval_set_difference(z, y), x)
+  expect_identical(interval_set_difference(y, z), interval(1L, 4L))
 })

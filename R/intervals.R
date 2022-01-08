@@ -36,18 +36,22 @@ interval <- function(start, end) {
   start <- args$start
   end <- args$end
 
-  missing_start <- vec_equal_na(start)
-  missing_end <- vec_equal_na(end)
+  # With `na_equal = FALSE`, comparisons between `start` and `end` that can't
+  # be made because of missing values will result in a missing value. This
+  # occurs when either `start` or `end` contains a missing value or an
+  # incomplete column of a data frame where the incomplete value occurs before
+  # all ties are broken. We call these cases incomparable, and they result in
+  # a missing interval.
+  compare <- vec_compare(start, end)
 
-  if (any(missing_start)) {
-    end <- vec_assign(end, missing_start, NA)
-  }
-  if (any(missing_end)) {
-    start <- vec_assign(start, missing_end, NA)
-  }
-
-  if (any(vec_compare(start, end) == 1L, na.rm = TRUE)) {
+  if (any(compare == 1L, na.rm = TRUE)) {
     abort("`start` must be less than or equal to `end`.")
+  }
+
+  if (anyNA(compare)) {
+    incomparable <- vec_equal_na(compare)
+    start <- vec_assign(start, incomparable, NA)
+    end <- vec_assign(end, incomparable, NA)
   }
 
   new_interval(start, end)

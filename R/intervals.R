@@ -351,8 +351,8 @@ interval_parallel_union <- function(x, y, ..., fill = FALSE) {
 
 interval_parallel_intersect <- function(x, y) {
   args <- list(x = x, y = y)
-  args <- vec_recycle_common(!!!args)
   args <- vec_cast_common(!!!args)
+  args <- vec_recycle_common(!!!args)
   x <- args[[1]]
   y <- args[[2]]
 
@@ -377,6 +377,41 @@ interval_parallel_intersect <- function(x, y) {
       "Can't take the intersection of intervals containing a gap.",
       i = "A gap would generate an ambiguous empty interval.",
       i = glue::glue("Location {loc} contains a gap.")
+    ))
+  }
+
+  out <- new_interval(start, end)
+  out <- interval_restore(out, x)
+
+  out
+}
+
+interval_parallel_complement <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_cast_common(!!!args)
+  args <- vec_recycle_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  x_proxy <- interval_proxy(x)
+  y_proxy <- interval_proxy(y)
+
+  x_start <- field_start(x_proxy)
+  y_start <- field_start(y_proxy)
+
+  x_end <- field_end(x_proxy)
+  y_end <- field_end(y_proxy)
+
+  end <- vec_parallel_max(x_start, y_start)
+  start <- vec_parallel_min(x_end, y_end)
+
+  overlap <- start > end
+  if (any(overlap, na.rm = TRUE)) {
+    loc <- which(overlap)[[1]]
+
+    abort(c(
+      "Can't take the complement of overlapping intervals.",
+      i = glue::glue("Location {loc} contains an overlap.")
     ))
   }
 

@@ -129,29 +129,6 @@ interval_parallel_difference <- function(x, y) {
   new_interval(start, end)
 }
 
-interval_parallel_complement <- function(x, y) {
-  args <- list(x = x, y = y)
-  args <- vec_recycle_common(!!!args)
-  args <- vec_cast_common(!!!args)
-  x <- args[[1]]
-  y <- args[[2]]
-
-  end <- vec_parallel_max(interval_start(x), interval_start(y))
-  start <- vec_parallel_min(interval_end(x), interval_end(y))
-
-  empty <- start >= end
-  if (any(empty, na.rm = TRUE)) {
-    loc <- which(empty)[[1]]
-
-    abort(c(
-      "Complement between `x` and `y` can't result in an empty interval.",
-      i = glue::glue("Complement is empty at location {loc}.")
-    ))
-  }
-
-  new_interval(start, end)
-}
-
 int_min <- function(x) {
   empty <- vec_equal_na(x)
   if (any(empty)) {

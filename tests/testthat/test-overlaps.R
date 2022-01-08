@@ -38,38 +38,3 @@ test_that("parallel difference propagates NAs", {
     interval(c(2, NA), c(4, NA))
   )
 })
-
-# ------------------------------------------------------------------------------
-# interval_parallel_complement()
-
-test_that("can parallel complement", {
-  expect_identical(
-    interval_parallel_complement(interval(1, 2), interval(5, 6)),
-    interval(2, 5)
-  )
-
-  expect_identical(
-    interval_parallel_complement(interval(1, 2), interval(-1, 0)),
-    interval(0, 1)
-  )
-})
-
-test_that("parallel complement can't result in an empty set", {
-  expect_snapshot(
-    (expect_error(interval_parallel_complement(interval(1, 2), interval(1, 2))))
-  )
-})
-
-test_that("parallel complement propagates NAs", {
-  x <- interval(c(0, NA), c(2, NA))
-  y <- interval(4, 5)
-
-  expect_identical(
-    interval_parallel_complement(x, y),
-    interval(c(2, NA), c(4, NA))
-  )
-  expect_identical(
-    interval_parallel_complement(y, x),
-    interval(c(2, NA), c(4, NA))
-  )
-})

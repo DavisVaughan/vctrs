@@ -1089,3 +1089,101 @@ test_that("parallel intersect is generic over container", {
   y <- integer_interval(2, 3)
   expect_identical(interval_parallel_intersect(x, y), integer_interval(2, 3))
 })
+
+# ------------------------------------------------------------------------------
+# interval_parallel_complement()
+
+test_that("can parallel complement", {
+  expect_identical(
+    interval_parallel_complement(interval(1, 2), interval(5, 6)),
+    interval(2, 5)
+  )
+
+  expect_identical(
+    interval_parallel_complement(interval(1, 2), interval(-1, 0)),
+    interval(0, 1)
+  )
+})
+
+test_that("parallel complement propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(4, 5)
+
+  expect_identical(
+    interval_parallel_complement(x, y),
+    interval(c(2, NA), c(4, NA))
+  )
+  expect_identical(
+    interval_parallel_complement(y, x),
+    interval(c(2, NA), c(4, NA))
+  )
+})
+
+test_that("parallel complement of empty interval with itself is an empty interval", {
+  x <- interval(1, 1)
+
+  # The result, [1, 1), abuts but does not overlap either input
+  expect_identical(
+    interval_parallel_complement(x, x),
+    x
+  )
+})
+
+test_that("parallel complement of abutting intervals equals an empty interval", {
+  x <- interval(1, 2)
+
+  # `y` abuts `x`, it does not overlap `x`.
+  # The complement is guaranteed to not overlap `x` nor `y`.
+  # Returning the [1, 1) fulfills this, as [1, 1) abuts but does not overlap itself.
+  y <- interval(1, 1)
+  expect_identical(
+    interval_parallel_complement(x, y),
+    interval(1, 1)
+  )
+
+  y <- interval(0, 1)
+  expect_identical(
+    interval_parallel_complement(x, y),
+    interval(1, 1)
+  )
+
+  y <- interval(2, 2)
+  expect_identical(
+    interval_parallel_complement(x, y),
+    interval(2, 2)
+  )
+
+  y <- interval(2, 3)
+  expect_identical(
+    interval_parallel_complement(x, y),
+    interval(2, 2)
+  )
+})
+
+test_that("parallel complement can't be taken of overlapping intervals", {
+  x <- interval(1, 3)
+
+  expect_snapshot(
+    (expect_error(interval_parallel_complement(x, x)))
+  )
+
+  y <- interval(0, 4)
+
+  expect_snapshot({
+    (expect_error(interval_parallel_complement(x, y)))
+    (expect_error(interval_parallel_complement(y, x)))
+  })
+
+  y <- interval(2, 4)
+
+  expect_snapshot({
+    (expect_error(interval_parallel_complement(x, y)))
+    (expect_error(interval_parallel_complement(y, x)))
+  })
+})
+
+test_that("parallel complement is generic over container", {
+  x <- integer_interval(1, 3)
+  y <- integer_interval(-1, 0)
+  expect_identical(interval_parallel_complement(x, y), integer_interval(0, 1))
+})

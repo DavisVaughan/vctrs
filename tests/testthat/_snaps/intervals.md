@@ -71,3 +71,47 @@
       i A gap would generate an ambiguous empty interval.
       i Location 1 contains a gap.
 
+# parallel complement can't be taken of overlapping intervals
+
+    Code
+      (expect_error(interval_parallel_complement(x, x)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping intervals.
+      i Location 1 contains an overlap.
+
+---
+
+    Code
+      (expect_error(interval_parallel_complement(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping intervals.
+      i Location 1 contains an overlap.
+    Code
+      (expect_error(interval_parallel_complement(y, x)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping intervals.
+      i Location 1 contains an overlap.
+
+---
+
+    Code
+      (expect_error(interval_parallel_complement(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping intervals.
+      i Location 1 contains an overlap.
+    Code
+      (expect_error(interval_parallel_complement(y, x)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping intervals.
+      i Location 1 contains an overlap.
+

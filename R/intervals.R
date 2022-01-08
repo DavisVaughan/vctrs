@@ -300,6 +300,84 @@ interval_set_intersect <- function(x, y) {
   out
 }
 
+interval_parallel_union <- function(x, y, ..., fill = FALSE) {
+  if (!is_bool(fill)) {
+    abort("`fill` must be a single `TRUE` or `FALSE`.")
+  }
+
+  args <- list(x = x, y = y)
+  args <- vec_cast_common(!!!args)
+  args <- vec_recycle_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  x_proxy <- interval_proxy(x)
+  y_proxy <- interval_proxy(y)
+
+  x_start <- field_start(x_proxy)
+  y_start <- field_start(y_proxy)
+
+  x_end <- field_end(x_proxy)
+  y_end <- field_end(y_proxy)
+
+  if (!fill) {
+    max_start <- vec_parallel_max(x_start, y_start)
+    min_end <- vec_parallel_min(x_end, y_end)
+    has_gap <- vec_compare(max_start, min_end) == 1L
+
+    if (any(has_gap, na.rm = TRUE)) {
+      loc <- which(has_gap)[[1]]
+
+      abort(c(
+        "Can't take the union of intervals containing a gap.",
+        i = glue::glue("Location {loc} contains a gap."),
+        i = "Set `fill = TRUE` to force a union anyways."
+      ))
+    }
+  }
+
+  start <- vec_parallel_min(x_start, y_start)
+  end <- vec_parallel_max(x_end, y_end)
+
+  out <- new_interval(start, end)
+  out <- interval_restore(out, x)
+
+  out
+}
+
+vec_parallel_min <- function(x, y) {
+  vec_parallel_summary(x, y, type = "min")
+}
+vec_parallel_max <- function(x, y) {
+  vec_parallel_summary(x, y, type = "max")
+}
+vec_parallel_summary <- function(x, y, type) {
+  args <- list(x = x, y = y)
+  args <- vec_cast_common(!!!args)
+  args <- vec_recycle_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  cmp <- vec_compare(x, y)
+
+  if (type == "min") {
+    x_wins <- cmp <= 0L
+    y_wins <- !x_wins
+  } else if (type == "max") {
+    x_wins <- cmp >= 0L
+    y_wins <- !x_wins
+  } else {
+    abort("Unknown `type`.")
+  }
+
+  # Assign mins and maxes, propagate missings through `vec_init()`
+  out <- vec_init(x, vec_size(x))
+  out <- vec_assign(out, x_wins, vec_slice(x, x_wins))
+  out <- vec_assign(out, y_wins, vec_slice(y, y_wins))
+
+  out
+}
+
 # ------------------------------------------------------------------------------
 
 integer_interval <- function(start = integer(), end = integer()) {

@@ -1,14 +1,3 @@
-# errors on gaps
-
-    Code
-      (expect_error(interval_parallel_union(x, y)))
-    Output
-      <error/rlang_error>
-      Error in `interval_parallel_union()`:
-      ! Can't take the union of intervals containing a gap.
-      i Location 1 contains a gap of size 1.
-      i Set `fill_gap = TRUE` to force a union anyways.
-
 # parallel intersection resulting in empty ranges errors
 
     Code

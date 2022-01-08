@@ -68,45 +68,6 @@
 #' data_frame(old = old, new = new)
 NULL
 
-interval_parallel_union <- function(x, y, ..., fill_gap = FALSE) {
-  if (!is_bool(fill_gap)) {
-    abort("`fill_gap` must be a single `TRUE` or `FALSE`.")
-  }
-
-  args <- list(x = x, y = y)
-  args <- vec_recycle_common(!!!args)
-  args <- vec_cast_common(!!!args)
-  x <- args[[1]]
-  y <- args[[2]]
-
-  x_start <- interval_start(x)
-  x_end <- interval_end(x)
-
-  y_start <- interval_start(y)
-  y_end <- interval_end(y)
-
-  if (!fill_gap) {
-    gap <- vec_parallel_max(x_start, y_start) - vec_parallel_min(x_end, y_end)
-    has_gap <- gap > 0L
-
-    if (any(has_gap, na.rm = TRUE)) {
-      loc <- which(has_gap)[[1]]
-      gap <- gap[[loc]]
-
-      abort(c(
-        "Can't take the union of intervals containing a gap.",
-        i = glue::glue("Location {loc} contains a gap of size {gap}."),
-        i = "Set `fill_gap = TRUE` to force a union anyways."
-      ))
-    }
-  }
-
-  start <- vec_parallel_min(x_start, y_start)
-  end <- vec_parallel_max(x_end, y_end)
-
-  new_interval(start, end)
-}
-
 interval_parallel_intersect <- function(x, y) {
   args <- list(x = x, y = y)
   args <- vec_recycle_common(!!!args)
@@ -212,38 +173,6 @@ interval_parallel_complement <- function(x, y) {
   }
 
   new_interval(start, end)
-}
-
-
-vec_parallel_min <- function(x, y) {
-  vec_parallel_summary(x, y, type = "min")
-}
-vec_parallel_max <- function(x, y) {
-  vec_parallel_summary(x, y, type = "max")
-}
-vec_parallel_summary <- function(x, y, type) {
-  args <- vec_cast_common(x = x, y = y)
-  args <- vec_recycle_common(!!!args)
-  x <- args[[1]]
-  y <- args[[2]]
-
-  cmp <- vec_compare(x, y)
-
-  if (type == "min") {
-    x_wins <- cmp <= 0L
-    y_wins <- !x_wins
-  } else if (type == "max") {
-    x_wins <- cmp >= 0L
-    y_wins <- !x_wins
-  } else {
-    abort("Unknown `type`.")
-  }
-
-  out <- vec_init(x, vec_size(x))
-  out <- vec_assign(out, x_wins, vec_slice(x, x_wins))
-  out <- vec_assign(out, y_wins, vec_slice(y, y_wins))
-
-  out
 }
 
 int_min <- function(x) {

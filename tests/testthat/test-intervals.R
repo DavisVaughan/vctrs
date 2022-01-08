@@ -865,3 +865,94 @@ test_that("minimizes on early exits", {
   expect_identical(interval_set_difference(z, y), x)
   expect_identical(interval_set_difference(y, z), interval(1L, 4L))
 })
+
+# ------------------------------------------------------------------------------
+# interval_parallel_union()
+
+test_that("can take the parallel union", {
+  x <- interval(1, 3)
+  y <- interval(2, 4)
+
+  expect_identical(
+    interval_parallel_union(x, y),
+    interval(1, 4)
+  )
+
+  y <- interval(3, 4)
+
+  expect_identical(
+    interval_parallel_union(x, y),
+    interval(1, 4)
+  )
+})
+
+test_that("errors on gaps", {
+  x <- interval(1, 3)
+  y <- interval(4, 5)
+
+  expect_snapshot((expect_error(interval_parallel_union(x, y))))
+
+  x <- interval(1, 1)
+  y <- interval(2, 2)
+
+  expect_snapshot((expect_error(interval_parallel_union(x, y))))
+
+  x <- interval(1, 1)
+  y <- interval(3, 5)
+
+  expect_snapshot((expect_error(interval_parallel_union(x, y))))
+})
+
+test_that("can force gaps to be filled", {
+  x <- interval(1, 3)
+  y <- interval(4, 5)
+
+  expect_identical(
+    interval_parallel_union(x, y, fill = TRUE),
+    interval(1, 5)
+  )
+
+  x <- interval(1, 1)
+  y <- interval(2, 2)
+
+  expect_identical(
+    interval_parallel_union(x, y, fill = TRUE),
+    interval(1, 2)
+  )
+
+  x <- interval(1, 1)
+  y <- interval(3, 5)
+
+  expect_identical(
+    interval_parallel_union(x, y, fill = TRUE),
+    interval(1, 5)
+  )
+})
+
+test_that("parallel union propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_parallel_union(x, y),
+    interval(c(0, NA), c(4, NA))
+  )
+  expect_identical(
+    interval_parallel_union(y, x),
+    interval(c(0, NA), c(4, NA))
+  )
+})
+
+test_that("union of two empty intervals is allowed", {
+  x <- interval(1, 1)
+
+  expect_identical(interval_parallel_union(x, x), x)
+})
+
+test_that("union of empty interval and abutting/overlapping interval is allowed", {
+  x <- interval(1, 1)
+  y <- interval(c(0, 0, 1), c(2, 1, 2))
+
+  expect_identical(interval_parallel_union(x, y), y)
+})
+

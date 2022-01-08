@@ -1,13 +1,3 @@
-# parallel intersection resulting in empty ranges errors
-
-    Code
-      (expect_error(interval_parallel_intersect(x, y)))
-    Output
-      <error/rlang_error>
-      Error in `interval_parallel_intersect()`:
-      ! Intersection between `x` and `y` can't result in an empty interval.
-      i Intersection is empty at location 1.
-
 # parallel difference can't result in an empty interval
 
     Code

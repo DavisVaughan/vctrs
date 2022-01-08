@@ -1009,3 +1009,83 @@ test_that("parallel union is generic over container", {
   y <- integer_interval(2, 3)
   expect_identical(interval_parallel_union(x, y), integer_interval(1, 3))
 })
+
+# ------------------------------------------------------------------------------
+# interval_parallel_intersect()
+
+test_that("can take parallel intersection", {
+  x <- interval(start = 1L, end = 4L)
+  y <- interval(start = 0L, end = 3L)
+
+  expect_identical(
+    interval_parallel_intersect(x, y),
+    interval(start = 1L, end = 3L)
+  )
+})
+
+test_that("can recycle inputs", {
+  x <- interval(start = c(1L, 2L), end = c(4L, 5L))
+  y <- interval(start = 0L, end = 3L)
+
+  expect_identical(
+    interval_parallel_intersect(x, y),
+    interval(start = c(1L, 2L), end = c(3L, 3L))
+  )
+})
+
+test_that("parallel intersection between intervals with a gap errors", {
+  x <- interval(start = 1L, end = 4L)
+
+  y <- interval(start = 5L, end = 6L)
+
+  expect_snapshot(
+    (expect_error(interval_parallel_intersect(x, y)))
+  )
+
+  y <- interval(start = -1L, end = 0L)
+
+  expect_snapshot(
+    (expect_error(interval_parallel_intersect(x, y)))
+  )
+})
+
+test_that("parallel intersection between abutting intervals is fine", {
+  x <- interval(start = 1L, end = 5L)
+
+  a <- interval(start = 5L, end = 6L)
+  b <- interval(start = 5L, end = 5L)
+  c <- interval(start = 1L, end = 1L)
+
+  expect_identical(
+    interval_parallel_intersect(x, a),
+    interval(start = 5L, end = 5L)
+  )
+  expect_identical(
+    interval_parallel_intersect(x, b),
+    interval(start = 5L, end = 5L)
+  )
+  expect_identical(
+    interval_parallel_intersect(x, c),
+    interval(start = 1L, end = 1L)
+  )
+})
+
+test_that("parallel intersection propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_parallel_intersect(x, y),
+    interval(c(1, NA), c(2, NA))
+  )
+  expect_identical(
+    interval_parallel_intersect(y, x),
+    interval(c(1, NA), c(2, NA))
+  )
+})
+
+test_that("parallel intersect is generic over container", {
+  x <- integer_interval(1, 3)
+  y <- integer_interval(2, 3)
+  expect_identical(interval_parallel_intersect(x, y), integer_interval(2, 3))
+})

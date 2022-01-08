@@ -49,3 +49,25 @@
       i Location 1 contains a gap.
       i Set `fill = TRUE` to force a union anyways.
 
+# parallel intersection between intervals with a gap errors
+
+    Code
+      (expect_error(interval_parallel_intersect(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_intersect()`:
+      ! Can't take the intersection of intervals containing a gap.
+      i A gap would generate an ambiguous empty interval.
+      i Location 1 contains a gap.
+
+---
+
+    Code
+      (expect_error(interval_parallel_intersect(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_intersect()`:
+      ! Can't take the intersection of intervals containing a gap.
+      i A gap would generate an ambiguous empty interval.
+      i Location 1 contains a gap.
+

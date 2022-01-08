@@ -540,3 +540,230 @@ test_that("complement works when `lower` and `upper` are in the same data_frame"
   )
 })
 
+# ------------------------------------------------------------------------------
+# interval_minimize()
+
+test_that("can minimize overlaps", {
+  x <- interval(
+    c(1L, 10L,  2L, 2L, 9L),
+    c(5L, 12L, 6L, 8L, 11L)
+  )
+
+  expect_identical(
+    interval_minimize(x),
+    interval(c(1L, 9L), c(8L, 12L))
+  )
+})
+
+test_that("`[a, b)` combines with `[b, c)`", {
+  x <- interval(
+    c(10L, 9L),
+    c(12L, 10L)
+  )
+
+  expect_identical(
+    interval_minimize(x),
+    interval(9L, 12L)
+  )
+})
+
+test_that("keys are returned ordered", {
+  x <- interval(start = c(4L, 3L, 1L), end = c(6L, 5L, 2L))
+
+  expect_identical(
+    interval_minimize(x),
+    interval(start = c(1L, 3L), end = c(2L, 6L))
+  )
+})
+
+test_that("max endpoint is retained even if it isn't the last in the group", {
+  # 10 is max end of first group, but 5 is last value in that group
+  x <- interval(start = c(1L, 2L, 12L), end = c(10L, 5L, 15L))
+
+  expect_identical(
+    interval_minimize(x),
+    interval(start = c(1L, 12L), end = c(10L, 15L))
+  )
+})
+
+test_that("can minimize with size zero input", {
+  expect_identical(
+    interval_minimize(interval(integer(), integer())),
+    interval(integer(), integer())
+  )
+})
+
+test_that("can minimize with size one input", {
+  expect_identical(
+    interval_minimize(interval(1L, 2L)),
+    interval(1L, 2L)
+  )
+})
+
+test_that("missing intervals are removed by default", {
+  x <- interval(start = NA, end = NA)
+  expect_identical(interval_minimize(x), interval(start = logical(), end = logical()))
+})
+
+test_that("missing intervals don't affect the result", {
+  x <- interval(start = c(3, NA, 2, NA), end = c(5, NA, 3, NA))
+  expect_identical(interval_minimize(x), interval(2, 5))
+})
+
+# ------------------------------------------------------------------------------
+# interval_update_minimal()
+
+test_that("updates values to their minimal interval", {
+  x <- interval(start = c(1, 3, 6, 10), end = c(3, 7, 9, 12))
+
+  expect_identical(
+    interval_update_minimal(x),
+    interval(start = c(1, 1, 1, 10), end = c(9, 9, 9, 12))
+  )
+})
+
+test_that("abutting and overlapping empty intervals are updated", {
+  x <- interval(start = c(1, 1, 3, 10), end = c(1, 5, 3, 12))
+
+  expect_identical(
+    interval_update_minimal(x),
+    interval(start = c(1, 1, 1, 10), end = c(5, 5, 5, 12))
+  )
+})
+
+test_that("retains missing intervals", {
+  x <- interval(start = c(NA, 1, NA), end = c(NA, 5, NA))
+
+  expect_identical(interval_update_minimal(x), x)
+})
+
+test_that("retains unmerged empty intervals", {
+  x <- interval(start = c(0, 1, 2, 11), end = c(0, 2, 5, 11))
+
+  expect_identical(
+    interval_update_minimal(x),
+    interval(start = c(0, 1, 1, 11), end = c(0, 5, 5, 11))
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_set_union()
+
+test_that("union links", {
+  x <- interval(start = c(1L, 2L), end = c(2L, 3L))
+  y <- interval(start = 5L, end = 6L)
+
+  expect_identical(
+    interval_set_union(x, y),
+    interval(start = c(1L, 5L), end = c(3L, 6L))
+  )
+})
+
+test_that("union treats intervals as half open `[a, b)`", {
+  x <- interval(start = 1L, end = 2L)
+  y <- interval(start = 3L, end = 5L)
+
+  expect_identical(
+    interval_set_union(x, y),
+    interval(start = c(1L, 3L), end = c(2L, 5L))
+  )
+})
+
+test_that("union drops NAs", {
+  x <- interval(c(1, NA), c(2, NA))
+  y <- interval(2, 3)
+
+  expect_identical(
+    interval_set_union(x, y),
+    interval(1, 3)
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_set_intersect()
+
+test_that("intersect links", {
+  x <- interval(start = c(1L, 2L), end = c(2L, 3L))
+
+  expect_identical(
+    interval_set_intersect(x, x),
+    interval(start = 1L, end = 3L)
+  )
+})
+
+test_that("intersect works", {
+  x <- interval(start = c(1L, 6L), end = c(4L, 8L))
+  y <- interval(start = 2L, end = 3L)
+  z <- interval(start = 3L, end = 7L)
+
+  expect_identical(
+    interval_set_intersect(x, y),
+    interval(start = 2L, end = 3L)
+  )
+  expect_identical(
+    interval_set_intersect(x, z),
+    interval(start = c(3L, 6L), end = c(4L, 7L))
+  )
+})
+
+test_that("intersect works with size zero inputs", {
+  x <- interval(start = integer(), end = integer())
+  expect_identical(interval_set_intersect(x, x), x)
+})
+
+test_that("intersect drops NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(c(1, NA), c(4, NA))
+
+  expect_identical(
+    interval_set_intersect(x, y),
+    interval(1, 2)
+  )
+})
+
+# ------------------------------------------------------------------------------
+# interval_set_difference()
+
+test_that("difference links", {
+  x <- interval(start = c(1L, 2L), end = c(2L, 3L))
+  y <- interval(start = integer(), end = integer())
+
+  expect_identical(
+    interval_set_difference(x, y),
+    interval(start = 1L, end = 3L)
+  )
+})
+
+test_that("difference works", {
+  x <- interval(start = c(1L, 6L), end = c(4L, 8L))
+  y <- interval(start = 2L, end = 3L)
+  z <- interval(start = 3L, end = 7L)
+
+  expect_identical(
+    interval_set_difference(x, y),
+    interval(start = c(1L, 3L, 6L), end = c(2L, 4L, 8L))
+  )
+  expect_identical(
+    interval_set_difference(x, z),
+    interval(start = c(1L, 7L), end = c(3L, 8L))
+  )
+})
+
+test_that("difference works with size zero inputs", {
+  x <- interval(start = integer(), end = integer())
+  expect_identical(interval_set_difference(x, x), x)
+})
+
+test_that("difference drops NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_set_difference(x, y),
+    interval(0, 1)
+  )
+  expect_identical(
+    interval_set_difference(y, x),
+    interval(2, 4)
+  )
+})

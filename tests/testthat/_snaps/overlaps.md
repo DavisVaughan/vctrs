@@ -1,12 +1,3 @@
-# can't have `start > end`
-
-    Code
-      (expect_error(interval_locate_minimal_groups(x)))
-    Output
-      <error/rlang_error>
-      Error:
-      ! `start` must be less than or equal to `end`.
-
 # errors on gaps
 
     Code

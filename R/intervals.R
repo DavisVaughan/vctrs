@@ -29,6 +29,77 @@ vec_interval_complement <- function(start,
 
 # ------------------------------------------------------------------------------
 
+#' Interval definitions and properties
+#'
+#' @description
+#' Intervals are always half-open. In particular, they are left-closed,
+#' right-open, i.e. `[a, b)`. It is required that `a >= b`. When `a == b`,
+#' the interval is _empty_.
+#'
+#' ## Comparison states
+#'
+#' When comparing two intervals, there are three distinct states that can be
+#' used to describe the relationship between them.
+#'
+#' - _Abutting_ intervals occur when the end of one interval exactly matches
+#'   the start of the other interval. For example, `[1, 5)` and `[5, 7)` are
+#'   abutting.
+#'
+#' - _Overlapping_ intervals occur when two intervals overlap by at least one
+#'   value. For example, `[1, 5)` overlaps with `[2, 7)`. It also overlaps with
+#'   (and completely contains) `[2, 3)`.
+#'
+#' - _Disjoint_ intervals are those with a _gap_ between them. For example,
+#'   `[1, 5)` and `[6, 7)` are disjoint, with a gap of `[5, 6)`. This is also
+#'   known as the _complement_ of those two intervals.
+#'
+#' Note that when there is any ambiguity, the abutting state overrides the
+#' overlapping and disjoint states. For example, the empty interval of
+#' `[1, 1)` abuts, but does not overlap, `[1, 5)`. However, `[1, 1)` does
+#' overlap `[0, 5)`.
+#'
+#' ## Incomparable intervals
+#'
+#' Incomparable intervals are those that can't be compared with any other
+#' interval. In most cases, this just means the interval contains a missing
+#' value, like `[NA, NA)`. If one side of the interval is incomparable, then
+#' the other side is required to be incomparable as well. The [interval()]
+#' helper enforces this automatically.
+#'
+#' Incomparable intervals are infectious. For example, when intersecting two
+#' sets of intervals in parallel with `interval_parallel_intersect()`, if `x`
+#' or `y` contain an incomparable interval, then the result will also be
+#' incomparable.
+#'
+#' Intervals containing data frames are a special case where missing values
+#' may be present without automatically forcing the interval to be incomparable.
+#' For example, an interval containing
+#' `[ data.frame(x = 1, y = NA), data.frame(x = 2, y = 3) )`
+#' is not automatically incomparable. Because `1 < 2`, the `x` column determined
+#' that the `start` of the interval was less than the `end` of it. However, the
+#' following would result in an incomparable interval:
+#' `[ data.frame(x = 1, y = NA), data.frame(x = 1, y = 3) )`.
+#' Because the `x` results in a tie, we look to `y` to break the tie, but this
+#' contains an incomparable value. If we supplied these values to the
+#' `interval()` helper, it would detect this and standardize both sides of the
+#' interval into their missing value, `data.frame(x = NA, y = NA)`.
+#'
+#' ## Minimal interval vectors
+#'
+#' A _minimal_ interval vector is one that contains no redundant information. In
+#' particular, a minimal interval vector:
+#'
+#' - Has no incomparable intervals
+#' - Has no empty intervals
+#' - Has no abutting intervals
+#' - Has no overlapping intervals
+#' - Is ordered by both the `start` and `end` fields
+#'
+#' [interval_minimize()] will turn an interval vector into its minimal form.
+#'
+#' @noRd
+NULL
+
 interval <- function(start, end) {
   args <- list(start = start, end = end)
   args <- vec_cast_common(!!!args)

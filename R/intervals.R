@@ -421,6 +421,70 @@ interval_parallel_complement <- function(x, y) {
   out
 }
 
+interval_parallel_difference <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  args <- vec_cast_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  x_proxy <- interval_proxy(x)
+  y_proxy <- interval_proxy(y)
+
+  x_start <- field_start(x_proxy)
+  y_start <- field_start(y_proxy)
+
+  x_end <- field_end(x_proxy)
+  y_end <- field_end(y_proxy)
+
+  y_contained <-
+    (vec_compare(y_start, x_start) == 1L) &
+    (vec_compare(y_end, x_end) == -1L)
+
+  if (any(y_contained, na.rm = TRUE)) {
+    loc <- which(y_contained)[[1]]
+
+    abort(c(
+      "Can't compute a difference when `y` is completely contained within `x`.",
+      i = "This would result in two distinct intervals for a single observation.",
+      i = glue::glue("Location {loc} contains this issue.")
+    ))
+  }
+
+  start <- x_start
+  end <- x_end
+
+  max_start <- vec_parallel_max(x_start, y_start)
+  min_end <- vec_parallel_min(x_end, y_end)
+
+  update <- vec_compare(max_start, min_end) < 0L
+  direction <- vec_equal(min_end, x_end)
+
+  clamp_end <- update & direction
+  if (any(clamp_end, na.rm = TRUE)) {
+    end <- vec_assign(end, clamp_end, vec_slice(max_start, clamp_end))
+  }
+
+  clamp_start <- update & !direction
+  if (any(clamp_start, na.rm = TRUE)) {
+    start <- vec_assign(start, clamp_start, vec_slice(min_end, clamp_start))
+  }
+
+  if (anyNA(update)) {
+    # Ensure missings / incomparables in `y` get propagated
+    incomparable <- vec_equal_na(update)
+    start <- vec_assign(start, incomparable, NA)
+    end <- vec_assign(end, incomparable, NA)
+  }
+
+  out <- new_interval(start, end)
+  out <- interval_restore(out, x)
+
+  out
+}
+
+# ------------------------------------------------------------------------------
+
 vec_parallel_min <- function(x, y) {
   vec_parallel_summary(x, y, type = "min")
 }

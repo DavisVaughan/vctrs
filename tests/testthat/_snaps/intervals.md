@@ -115,3 +115,14 @@
       ! Can't take the complement of overlapping intervals.
       i Location 1 contains an overlap.
 
+# throws error when `y` is contained within `x`
+
+    Code
+      (expect_error(interval_parallel_difference(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_difference()`:
+      ! Can't compute a difference when `y` is completely contained within `x`.
+      i This would result in two distinct intervals for a single observation.
+      i Location 1 contains this issue.
+

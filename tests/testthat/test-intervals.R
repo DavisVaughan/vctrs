@@ -1187,3 +1187,100 @@ test_that("parallel complement is generic over container", {
   y <- integer_interval(-1, 0)
   expect_identical(interval_parallel_complement(x, y), integer_interval(0, 1))
 })
+
+# ------------------------------------------------------------------------------
+# interval_parallel_difference()
+
+test_that("can parallel difference from all sides of `x`", {
+  x <- interval(1, 10)
+
+  y <- interval(-1, 0)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(1, 10)
+  )
+
+  y <- interval(-1, 1)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(1, 10)
+  )
+
+  y <- interval(1, 1)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(1, 10)
+  )
+
+  y <- interval(1, 3)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(3, 10)
+  )
+
+  y <- interval(7, 10)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(1, 7)
+  )
+
+  y <- interval(10, 10)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(1, 10)
+  )
+
+  y <- interval(10, 12)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(1, 10)
+  )
+
+  y <- interval(11, 12)
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(1, 10)
+  )
+})
+
+test_that("parallel difference between interval and itself results in empty interval", {
+  x <- interval(1, 3)
+
+  expect_identical(
+    interval_parallel_difference(x, x),
+    interval(1, 1)
+  )
+
+  x <- interval(1, 1)
+
+  expect_identical(
+    interval_parallel_difference(x, x),
+    interval(1, 1)
+  )
+})
+
+test_that("throws error when `y` is contained within `x`", {
+  x <- interval(1, 4)
+  y <- interval(2, 3)
+
+  expect_snapshot((expect_error(interval_parallel_difference(x, y))))
+
+  expect_identical(
+    interval_parallel_difference(y, x),
+    interval(2, 2)
+  )
+})
+
+test_that("parallel difference propagates NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_parallel_difference(x, y),
+    interval(c(0, NA), c(1, NA))
+  )
+  expect_identical(
+    interval_parallel_difference(y, x),
+    interval(c(2, NA), c(4, NA))
+  )
+})

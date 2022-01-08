@@ -541,6 +541,18 @@ test_that("complement works when `lower` and `upper` are in the same data_frame"
 })
 
 # ------------------------------------------------------------------------------
+# interval_complement()
+
+test_that("complement is generic over container", {
+  x <- integer_interval(start = c(1, 5), end = c(3, 7))
+
+  expect_identical(
+    interval_complement(x),
+    integer_interval(start = 3, end = 5)
+  )
+})
+
+# ------------------------------------------------------------------------------
 # interval_minimize()
 
 test_that("can minimize overlaps", {
@@ -610,6 +622,15 @@ test_that("missing intervals don't affect the result", {
   expect_identical(interval_minimize(x), interval(2, 5))
 })
 
+test_that("minimize is generic over container", {
+  x <- integer_interval(start = c(1, 3), end = c(3, 7))
+
+  expect_identical(
+    interval_minimize(x),
+    integer_interval(start = 1, end = 7)
+  )
+})
+
 # ------------------------------------------------------------------------------
 # interval_update_minimal()
 
@@ -643,6 +664,15 @@ test_that("retains unmerged empty intervals", {
   expect_identical(
     interval_update_minimal(x),
     interval(start = c(0, 1, 1, 11), end = c(0, 5, 5, 11))
+  )
+})
+
+test_that("update is generic over container", {
+  x <- integer_interval(start = c(1, 3, 6, 10), end = c(3, 7, 9, 12))
+
+  expect_identical(
+    interval_update_minimal(x),
+    integer_interval(start = c(1, 1, 1, 10), end = c(9, 9, 9, 12))
   )
 })
 
@@ -687,6 +717,12 @@ test_that("union is the union of minimal interval vectors", {
   expect_identical(interval_set_union(x, x), interval(double(), double()))
   expect_identical(interval_set_union(x, y), interval(double(), double()))
   expect_identical(interval_set_union(x, z), z)
+})
+
+test_that("union is generic over container", {
+  x <- integer_interval(1, 3)
+  y <- integer_interval(2, 5)
+  expect_identical(interval_set_union(x, y), integer_interval(1, 5))
 })
 
 # ------------------------------------------------------------------------------
@@ -773,6 +809,12 @@ test_that("takes ptype on early exits", {
 
   expect_identical(interval_set_intersect(z, y), x)
   expect_identical(interval_set_intersect(y, z), x)
+})
+
+test_that("intersect is generic over container", {
+  x <- integer_interval(1, 3)
+  y <- integer_interval(2, 3)
+  expect_identical(interval_set_intersect(x, y), integer_interval(2, 3))
 })
 
 # ------------------------------------------------------------------------------
@@ -866,6 +908,12 @@ test_that("minimizes on early exits", {
   expect_identical(interval_set_difference(y, z), interval(1L, 4L))
 })
 
+test_that("difference is generic over container", {
+  x <- integer_interval(1, 3)
+  y <- integer_interval(2, 3)
+  expect_identical(interval_set_difference(x, y), integer_interval(1, 2))
+})
+
 # ------------------------------------------------------------------------------
 # interval_parallel_union()
 
@@ -956,3 +1004,8 @@ test_that("union of empty interval and abutting/overlapping interval is allowed"
   expect_identical(interval_parallel_union(x, y), y)
 })
 
+test_that("parallel union is generic over container", {
+  x <- integer_interval(1, 2)
+  y <- integer_interval(2, 3)
+  expect_identical(interval_parallel_union(x, y), integer_interval(1, 3))
+})

@@ -554,6 +554,26 @@ interval_parallel_difference <- function(x, y) {
   out
 }
 
+vec_within <- function(x, y) {
+  args <- list(x = x, y = y)
+  args <- vec_recycle_common(!!!args)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  y_proxy <- interval_proxy(y)
+  y_start <- field_start(y_proxy)
+  y_end <- field_end(y_proxy)
+
+  ptype <- vec_ptype2(x, y_start, x_arg = "x", y_arg = "interval_start(y)")
+
+  x <- vec_cast(x, ptype)
+  y_start <- vec_cast(y_start, ptype)
+  y_end <- vec_cast(y_end, ptype)
+
+  # a vs [b, c)
+  (vec_compare(x, y_start) >= 0L) & (vec_compare(x, y_end) < 0L)
+}
+
 # ------------------------------------------------------------------------------
 
 vec_parallel_min <- function(x, y) {

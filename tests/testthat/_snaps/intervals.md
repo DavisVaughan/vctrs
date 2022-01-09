@@ -126,3 +126,12 @@
       i This would result in two distinct intervals for a single observation.
       i Location 1 contains this issue.
 
+# takes the common type with interval fields
+
+    Code
+      (expect_error(vec_within(x, y)))
+    Output
+      <error/vctrs_error_incompatible_type>
+      Error in `stop_vctrs()`:
+      ! Can't combine `x` <character> and `interval_start(y)` <double>.
+

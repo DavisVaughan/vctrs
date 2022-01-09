@@ -1284,3 +1284,50 @@ test_that("parallel difference propagates NAs", {
     interval(c(2, NA), c(4, NA))
   )
 })
+
+# ------------------------------------------------------------------------------
+# vec_within()
+
+test_that("works with vectors", {
+  x <- 3
+  y <- interval(c(0, 1), c(5, 2))
+
+  expect_identical(vec_within(x, y), c(TRUE, FALSE))
+})
+
+test_that("propagates incomparable", {
+  x <- 2
+  y <- interval(c(NA, 1), c(NA, 3))
+
+  expect_identical(vec_within(x, y), c(NA, TRUE))
+
+  x <- NA
+
+  expect_identical(vec_within(x, y), c(NA, NA))
+})
+
+test_that("uses `[, )` conditions for containment", {
+  x <- interval(1, 2)
+
+  expect_identical(vec_within(1, x), TRUE)
+  expect_identical(vec_within(2, x), FALSE)
+})
+
+test_that("empty intervals don't contain their boundary", {
+  x <- interval(1, 1)
+  expect_identical(vec_within(1, x), FALSE)
+})
+
+test_that("works with empty inputs", {
+  x <- integer()
+  y <- interval(integer(), integer())
+
+  expect_identical(vec_within(x, y), logical())
+})
+
+test_that("takes the common type with interval fields", {
+  x <- "x"
+  y <- interval(c(0, 1), c(5, 2))
+
+  expect_snapshot((expect_error(vec_within(x, y))))
+})

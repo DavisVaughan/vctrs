@@ -1,21 +1,23 @@
 vec_interval_locate_minimal <- function(start,
                                         end,
                                         ...,
+                                        merge_abutting = TRUE,
                                         keep_empty = FALSE,
                                         keep_missing = FALSE) {
   check_dots_empty0(...)
   groups <- FALSE
-  .Call(vctrs_interval_locate_minimal, start, end, keep_empty, keep_missing, groups)
+  .Call(vctrs_interval_locate_minimal, start, end, merge_abutting, keep_empty, keep_missing, groups)
 }
 
 vec_interval_locate_minimal_groups <- function(start,
                                                end,
                                                ...,
+                                               merge_abutting = TRUE,
                                                keep_empty = FALSE,
                                                keep_missing = FALSE) {
   check_dots_empty0(...)
   groups <- TRUE
-  .Call(vctrs_interval_locate_minimal, start, end, keep_empty, keep_missing, groups)
+  .Call(vctrs_interval_locate_minimal, start, end, merge_abutting, keep_empty, keep_missing, groups)
 }
 
 vec_interval_complement <- function(start,
@@ -159,22 +161,34 @@ interval_restore.vctrs_interval <- function(x, to) {
   x
 }
 
-interval_locate_minimal <- function(x) {
+interval_locate_minimal <- function(x, ..., merge_abutting = TRUE) {
+  check_dots_empty0(...)
+
   proxy <- interval_proxy(x)
 
   start <- field_start(proxy)
   end <- field_end(proxy)
 
-  vec_interval_locate_minimal(start = start, end = end)
+  vec_interval_locate_minimal(
+    start = start,
+    end = end,
+    merge_abutting = merge_abutting
+  )
 }
 
-interval_locate_minimal_groups <- function(x) {
+interval_locate_minimal_groups <- function(x, ..., merge_abutting = TRUE) {
+  check_dots_empty0(...)
+
   proxy <- interval_proxy(x)
 
   start <- field_start(proxy)
   end <- field_end(proxy)
 
-  vec_interval_locate_minimal_groups(start = start, end = end)
+  vec_interval_locate_minimal_groups(
+    start = start,
+    end = end,
+    merge_abutting = merge_abutting
+  )
 }
 
 interval_complement <- function(x, ..., lower = NULL, upper = NULL) {
@@ -197,13 +211,19 @@ interval_complement <- function(x, ..., lower = NULL, upper = NULL) {
   out
 }
 
-interval_minimize <- function(x) {
+interval_minimize <- function(x, ..., merge_abutting = TRUE) {
+  check_dots_empty0(...)
+
   proxy <- interval_proxy(x)
 
   start <- field_start(proxy)
   end <- field_end(proxy)
 
-  loc <- vec_interval_locate_minimal(start = start, end = end)
+  loc <- vec_interval_locate_minimal(
+    start = start,
+    end = end,
+    merge_abutting = merge_abutting
+  )
 
   start <- vec_slice(start, loc$start)
   end <- vec_slice(end, loc$end)
@@ -214,7 +234,9 @@ interval_minimize <- function(x) {
   out
 }
 
-interval_update_minimal <- function(x) {
+interval_update_minimal <- function(x, ..., merge_abutting = TRUE) {
+  check_dots_empty0(...)
+
   proxy <- interval_proxy(x)
 
   start <- field_start(proxy)
@@ -223,6 +245,7 @@ interval_update_minimal <- function(x) {
   groups <- vec_interval_locate_minimal_groups(
     start = start,
     end = end,
+    merge_abutting = merge_abutting,
     keep_missing = TRUE
   )
 

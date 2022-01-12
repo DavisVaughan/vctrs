@@ -541,6 +541,28 @@ test_that("complement works when `lower` and `upper` are in the same data_frame"
 })
 
 # ------------------------------------------------------------------------------
+# interval()
+
+test_that("`start` must be less than `end`", {
+  expect_snapshot((expect_error(interval(2, 1))))
+  expect_snapshot((expect_error(interval(2, 2))))
+})
+
+test_that("incomplete values are propagated", {
+  expect_identical(interval(NA, TRUE), interval(NA, NA))
+  expect_identical(interval(TRUE, NA), interval(NA, NA))
+
+  # Propagates incompleteness, not missingness!
+  # Seen as incomplete even though start is "less" than end
+  x <- data_frame(x = 1, y = NA)
+  y <- data_frame(x = 2, y = 1)
+
+  expect <- data_frame(x = NA_real_, y = NA_real_)
+
+  expect_identical(interval(x, y), interval(expect, expect))
+})
+
+# ------------------------------------------------------------------------------
 # interval_complement()
 
 test_that("complement is generic over container", {
@@ -612,7 +634,7 @@ test_that("can minimize with size one input", {
   )
 })
 
-test_that("missing intervals are removed by default", {
+test_that("missing intervals are removed", {
   x <- interval(start = NA, end = NA)
   expect_identical(interval_minimize(x), interval(start = logical(), end = logical()))
 })
@@ -643,28 +665,10 @@ test_that("updates values to their minimal interval", {
   )
 })
 
-test_that("abutting and overlapping empty intervals are updated", {
-  x <- interval(start = c(1, 1, 3, 10), end = c(1, 5, 3, 12))
-
-  expect_identical(
-    interval_update_minimal(x),
-    interval(start = c(1, 1, 1, 10), end = c(5, 5, 5, 12))
-  )
-})
-
 test_that("retains missing intervals", {
   x <- interval(start = c(NA, 1, NA), end = c(NA, 5, NA))
 
   expect_identical(interval_update_minimal(x), x)
-})
-
-test_that("retains unmerged empty intervals", {
-  x <- interval(start = c(0, 1, 2, 11), end = c(0, 2, 5, 11))
-
-  expect_identical(
-    interval_update_minimal(x),
-    interval(start = c(0, 1, 1, 11), end = c(0, 5, 5, 11))
-  )
 })
 
 test_that("update is generic over container", {
@@ -707,16 +711,6 @@ test_that("union drops NAs", {
     interval_set_union(x, y),
     interval(1, 3)
   )
-})
-
-test_that("union is the union of minimal interval vectors", {
-  x <- interval(1, 1)
-  y <- interval(2, 2)
-  z <- interval(1, 3)
-
-  expect_identical(interval_set_union(x, x), interval(double(), double()))
-  expect_identical(interval_set_union(x, y), interval(double(), double()))
-  expect_identical(interval_set_union(x, z), z)
 })
 
 test_that("union is generic over container", {
@@ -765,37 +759,6 @@ test_that("intersect drops NAs", {
     interval_set_intersect(x, y),
     interval(1, 2)
   )
-})
-
-test_that("intersect is the intersection of minimal interval vectors", {
-  x <- interval(1, 5)
-
-  a <- interval(1, 1)
-  b <- interval(2, 2)
-  c <- interval(5, 5)
-  d <- interval(6, 6)
-  e <- interval(0, 0)
-
-  empty <- interval(double(), double())
-
-  expect_identical(interval_set_intersect(x, a), empty)
-  expect_identical(interval_set_intersect(a, x), empty)
-
-  expect_identical(interval_set_intersect(x, b), empty)
-  expect_identical(interval_set_intersect(b, x), empty)
-
-  expect_identical(interval_set_intersect(x, c), empty)
-  expect_identical(interval_set_intersect(c, x), empty)
-
-  expect_identical(interval_set_intersect(x, d), empty)
-  expect_identical(interval_set_intersect(d, x), empty)
-
-  expect_identical(interval_set_intersect(x, e), empty)
-  expect_identical(interval_set_intersect(e, x), empty)
-
-  # Empty interval with itself
-  expect_identical(interval_set_intersect(a, a), empty)
-  expect_identical(interval_set_intersect(a, a), empty)
 })
 
 test_that("takes ptype on early exits", {
@@ -864,37 +827,6 @@ test_that("difference drops NAs", {
   )
 })
 
-test_that("difference is the difference of minimal interval vectors", {
-  x <- interval(1, 5)
-
-  a <- interval(1, 1)
-  b <- interval(2, 2)
-  c <- interval(5, 5)
-  d <- interval(6, 6)
-  e <- interval(0, 0)
-
-  empty <- interval(double(), double())
-
-  expect_identical(interval_set_difference(x, a), x)
-  expect_identical(interval_set_difference(a, x), empty)
-
-  expect_identical(interval_set_difference(x, b), x)
-  expect_identical(interval_set_difference(b, x), empty)
-
-  expect_identical(interval_set_difference(x, c), x)
-  expect_identical(interval_set_difference(c, x), empty)
-
-  expect_identical(interval_set_difference(x, d), x)
-  expect_identical(interval_set_difference(d, x), empty)
-
-  expect_identical(interval_set_difference(x, e), x)
-  expect_identical(interval_set_difference(e, x), empty)
-
-  # Empty interval with itself
-  expect_identical(interval_set_difference(a, a), empty)
-  expect_identical(interval_set_difference(a, a), empty)
-})
-
 test_that("minimizes on early exits", {
   x <- interval(integer(), integer())
   y <- interval(c(1L, 3L), c(3L, 4L))
@@ -940,15 +872,7 @@ test_that("errors on gaps", {
 
   expect_snapshot((expect_error(interval_parallel_union(x, y))))
 
-  x <- interval(1, 1)
-  y <- interval(2, 2)
-
-  expect_snapshot((expect_error(interval_parallel_union(x, y))))
-
-  x <- interval(1, 1)
-  y <- interval(3, 5)
-
-  expect_snapshot((expect_error(interval_parallel_union(x, y))))
+  expect_snapshot((expect_error(interval_parallel_union(y, x))))
 })
 
 test_that("can force gaps to be filled", {
@@ -960,19 +884,8 @@ test_that("can force gaps to be filled", {
     interval(1, 5)
   )
 
-  x <- interval(1, 1)
-  y <- interval(2, 2)
-
   expect_identical(
-    interval_parallel_union(x, y, fill = TRUE),
-    interval(1, 2)
-  )
-
-  x <- interval(1, 1)
-  y <- interval(3, 5)
-
-  expect_identical(
-    interval_parallel_union(x, y, fill = TRUE),
+    interval_parallel_union(y, x, fill = TRUE),
     interval(1, 5)
   )
 })
@@ -989,19 +902,6 @@ test_that("parallel union propagates NAs", {
     interval_parallel_union(y, x),
     interval(c(0, NA), c(4, NA))
   )
-})
-
-test_that("union of two empty intervals is allowed", {
-  x <- interval(1, 1)
-
-  expect_identical(interval_parallel_union(x, x), x)
-})
-
-test_that("union of empty interval and abutting/overlapping interval is allowed", {
-  x <- interval(1, 1)
-  y <- interval(c(0, 0, 1), c(2, 1, 2))
-
-  expect_identical(interval_parallel_union(x, y), y)
 })
 
 test_that("parallel union is generic over container", {
@@ -1033,7 +933,7 @@ test_that("can recycle inputs", {
   )
 })
 
-test_that("parallel intersection between intervals with a gap errors", {
+test_that("parallel intersection between non-overlapping intervals errors", {
   x <- interval(start = 1L, end = 4L)
 
   y <- interval(start = 5L, end = 6L)
@@ -1047,26 +947,17 @@ test_that("parallel intersection between intervals with a gap errors", {
   expect_snapshot(
     (expect_error(interval_parallel_intersect(x, y)))
   )
-})
 
-test_that("parallel intersection between abutting intervals is fine", {
-  x <- interval(start = 1L, end = 5L)
+  y <- interval(start = 4L, end = 5L)
 
-  a <- interval(start = 5L, end = 6L)
-  b <- interval(start = 5L, end = 5L)
-  c <- interval(start = 1L, end = 1L)
-
-  expect_identical(
-    interval_parallel_intersect(x, a),
-    interval(start = 5L, end = 5L)
+  expect_snapshot(
+    (expect_error(interval_parallel_intersect(x, y)))
   )
-  expect_identical(
-    interval_parallel_intersect(x, b),
-    interval(start = 5L, end = 5L)
-  )
-  expect_identical(
-    interval_parallel_intersect(x, c),
-    interval(start = 1L, end = 1L)
+
+  y <- interval(start = 0L, end = 1L)
+
+  expect_snapshot(
+    (expect_error(interval_parallel_intersect(x, y)))
   )
 })
 
@@ -1119,48 +1010,22 @@ test_that("parallel complement propagates NAs", {
   )
 })
 
-test_that("parallel complement of empty interval with itself is an empty interval", {
-  x <- interval(1, 1)
-
-  # The result, [1, 1), abuts but does not overlap either input
-  expect_identical(
-    interval_parallel_complement(x, x),
-    x
-  )
+test_that("parallel complement of interval with itself is not allowed", {
+  x <- interval(1, 2)
+  expect_snapshot((expect_error(interval_parallel_complement(x, x))))
 })
 
-test_that("parallel complement of abutting intervals equals an empty interval", {
+test_that("parallel complement of abutting intervals is not allowed", {
   x <- interval(1, 2)
 
-  # `y` abuts `x`, it does not overlap `x`.
-  # The complement is guaranteed to not overlap `x` nor `y`.
-  # Returning the [1, 1) fulfills this, as [1, 1) abuts but does not overlap itself.
-  y <- interval(1, 1)
-  expect_identical(
-    interval_parallel_complement(x, y),
-    interval(1, 1)
-  )
-
   y <- interval(0, 1)
-  expect_identical(
-    interval_parallel_complement(x, y),
-    interval(1, 1)
-  )
-
-  y <- interval(2, 2)
-  expect_identical(
-    interval_parallel_complement(x, y),
-    interval(2, 2)
-  )
+  expect_snapshot((expect_error(interval_parallel_complement(x, y))))
 
   y <- interval(2, 3)
-  expect_identical(
-    interval_parallel_complement(x, y),
-    interval(2, 2)
-  )
+  expect_snapshot((expect_error(interval_parallel_complement(x, y))))
 })
 
-test_that("parallel complement can't be taken of overlapping intervals", {
+test_that("parallel complement of overlapping intervals is not allowed", {
   x <- interval(1, 3)
 
   expect_snapshot(
@@ -1206,12 +1071,6 @@ test_that("can parallel difference from all sides of `x`", {
     interval(1, 10)
   )
 
-  y <- interval(1, 1)
-  expect_identical(
-    interval_parallel_difference(x, y),
-    interval(1, 10)
-  )
-
   y <- interval(1, 3)
   expect_identical(
     interval_parallel_difference(x, y),
@@ -1222,12 +1081,6 @@ test_that("can parallel difference from all sides of `x`", {
   expect_identical(
     interval_parallel_difference(x, y),
     interval(1, 7)
-  )
-
-  y <- interval(10, 10)
-  expect_identical(
-    interval_parallel_difference(x, y),
-    interval(1, 10)
   )
 
   y <- interval(10, 12)
@@ -1243,20 +1096,9 @@ test_that("can parallel difference from all sides of `x`", {
   )
 })
 
-test_that("parallel difference between interval and itself results in empty interval", {
+test_that("parallel difference between interval and itself is not allowed", {
   x <- interval(1, 3)
-
-  expect_identical(
-    interval_parallel_difference(x, x),
-    interval(1, 1)
-  )
-
-  x <- interval(1, 1)
-
-  expect_identical(
-    interval_parallel_difference(x, x),
-    interval(1, 1)
-  )
+  expect_snapshot((expect_error(interval_parallel_difference(x, x))))
 })
 
 test_that("throws error when `y` is contained within `x`", {
@@ -1264,11 +1106,13 @@ test_that("throws error when `y` is contained within `x`", {
   y <- interval(2, 3)
 
   expect_snapshot((expect_error(interval_parallel_difference(x, y))))
+})
 
-  expect_identical(
-    interval_parallel_difference(y, x),
-    interval(2, 2)
-  )
+test_that("throws error when `y` contains `x`", {
+  x <- interval(2, 3)
+  y <- interval(1, 4)
+
+  expect_snapshot((expect_error(interval_parallel_difference(x, y))))
 })
 
 test_that("parallel difference propagates NAs", {
@@ -1311,11 +1155,6 @@ test_that("uses `[, )` conditions for containment", {
 
   expect_identical(vec_within(1, x), TRUE)
   expect_identical(vec_within(2, x), FALSE)
-})
-
-test_that("empty intervals don't contain their boundary", {
-  x <- interval(1, 1)
-  expect_identical(vec_within(1, x), FALSE)
 })
 
 test_that("works with empty inputs", {

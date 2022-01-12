@@ -107,22 +107,19 @@ interval <- function(start, end) {
   start <- args$start
   end <- args$end
 
-  # With `na_equal = FALSE`, comparisons between `start` and `end` that can't
-  # be made because of missing values will result in a missing value. This
-  # occurs when either `start` or `end` contains a missing value or an
-  # incomplete column of a data frame where the incomplete value occurs before
-  # all ties are broken. We call these cases incomparable, and they result in
-  # a missing interval.
   compare <- vec_compare(start, end)
 
-  if (any(compare == 1L, na.rm = TRUE)) {
-    abort("`start` must be less than or equal to `end`.")
+  if (any(compare != -1L, na.rm = TRUE)) {
+    abort("`start` must be less than `end`.")
   }
 
-  if (anyNA(compare)) {
-    incomparable <- vec_equal_na(compare)
-    start <- vec_assign(start, incomparable, NA)
-    end <- vec_assign(end, incomparable, NA)
+  joint <- data_frame(start = start, end = end)
+  complete <- vec_detect_complete(joint)
+
+  if (!all(complete)) {
+    incomplete <- !complete
+    start <- vec_assign(start, incomplete, NA)
+    end <- vec_assign(end, incomplete, NA)
   }
 
   new_interval(start, end)
@@ -200,34 +197,22 @@ interval_restore.vctrs_interval <- function(x, to) {
   x
 }
 
-interval_locate_minimal <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
+interval_locate_minimal <- function(x) {
   proxy <- interval_proxy(x)
 
   start <- field_start(proxy)
   end <- field_end(proxy)
 
-  vec_interval_locate_minimal(
-    start = start,
-    end = end,
-    ...,
-    keep_empty = keep_empty,
-    keep_missing = keep_missing
-  )
+  vec_interval_locate_minimal(start = start, end = end)
 }
 
-interval_locate_minimal_groups <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
+interval_locate_minimal_groups <- function(x) {
   proxy <- interval_proxy(x)
 
   start <- field_start(proxy)
   end <- field_end(proxy)
 
-  vec_interval_locate_minimal_groups(
-    start = start,
-    end = end,
-    ...,
-    keep_empty = keep_empty,
-    keep_missing = keep_missing
-  )
+  vec_interval_locate_minimal_groups(start = start, end = end)
 }
 
 interval_complement <- function(x, ..., lower = NULL, upper = NULL) {
@@ -250,19 +235,13 @@ interval_complement <- function(x, ..., lower = NULL, upper = NULL) {
   out
 }
 
-interval_minimize <- function(x, ..., keep_empty = FALSE, keep_missing = FALSE) {
+interval_minimize <- function(x) {
   proxy <- interval_proxy(x)
 
   start <- field_start(proxy)
   end <- field_end(proxy)
 
-  loc <- vec_interval_locate_minimal(
-    start = start,
-    end = end,
-    ...,
-    keep_empty = keep_empty,
-    keep_missing = keep_missing
-  )
+  loc <- vec_interval_locate_minimal(start = start, end = end)
 
   start <- vec_slice(start, loc$start)
   end <- vec_slice(end, loc$end)
@@ -282,7 +261,6 @@ interval_update_minimal <- function(x) {
   groups <- vec_interval_locate_minimal_groups(
     start = start,
     end = end,
-    keep_empty = TRUE,
     keep_missing = TRUE
   )
 
@@ -439,15 +417,15 @@ interval_parallel_intersect <- function(x, y) {
   start <- vec_parallel_max(x_start, y_start)
   end <- vec_parallel_min(x_end, y_end)
 
-  has_gap <- vec_compare(start, end) == 1L
+  non_overlapping <- vec_compare(start, end) >= 0L
 
-  if (any(has_gap, na.rm = TRUE)) {
-    loc <- which(has_gap)[[1]]
+  if (any(non_overlapping, na.rm = TRUE)) {
+    loc <- which(non_overlapping)[[1]]
 
     abort(c(
-      "Can't take the intersection of intervals containing a gap.",
-      i = "A gap would generate an ambiguous empty interval.",
-      i = glue::glue("Location {loc} contains a gap.")
+      "Can't take the intersection of non-overlapping intervals.",
+      i = "This would result in an empty interval.",
+      i = glue::glue("Location {loc} contains non-overlapping intervals.")
     ))
   }
 
@@ -476,13 +454,13 @@ interval_parallel_complement <- function(x, y) {
   end <- vec_parallel_max(x_start, y_start)
   start <- vec_parallel_min(x_end, y_end)
 
-  overlap <- start > end
-  if (any(overlap, na.rm = TRUE)) {
-    loc <- which(overlap)[[1]]
+  overlaps_or_abuts <- start >= end
+  if (any(overlaps_or_abuts, na.rm = TRUE)) {
+    loc <- which(overlaps_or_abuts)[[1]]
 
     abort(c(
-      "Can't take the complement of overlapping intervals.",
-      i = glue::glue("Location {loc} contains an overlap.")
+      "Can't take the complement of overlapping or abutting intervals.",
+      i = glue::glue("Location {loc} contains overlapping or abutting intervals.")
     ))
   }
 
@@ -508,9 +486,10 @@ interval_parallel_difference <- function(x, y) {
   x_end <- field_end(x_proxy)
   y_end <- field_end(y_proxy)
 
-  y_contained <-
-    (vec_compare(y_start, x_start) == 1L) &
-    (vec_compare(y_end, x_end) == -1L)
+  compare_start <- vec_compare(y_start, x_start)
+  compare_end <- vec_compare(y_end, x_end)
+
+  y_contained <- (compare_start == 1L) & (compare_end == -1L)
 
   if (any(y_contained, na.rm = TRUE)) {
     loc <- which(y_contained)[[1]]
@@ -518,6 +497,18 @@ interval_parallel_difference <- function(x, y) {
     abort(c(
       "Can't compute a difference when `y` is completely contained within `x`.",
       i = "This would result in two distinct intervals for a single observation.",
+      i = glue::glue("Location {loc} contains this issue.")
+    ))
+  }
+
+  y_contains <- (compare_start <= 0L) & (compare_end >= 0L)
+
+  if (any(y_contains, na.rm = TRUE)) {
+    loc <- which(y_contains)[[1]]
+
+    abort(c(
+      "Can't compute a difference when `y` completely contains `x`.",
+      i = "This would result in an empty interval.",
       i = glue::glue("Location {loc} contains this issue.")
     ))
   }
@@ -542,10 +533,10 @@ interval_parallel_difference <- function(x, y) {
   }
 
   if (anyNA(update)) {
-    # Ensure missings / incomparables in `y` get propagated
-    incomparable <- vec_equal_na(update)
-    start <- vec_assign(start, incomparable, NA)
-    end <- vec_assign(end, incomparable, NA)
+    # Ensure missings in `y` get propagated
+    missing <- vec_equal_na(update)
+    start <- vec_assign(start, missing, NA)
+    end <- vec_assign(end, missing, NA)
   }
 
   out <- new_interval(start, end)

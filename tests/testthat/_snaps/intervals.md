@@ -16,6 +16,24 @@
       Error in `stop_vctrs()`:
       ! Can't combine `start` <double> and `end` <character>.
 
+# `start` must be less than `end`
+
+    Code
+      (expect_error(interval(2, 1)))
+    Output
+      <error/rlang_error>
+      Error in `interval()`:
+      ! `start` must be less than `end`.
+
+---
+
+    Code
+      (expect_error(interval(2, 2)))
+    Output
+      <error/rlang_error>
+      Error in `interval()`:
+      ! `start` must be less than `end`.
+
 # errors on gaps
 
     Code
@@ -30,7 +48,7 @@
 ---
 
     Code
-      (expect_error(interval_parallel_union(x, y)))
+      (expect_error(interval_parallel_union(y, x)))
     Output
       <error/rlang_error>
       Error in `interval_parallel_union()`:
@@ -38,27 +56,16 @@
       i Location 1 contains a gap.
       i Set `fill = TRUE` to force a union anyways.
 
----
-
-    Code
-      (expect_error(interval_parallel_union(x, y)))
-    Output
-      <error/rlang_error>
-      Error in `interval_parallel_union()`:
-      ! Can't take the union of intervals containing a gap.
-      i Location 1 contains a gap.
-      i Set `fill = TRUE` to force a union anyways.
-
-# parallel intersection between intervals with a gap errors
+# parallel intersection between non-overlapping intervals errors
 
     Code
       (expect_error(interval_parallel_intersect(x, y)))
     Output
       <error/rlang_error>
       Error in `interval_parallel_intersect()`:
-      ! Can't take the intersection of intervals containing a gap.
-      i A gap would generate an ambiguous empty interval.
-      i Location 1 contains a gap.
+      ! Can't take the intersection of non-overlapping intervals.
+      i This would result in an empty interval.
+      i Location 1 contains non-overlapping intervals.
 
 ---
 
@@ -67,19 +74,51 @@
     Output
       <error/rlang_error>
       Error in `interval_parallel_intersect()`:
-      ! Can't take the intersection of intervals containing a gap.
-      i A gap would generate an ambiguous empty interval.
-      i Location 1 contains a gap.
+      ! Can't take the intersection of non-overlapping intervals.
+      i This would result in an empty interval.
+      i Location 1 contains non-overlapping intervals.
 
-# parallel complement can't be taken of overlapping intervals
+---
+
+    Code
+      (expect_error(interval_parallel_intersect(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_intersect()`:
+      ! Can't take the intersection of non-overlapping intervals.
+      i This would result in an empty interval.
+      i Location 1 contains non-overlapping intervals.
+
+---
+
+    Code
+      (expect_error(interval_parallel_intersect(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_intersect()`:
+      ! Can't take the intersection of non-overlapping intervals.
+      i This would result in an empty interval.
+      i Location 1 contains non-overlapping intervals.
+
+# parallel complement of interval with itself is not allowed
 
     Code
       (expect_error(interval_parallel_complement(x, x)))
     Output
       <error/rlang_error>
       Error in `interval_parallel_complement()`:
-      ! Can't take the complement of overlapping intervals.
-      i Location 1 contains an overlap.
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
+
+# parallel complement of abutting intervals is not allowed
+
+    Code
+      (expect_error(interval_parallel_complement(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
 
 ---
 
@@ -88,15 +127,18 @@
     Output
       <error/rlang_error>
       Error in `interval_parallel_complement()`:
-      ! Can't take the complement of overlapping intervals.
-      i Location 1 contains an overlap.
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
+
+# parallel complement of overlapping intervals is not allowed
+
     Code
-      (expect_error(interval_parallel_complement(y, x)))
+      (expect_error(interval_parallel_complement(x, x)))
     Output
       <error/rlang_error>
       Error in `interval_parallel_complement()`:
-      ! Can't take the complement of overlapping intervals.
-      i Location 1 contains an overlap.
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
 
 ---
 
@@ -105,15 +147,43 @@
     Output
       <error/rlang_error>
       Error in `interval_parallel_complement()`:
-      ! Can't take the complement of overlapping intervals.
-      i Location 1 contains an overlap.
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
     Code
       (expect_error(interval_parallel_complement(y, x)))
     Output
       <error/rlang_error>
       Error in `interval_parallel_complement()`:
-      ! Can't take the complement of overlapping intervals.
-      i Location 1 contains an overlap.
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
+
+---
+
+    Code
+      (expect_error(interval_parallel_complement(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
+    Code
+      (expect_error(interval_parallel_complement(y, x)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_complement()`:
+      ! Can't take the complement of overlapping or abutting intervals.
+      i Location 1 contains overlapping or abutting intervals.
+
+# parallel difference between interval and itself is not allowed
+
+    Code
+      (expect_error(interval_parallel_difference(x, x)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_difference()`:
+      ! Can't compute a difference when `y` completely contains `x`.
+      i This would result in an empty interval.
+      i Location 1 contains this issue.
 
 # throws error when `y` is contained within `x`
 
@@ -124,6 +194,17 @@
       Error in `interval_parallel_difference()`:
       ! Can't compute a difference when `y` is completely contained within `x`.
       i This would result in two distinct intervals for a single observation.
+      i Location 1 contains this issue.
+
+# throws error when `y` contains `x`
+
+    Code
+      (expect_error(interval_parallel_difference(x, y)))
+    Output
+      <error/rlang_error>
+      Error in `interval_parallel_difference()`:
+      ! Can't compute a difference when `y` completely contains `x`.
+      i This would result in an empty interval.
       i Location 1 contains this issue.
 
 # takes the common type with interval fields

@@ -161,7 +161,10 @@ interval_restore.vctrs_interval <- function(x, to) {
   x
 }
 
-interval_locate_minimal <- function(x, ..., merge_abutting = TRUE) {
+interval_locate_minimal <- function(x,
+                                    ...,
+                                    merge_abutting = TRUE,
+                                    keep_missing = FALSE) {
   check_dots_empty0(...)
 
   proxy <- interval_proxy(x)
@@ -172,11 +175,15 @@ interval_locate_minimal <- function(x, ..., merge_abutting = TRUE) {
   vec_interval_locate_minimal(
     start = start,
     end = end,
-    merge_abutting = merge_abutting
+    merge_abutting = merge_abutting,
+    keep_missing = keep_missing
   )
 }
 
-interval_locate_minimal_groups <- function(x, ..., merge_abutting = TRUE) {
+interval_locate_minimal_groups <- function(x,
+                                           ...,
+                                           merge_abutting = TRUE,
+                                           keep_missing = FALSE) {
   check_dots_empty0(...)
 
   proxy <- interval_proxy(x)
@@ -187,7 +194,8 @@ interval_locate_minimal_groups <- function(x, ..., merge_abutting = TRUE) {
   vec_interval_locate_minimal_groups(
     start = start,
     end = end,
-    merge_abutting = merge_abutting
+    merge_abutting = merge_abutting,
+    keep_missing = keep_missing
   )
 }
 
@@ -211,7 +219,10 @@ interval_complement <- function(x, ..., lower = NULL, upper = NULL) {
   out
 }
 
-interval_minimize <- function(x, ..., merge_abutting = TRUE) {
+interval_minimize <- function(x,
+                              ...,
+                              merge_abutting = TRUE,
+                              keep_missing = FALSE) {
   check_dots_empty0(...)
 
   proxy <- interval_proxy(x)
@@ -222,7 +233,8 @@ interval_minimize <- function(x, ..., merge_abutting = TRUE) {
   loc <- vec_interval_locate_minimal(
     start = start,
     end = end,
-    merge_abutting = merge_abutting
+    merge_abutting = merge_abutting,
+    keep_missing = keep_missing
   )
 
   start <- vec_slice(start, loc$start)

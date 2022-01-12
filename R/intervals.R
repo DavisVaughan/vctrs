@@ -639,46 +639,52 @@ interval_restore.integer_interval <- function(x, to) {
 
 
 
-# Pass at interval splitting function.
-# - Empty intervals are always used to construct the boundaries, i.e. with
-#   [1, 4), [3, 3), [2, 4) we will always get a split at [2, 3) and [3, 4)
-#   even if we don't use `keep_empty` to keep the empties at the end
+# Pass at interval splitting function
+# - Could be simplified with a fix to vec_locate_matches() to ensure that
+#   missings are always matched exactly even when using `>` or `<`
 #
-# interval_empty <- function(x) {
-#   proxy <- interval_proxy(x)
+# x <- data_frame(start = c(1, NA, 2, 5, NA, 7, 8), end = c(3, NA, 4, 6, NA, 12, 10))
+# interval_split(x)
 #
-#   start <- field_start(proxy)
-#   end <- field_end(proxy)
 #
-#   compare <- vec_compare(start, end)
-#
-#   # Treat incomparable as non-empty
-#   if (anyNA(compare)) {
-#     missing <- vec_equal_na(compare)
-#     compare[missing] <- 1L
-#   }
-#
-#   compare == 0L
+# interval_proxy <- function(x) {
+#   x
+# }
+# field_start <- function(x) {
+#   x$start
+# }
+# field_end <- function(x) {
+#   x$end
 # }
 #
-# interval_incomparable <- function(x) {
-#   proxy <- interval_proxy(x)
+# interval_split_points <- function(start, end, keep_missing) {
+#   points <- vec_sort(vec_unique(vec_c(start, end)))
+#   size_points <- vec_size(points)
 #
-#   start <- field_start(proxy)
-#   end <- field_end(proxy)
+#   any_missing <- any(vec_equal_na(vec_slice(points, size_points)))
+#   if (any_missing) {
+#     points <- vec_slice(points, -size_points)
+#     size_points <- size_points - 1L
+#   }
 #
-#   compare <- vec_compare(start, end)
+#   slice_start <- 1L
+#   slice_end <- size_points
 #
-#   vec_equal_na(compare)
+#   loc_start <- seq2(slice_start, slice_end - 1L)
+#   loc_end <- seq2(slice_start + 1L, slice_end)
+#
+#   point_start <- vec_slice(points, loc_start)
+#   point_end <- vec_slice(points, loc_end)
+#
+#   if (keep_missing && any_missing) {
+#     point_start <- vec_c(point_start, vec_init(point_start))
+#     point_end <- vec_c(point_end, vec_init(point_end))
+#   }
+#
+#   list(start = point_start, end = point_end)
 # }
 #
-# interval_split <- function(x,
-#                            ...,
-#                            keep_empty = TRUE,
-#                            keep_missing = TRUE) {
-#   if (!is_bool(keep_empty)) {
-#     abort("`keep_empty` must be a single `TRUE` or `FALSE`.")
-#   }
+# interval_split <- function(x, ..., keep_missing = FALSE) {
 #   if (!is_bool(keep_missing)) {
 #     abort("`keep_missing` must be a single `TRUE` or `FALSE`.")
 #   }
@@ -688,18 +694,18 @@ interval_restore.integer_interval <- function(x, to) {
 #   start <- field_start(proxy)
 #   end <- field_end(proxy)
 #
-#   points <- vec_sort(vec_unique(vec_c(start, end)))
+#   args <- interval_split_points(start, end, keep_missing)
+#   point_start <- args$start
+#   point_end <- args$end
 #
-#   slice_start <- 1L
-#   slice_end <- vec_size(points)
+#   # This doesn't work right now with < or > conditions
+#   # if (keep_missing) {
+#   #   incomplete <- "match"
+#   # } else {
+#   #   incomplete <- "drop"
+#   # }
 #
-#   loc_start <- seq2(slice_start, slice_end - 1L)
-#   loc_end <- seq2(slice_start + 1L, slice_end)
-#
-#   needle_start <- vec_slice(points, loc_start)
-#   needle_end <- vec_slice(points, loc_end)
-#
-#   needles <- data_frame(start = needle_start, end = needle_end)
+#   needles <- data_frame(start = point_start, end = point_end)
 #   haystack <- data_frame(start = end, end = start)
 #
 #   # Find actual overlaps from all possible intervals
@@ -714,37 +720,16 @@ interval_restore.integer_interval <- function(x, to) {
 #
 #   out <- vec_slice(needles, loc$needles)
 #
-#   if (keep_empty) {
-#     empty <- interval_empty(x)
-#
-#     if (any(empty)) {
-#       x_empty <- vec_slice(x, empty)
-#       x_empty <- vec_unique(x_empty)
-#       out <- vec_c(out, x_empty)
-#       out <- vec_sort(out)
-#     }
-#   }
-#
-#   if (keep_missing) {
-#     incomparable <- interval_incomparable(x)
-#
-#     if (any(incomparable)) {
-#       incomparable <- vec_init(x)
-#       out <- vec_c(out, incomparable)
-#     }
+#   # TODO: Remove this if `incomplete = "match"` works
+#   if (keep_missing && any(vec_equal_na(x))) {
+#     out <- vec_c(out, vec_init(out))
 #   }
 #
 #   # TODO: Put back into an interval object
 #   out
 # }
 #
-# interval_locate_split_groups <- function(x,
-#                                          ...,
-#                                          keep_empty = TRUE,
-#                                          keep_missing = TRUE) {
-#   if (!is_bool(keep_empty)) {
-#     abort("`keep_empty` must be a single `TRUE` or `FALSE`.")
-#   }
+# interval_locate_split_groups <- function(x, ..., keep_missing = FALSE) {
 #   if (!is_bool(keep_missing)) {
 #     abort("`keep_missing` must be a single `TRUE` or `FALSE`.")
 #   }
@@ -754,18 +739,18 @@ interval_restore.integer_interval <- function(x, to) {
 #   start <- field_start(proxy)
 #   end <- field_end(proxy)
 #
-#   points <- vec_sort(vec_unique(vec_c(start, end)))
+#   args <- interval_split_points(start, end, keep_missing)
+#   point_start <- args$start
+#   point_end <- args$end
 #
-#   slice_start <- 1L
-#   slice_end <- vec_size(points)
+#   # This doesn't work right now with < or > conditions
+#   # if (keep_missing) {
+#   #   incomplete <- "match"
+#   # } else {
+#   #   incomplete <- "drop"
+#   # }
 #
-#   loc_start <- seq2(slice_start, slice_end - 1L)
-#   loc_end <- seq2(slice_start + 1L, slice_end)
-#
-#   needle_start <- vec_slice(points, loc_start)
-#   needle_end <- vec_slice(points, loc_end)
-#
-#   needles <- data_frame(start = needle_start, end = needle_end)
+#   needles <- data_frame(start = point_start, end = point_end)
 #   haystack <- data_frame(start = end, end = start)
 #
 #   # Find actual overlaps from all possible intervals
@@ -784,28 +769,16 @@ interval_restore.integer_interval <- function(x, to) {
 #
 #   out <- data_frame(key = key, loc = loc)
 #
-#   if (keep_empty) {
-#     empty <- interval_empty(x)
-#
-#     if (any(empty)) {
-#       empty <- which(empty)
-#       x_empty <- vec_slice(x, empty)
-#       out_empty <- vec_group_loc(x_empty)
-#       out_empty$loc <- vec_chop(empty, out_empty$loc)
-#       out <- vec_c(out, out_empty)
-#       out <- vec_slice(out, vec_order(out$key))
-#     }
-#   }
-#
+#   # TODO: Remove this if `incomplete = "match"` works
 #   if (keep_missing) {
-#     incomparable <- interval_incomparable(x)
+#     missing <- vec_equal_na(x)
 #
-#     if (any(incomparable)) {
-#       incomparable <- which(incomparable)
-#       key_incomparable <- vec_init(x)
-#       loc_incomparable <- list(incomparable)
-#       out_incomparable <- data_frame(key = key_incomparable, loc = loc_incomparable)
-#       out <- vec_c(out, out_incomparable)
+#     if (any(missing)) {
+#       missing <- which(missing)
+#       key_missing <- vec_init(x)
+#       loc_missing <- list(missing)
+#       out_missing <- data_frame(key = key_missing, loc = loc_missing)
+#       out <- vec_c(out, out_missing)
 #     }
 #   }
 #
@@ -818,63 +791,24 @@ interval_restore.integer_interval <- function(x, to) {
 #   start <- field_start(proxy)
 #   end <- field_end(proxy)
 #
-#   points <- vec_sort(vec_unique(vec_c(start, end)))
-#
-#   slice_start <- 1L
-#   slice_end <- vec_size(points)
-#
-#   loc_start <- seq2(slice_start, slice_end - 1L)
-#   loc_end <- seq2(slice_start + 1L, slice_end)
-#
-#   haystack_start <- vec_slice(points, loc_start)
-#   haystack_end <- vec_slice(points, loc_end)
+#   args <- interval_split_points(start, end, keep_missing = TRUE)
+#   point_start <- args$start
+#   point_end <- args$end
 #
 #   needles <- data_frame(start = start, end = end)
-#   haystack <- data_frame(start = haystack_end, end = haystack_start)
-#
-#   candidates <- data_frame(start = haystack_start, end = haystack_end)
+#   haystack <- data_frame(start = point_end, end = point_start)
 #
 #   loc <- vec_locate_matches(
 #     needles,
 #     haystack,
 #     condition = c("<", ">"),
-#     no_match = "drop",
-#     incomplete = "drop"
+#     no_match = "error",
+#     incomplete = NA_integer_
 #   )
 #
-#   empty <- interval_empty(x)
-#   if (any(empty)) {
-#     empty <- which(empty)
-#     x_empty <- vec_slice(x, empty)
-#
-#     loc_needles <- empty
-#     loc_haystack <- vec_group_id(x_empty) + vec_size(candidates)
-#     attributes(loc_haystack) <- NULL
-#     loc_empty <- data_frame(needles = loc_needles, haystack = loc_haystack)
-#
-#     loc <- vec_c(loc, loc_empty)
-#     loc <- vec_slice(loc, vec_order(loc$needles))
-#
-#     candidates_empty <- vec_unique(x_empty)
-#     candidates <- vec_c(candidates, candidates_empty)
-#   }
-#
-#   incomparable <- interval_incomparable(x)
-#   if (any(incomparable)) {
-#     incomparable <- which(incomparable)
-#
-#     loc_needles <- incomparable
-#     loc_haystack <- vec_rep(vec_size(candidates) + 1L, vec_size(loc_needles))
-#     loc_incomparable <- data_frame(needles = loc_needles, haystack = loc_haystack)
-#
-#     loc <- vec_c(loc, loc_incomparable)
-#     loc <- vec_slice(loc, vec_order(loc$needles))
-#
-#     candidates_incomparable <- vec_init(x)
-#     candidates <- vec_c(candidates, candidates_incomparable)
-#   }
-#
 #   loc <- vec_split(loc$haystack, loc$needles)
+#
+#   candidates <- data_frame(start = point_start, end = point_end)
 #
 #   vec_chop(candidates, loc$val)
 # }

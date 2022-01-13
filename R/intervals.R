@@ -350,6 +350,45 @@ interval_set_intersect <- function(x, y) {
   out
 }
 
+interval_set_symmetric_difference <- function(x, y) {
+  args <- vec_cast_common(x = x, y = y)
+  x <- args[[1]]
+  y <- args[[2]]
+
+  if (vec_size(x) == 0L || all(vec_equal_na(x))) {
+    return(interval_minimize(y))
+  }
+  if (vec_size(y) == 0L || all(vec_equal_na(y))) {
+    return(interval_minimize(x))
+  }
+
+  x_proxy <- interval_proxy(x)
+  y_proxy <- interval_proxy(y)
+
+  lower <- min(
+    min(field_start(x_proxy), na.rm = TRUE),
+    min(field_start(y_proxy), na.rm = TRUE)
+  )
+  upper <- max(
+    max(field_end(x_proxy), na.rm = TRUE),
+    max(field_end(y_proxy), na.rm = TRUE)
+  )
+
+  x_c <- interval_complement(x_proxy, lower = lower, upper = upper)
+  x_c_union_y <- interval_set_union(x_c, y_proxy)
+  x_setdiff_y <- interval_complement(x_c_union_y, lower = lower, upper = upper)
+
+  y_c <- interval_complement(y_proxy, lower = lower, upper = upper)
+  y_c_union_x <- interval_set_union(y_c, x_proxy)
+  y_setdiff_x <- interval_complement(y_c_union_x, lower = lower, upper = upper)
+
+  out <- interval_set_union(x_setdiff_y, y_setdiff_x)
+
+  out <- interval_restore(out, x)
+
+  out
+}
+
 interval_parallel_union <- function(x, y, ..., fill = FALSE) {
   if (!is_bool(fill)) {
     abort("`fill` must be a single `TRUE` or `FALSE`.")

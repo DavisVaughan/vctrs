@@ -910,6 +910,57 @@ test_that("difference is generic over container", {
 })
 
 # ------------------------------------------------------------------------------
+# interval_set_symmetric_difference()
+
+test_that("difference works with size zero inputs", {
+  x <- interval(start = integer(), end = integer())
+  expect_identical(interval_set_symmetric_difference(x, x), x)
+})
+
+test_that("minimizes on early exits", {
+  x <- interval(integer(), integer())
+  y <- interval(c(1L, 3L), c(3L, 4L))
+
+  expect_identical(interval_set_symmetric_difference(x, y), interval(1L, 4L))
+  expect_identical(interval_set_symmetric_difference(y, x), interval(1L, 4L))
+
+  z <- interval(NA_integer_, NA_integer_)
+
+  expect_identical(interval_set_symmetric_difference(z, y), interval(1L, 4L))
+  expect_identical(interval_set_symmetric_difference(y, z), interval(1L, 4L))
+})
+
+test_that("symmetric difference performs xor", {
+  x <- interval(c(3, 0, 7), c(8, 2, 10))
+  y <- interval(c(1, 8), c(5, 12))
+
+  expect_identical(
+    interval_set_symmetric_difference(x, y),
+    interval(c(0, 2, 5, 10), c(1, 3, 8, 12))
+  )
+})
+
+test_that("symmetric difference drops NAs", {
+  x <- interval(c(0, NA), c(2, NA))
+  y <- interval(1, 4)
+
+  expect_identical(
+    interval_set_symmetric_difference(x, y),
+    interval(c(0, 2), c(1, 4))
+  )
+  expect_identical(
+    interval_set_symmetric_difference(y, x),
+    interval(c(0, 2), c(1, 4))
+  )
+})
+
+test_that("symmetric difference is generic over container", {
+  x <- integer_interval(1, 3)
+  y <- integer_interval(2, 5)
+  expect_identical(interval_set_symmetric_difference(x, y), integer_interval(c(1, 3), c(2, 5)))
+})
+
+# ------------------------------------------------------------------------------
 # interval_parallel_union()
 
 test_that("can take the parallel union", {

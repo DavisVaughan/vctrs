@@ -691,8 +691,6 @@ interval_restore.integer_interval <- function(x, to) {
 
 
 # Pass at interval splitting function
-# - Could be simplified with a fix to vec_locate_matches() to ensure that
-#   missings are always matched exactly even when using `>` or `<`
 #
 # x <- data_frame(start = c(1, NA, 2, 5, NA, 7, 8), end = c(3, NA, 4, 6, NA, 12, 10))
 # interval_split(x)
@@ -712,6 +710,7 @@ interval_restore.integer_interval <- function(x, to) {
 #   points <- vec_sort(vec_unique(vec_c(start, end)))
 #   size_points <- vec_size(points)
 #
+#   # If any missing intervals are present, they will show up at the end
 #   any_missing <- any(vec_equal_na(vec_slice(points, size_points)))
 #   if (any_missing) {
 #     points <- vec_slice(points, -size_points)
@@ -749,12 +748,11 @@ interval_restore.integer_interval <- function(x, to) {
 #   point_start <- args$start
 #   point_end <- args$end
 #
-#   # This doesn't work right now with < or > conditions
-#   # if (keep_missing) {
-#   #   incomplete <- "match"
-#   # } else {
-#   #   incomplete <- "drop"
-#   # }
+#   if (keep_missing) {
+#     incomplete <- "match"
+#   } else {
+#     incomplete <- "drop"
+#   }
 #
 #   needles <- data_frame(start = point_start, end = point_end)
 #   haystack <- data_frame(start = end, end = start)
@@ -765,16 +763,11 @@ interval_restore.integer_interval <- function(x, to) {
 #     haystack,
 #     condition = c("<", ">"),
 #     no_match = "drop",
-#     incomplete = "drop",
+#     incomplete = incomplete,
 #     multiple = "first"
 #   )
 #
 #   out <- vec_slice(needles, loc$needles)
-#
-#   # TODO: Remove this if `incomplete = "match"` works
-#   if (keep_missing && any(vec_equal_na(x))) {
-#     out <- vec_c(out, vec_init(out))
-#   }
 #
 #   # TODO: Put back into an interval object
 #   out
@@ -794,12 +787,11 @@ interval_restore.integer_interval <- function(x, to) {
 #   point_start <- args$start
 #   point_end <- args$end
 #
-#   # This doesn't work right now with < or > conditions
-#   # if (keep_missing) {
-#   #   incomplete <- "match"
-#   # } else {
-#   #   incomplete <- "drop"
-#   # }
+#   if (keep_missing) {
+#     incomplete <- "match"
+#   } else {
+#     incomplete <- "drop"
+#   }
 #
 #   needles <- data_frame(start = point_start, end = point_end)
 #   haystack <- data_frame(start = end, end = start)
@@ -810,7 +802,7 @@ interval_restore.integer_interval <- function(x, to) {
 #     haystack,
 #     condition = c("<", ">"),
 #     no_match = "drop",
-#     incomplete = "drop"
+#     incomplete = incomplete
 #   )
 #   loc <- vec_split(loc$haystack, loc$needles)
 #
@@ -819,19 +811,6 @@ interval_restore.integer_interval <- function(x, to) {
 #   loc <- loc$val
 #
 #   out <- data_frame(key = key, loc = loc)
-#
-#   # TODO: Remove this if `incomplete = "match"` works
-#   if (keep_missing) {
-#     missing <- vec_equal_na(x)
-#
-#     if (any(missing)) {
-#       missing <- which(missing)
-#       key_missing <- vec_init(x)
-#       loc_missing <- list(missing)
-#       out_missing <- data_frame(key = key_missing, loc = loc_missing)
-#       out <- vec_c(out, out_missing)
-#     }
-#   }
 #
 #   out
 # }

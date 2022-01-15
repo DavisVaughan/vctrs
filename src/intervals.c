@@ -418,7 +418,6 @@ r_obj* vec_interval_complement(r_obj* start,
 
   bool used_lower = false;
   bool used_upper = false;
-  const r_ssize loc_bound = vec_size(start);
 
   const void* p_lower = NULL;
   if (use_lower) {
@@ -525,7 +524,6 @@ r_obj* vec_interval_complement(r_obj* start,
       loc_gap_start = v_loc_minimal_end[loc_lower_before_end_of] - 1;
     } else {
       used_lower = true;
-      loc_gap_start = loc_bound;
     }
 
     // End of the gap is the next interval start. No need to worry about
@@ -533,7 +531,9 @@ r_obj* vec_interval_complement(r_obj* start,
     // between `lower` and `upper`.
     const r_ssize loc_gap_end = v_loc_minimal_start[loc_lower_after_start_of + 1] - 1;
 
-    r_int_push_back(p_loc_start, loc_gap_start + 1);
+    if (!used_lower) {
+      r_int_push_back(p_loc_start, loc_gap_start + 1);
+    }
     r_int_push_back(p_loc_end, loc_gap_end + 1);
   }
 
@@ -578,11 +578,12 @@ r_obj* vec_interval_complement(r_obj* start,
       loc_gap_end = v_loc_minimal_start[loc_upper_before_end_of] - 1;
     } else {
       used_upper = true;
-      loc_gap_end = loc_bound;
     }
 
     r_int_push_back(p_loc_start, loc_gap_start + 1);
-    r_int_push_back(p_loc_end, loc_gap_end + 1);
+    if (!used_upper) {
+      r_int_push_back(p_loc_end, loc_gap_end + 1);
+    }
   }
 
   if (use_lower && use_upper && !has_intervals_between) {
@@ -599,7 +600,6 @@ r_obj* vec_interval_complement(r_obj* start,
       loc_gap_start = v_loc_minimal_end[loc_lower_before_end_of] - 1;
     } else {
       used_lower = true;
-      loc_gap_start = loc_bound;
     }
 
     r_ssize loc_gap_end = -1;
@@ -608,7 +608,6 @@ r_obj* vec_interval_complement(r_obj* start,
       loc_gap_end = v_loc_minimal_start[loc_upper_before_end_of] - 1;
     } else {
       used_upper = true;
-      loc_gap_end = loc_bound;
     }
 
     const bool lower_and_upper_in_same_interval =
@@ -616,15 +615,25 @@ r_obj* vec_interval_complement(r_obj* start,
       upper_in_interval &&
       (loc_lower_before_end_of == loc_upper_before_end_of);
 
-    if (!lower_and_upper_in_same_interval) {
+    if (!used_lower && !lower_and_upper_in_same_interval) {
       r_int_push_back(p_loc_start, loc_gap_start + 1);
+    }
+    if (!used_upper && !lower_and_upper_in_same_interval) {
       r_int_push_back(p_loc_end, loc_gap_end + 1);
     }
   }
 
 
+  r_obj* loc_start = KEEP_N(r_arr_unwrap(p_loc_start), &n_prot);
+  r_obj* loc_end = KEEP_N(r_arr_unwrap(p_loc_end), &n_prot);
+
+  // Slice `end` to get new starts and `start` to get new ends!
+  r_obj* out_start = KEEP_N(vec_slice_impl(end, loc_start), &n_prot);
+  r_obj* out_end = KEEP_N(vec_slice_impl(start, loc_end), &n_prot);
+
   if (used_lower || used_upper) {
-    // Append `lower` to `end` and `upper` to `start` before slicing
+    // Push `lower` to the start of the new starts
+    // Push `upper` to the end of the new ends
 
     r_obj* args = KEEP_N(r_new_list(2), &n_prot);
 
@@ -634,10 +643,10 @@ r_obj* vec_interval_complement(r_obj* start,
     };
 
     if (used_lower) {
-      r_list_poke(args, 0, end);
-      r_list_poke(args, 1, lower);
+      r_list_poke(args, 0, lower);
+      r_list_poke(args, 1, out_start);
 
-      end = KEEP_N(vec_c(
+      out_start = KEEP_N(vec_c(
         args,
         ptype,
         R_NilValue,
@@ -646,10 +655,10 @@ r_obj* vec_interval_complement(r_obj* start,
     }
 
     if (used_upper) {
-      r_list_poke(args, 0, start);
+      r_list_poke(args, 0, out_end);
       r_list_poke(args, 1, upper);
 
-      start = KEEP_N(vec_c(
+      out_end = KEEP_N(vec_c(
         args,
         ptype,
         R_NilValue,
@@ -657,13 +666,6 @@ r_obj* vec_interval_complement(r_obj* start,
       ), &n_prot);
     }
   }
-
-  r_obj* loc_start = KEEP_N(r_arr_unwrap(p_loc_start), &n_prot);
-  r_obj* loc_end = KEEP_N(r_arr_unwrap(p_loc_end), &n_prot);
-
-  // Slice `end` to get new starts and `start` to get new ends!
-  r_obj* out_start = KEEP_N(vec_slice_impl(end, loc_start), &n_prot);
-  r_obj* out_end = KEEP_N(vec_slice_impl(start, loc_end), &n_prot);
 
   r_obj* out = KEEP_N(r_new_list(2), &n_prot);
   r_list_poke(out, 0, out_start);
@@ -674,7 +676,7 @@ r_obj* vec_interval_complement(r_obj* start,
   r_chr_poke(out_names, 0, r_str("start"));
   r_chr_poke(out_names, 1, r_str("end"));
 
-  r_init_data_frame(out, vec_size(loc_start));
+  r_init_data_frame(out, vec_size(out_start));
 
   FREE(n_prot);
   return out;

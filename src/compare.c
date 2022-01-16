@@ -30,10 +30,8 @@ do {                                                    \
 }                                                       \
 while (0)
 
-// [[ register() ]]
-SEXP vctrs_compare(SEXP x, SEXP y, SEXP na_equal_) {
-  bool na_equal = r_bool_as_int(na_equal_);
-
+// [[ include("compare.h") ]]
+SEXP vec_compare(SEXP x, SEXP y, bool na_equal) {
   R_len_t size = vec_size(x);
 
   enum vctrs_type type = vec_proxy_typeof(x);
@@ -71,6 +69,12 @@ SEXP vctrs_compare(SEXP x, SEXP y, SEXP na_equal_) {
     default:                   stop_unimplemented_vctrs_type("vctrs_compare", type);
     }
   }
+}
+
+// [[ register() ]]
+SEXP vctrs_compare(SEXP x, SEXP y, SEXP na_equal) {
+  const bool c_na_equal = r_bool_as_int(na_equal);
+  return vec_compare(x, y, c_na_equal);
 }
 
 #undef COMPARE

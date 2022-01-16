@@ -7,6 +7,10 @@
 
 // -----------------------------------------------------------------------------
 
+SEXP vec_compare(SEXP x, SEXP y, bool na_equal);
+
+// -----------------------------------------------------------------------------
+
 // https://stackoverflow.com/questions/10996418
 static inline
 int int_compare_scalar(int x, int y) {
@@ -142,11 +146,11 @@ int p_list_compare_na_equal(const void* p_x, r_ssize i, const void* p_y, r_ssize
 #undef P_COMPARE_NA_EQUAL
 
 static inline
-bool p_compare_na_equal(const void* p_x,
-                        r_ssize i,
-                        const void* p_y,
-                        r_ssize j,
-                        const enum vctrs_type type) {
+int p_compare_na_equal(const void* p_x,
+                       r_ssize i,
+                       const void* p_y,
+                       r_ssize j,
+                       const enum vctrs_type type) {
   switch (type) {
   case vctrs_type_null: return p_nil_compare_na_equal(p_x, i, p_y, j);
   case vctrs_type_logical: return p_lgl_compare_na_equal(p_x, i, p_y, j);
@@ -255,11 +259,11 @@ int p_list_compare_na_propagate(const void* p_x, r_ssize i, const void* p_y, r_s
 #undef P_COMPARE_NA_PROPAGATE
 
 static inline
-bool p_compare_na_propagate(const void* p_x,
-                            r_ssize i,
-                            const void* p_y,
-                            r_ssize j,
-                            const enum vctrs_type type) {
+int p_compare_na_propagate(const void* p_x,
+                           r_ssize i,
+                           const void* p_y,
+                           r_ssize j,
+                           const enum vctrs_type type) {
   switch (type) {
   case vctrs_type_null: return p_nil_compare_na_propagate(p_x, i, p_y, j);
   case vctrs_type_logical: return p_lgl_compare_na_propagate(p_x, i, p_y, j);

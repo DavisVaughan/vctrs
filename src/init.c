@@ -140,7 +140,8 @@ extern r_obj* vctrs_list_drop_empty(r_obj*);
 extern r_obj* vctrs_is_altrep(r_obj* x);
 extern r_obj* vctrs_test_compute_nesting_container_info(r_obj*, r_obj*);
 extern r_obj* vctrs_locate_matches(r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*);
-
+extern r_obj* vctrs_interval_locate_minimal(r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*);
+extern r_obj* vctrs_interval_complement(r_obj*, r_obj*, r_obj*, r_obj*);
 
 // Maturing
 // In the public header
@@ -300,6 +301,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_is_altrep",                              (DL_FUNC) &vctrs_is_altrep, 1},
   {"vctrs_test_compute_nesting_container_info",    (DL_FUNC) &vctrs_test_compute_nesting_container_info, 2},
   {"vctrs_locate_matches",                         (DL_FUNC) &vctrs_locate_matches, 12},
+  {"vctrs_interval_locate_minimal",                (DL_FUNC) &vctrs_interval_locate_minimal, 6},
+  {"vctrs_interval_complement",                    (DL_FUNC) &vctrs_interval_complement, 4},
   {NULL, NULL, 0}
 };
 
@@ -358,6 +361,7 @@ void vctrs_init_bind(SEXP ns);
 void vctrs_init_cast(SEXP ns);
 void vctrs_init_data(SEXP ns);
 void vctrs_init_dictionary(SEXP ns);
+void vctrs_init_intervals(SEXP ns);
 void vctrs_init_match(r_obj* ns);
 void vctrs_init_names(SEXP ns);
 void vctrs_init_proxy_restore(SEXP ns);
@@ -382,6 +386,7 @@ SEXP vctrs_init_library(SEXP ns) {
   vctrs_init_cast(ns);
   vctrs_init_data(ns);
   vctrs_init_dictionary(ns);
+  vctrs_init_intervals(ns);
   vctrs_init_match(ns);
   vctrs_init_names(ns);
   vctrs_init_proxy_restore(ns);

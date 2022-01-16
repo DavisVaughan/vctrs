@@ -13,7 +13,7 @@ static struct vctrs_arg* const args_upper = &args_upper_;
 
 static r_obj* vec_interval_locate_minimal(r_obj* start,
                                           r_obj* end,
-                                          bool merge_abutting,
+                                          bool keep_abutting,
                                           bool keep_empty,
                                           bool keep_missing,
                                           bool groups);

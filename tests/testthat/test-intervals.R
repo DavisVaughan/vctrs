@@ -275,7 +275,7 @@ test_that("can keep abutting intervals separate", {
   # after
   x <- data_frame(start = c(1L, 2L, 0L), end = c(2L, 3L, 2L))
 
-  out <- vec_interval_locate_minimal_groups(x$start, x$end, merge_abutting = FALSE)
+  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_abutting = TRUE)
 
   expect_identical(out$key, data_frame(start = c(3L, 2L), end = c(3L, 2L)))
   expect_identical(out$loc, list(c(3L, 1L), 2L))
@@ -283,7 +283,7 @@ test_that("can keep abutting intervals separate", {
   # before
   x <- data_frame(start = c(1L, 0L), end = c(2L, 1L))
 
-  out <- vec_interval_locate_minimal_groups(x$start, x$end, merge_abutting = FALSE)
+  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_abutting = TRUE)
 
   expect_identical(out$key, data_frame(start = c(2L, 1L), end = c(2L, 1L)))
   expect_identical(out$loc, list(2L, 1L))
@@ -291,7 +291,7 @@ test_that("can keep abutting intervals separate", {
   # both
   x <- data_frame(start = c(1L, 0L, 2L), end = c(2L, 1L, 3L))
 
-  out <- vec_interval_locate_minimal_groups(x$start, x$end, merge_abutting = FALSE)
+  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_abutting = TRUE)
 
   expect_identical(out$key, data_frame(start = c(2L, 1L, 3L), end = c(2L, 1L, 3L)))
   expect_identical(out$loc, list(2L, 1L, 3L))
@@ -300,17 +300,17 @@ test_that("can keep abutting intervals separate", {
 test_that("can keep abutting empty intervals separate", {
   x <- data_frame(start = c(1L, 2L, 2L), end = c(2L, 2L, 3L))
 
-  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_empty = TRUE, merge_abutting = FALSE)
+  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_empty = TRUE, keep_abutting = TRUE)
 
   expect_identical(out$key, data_frame(start = 1:3, end = 1:3))
   expect_identical(out$loc, list(1L, 2L, 3L))
 })
 
-test_that("repeated empty intervals are in different groups if `merge_abutting = FALSE`", {
+test_that("repeated empty intervals are in different groups if `keep_abutting = TRUE`", {
   # Because [1, 1) abuts but does not overlap [1, 1)
   x <- data_frame(start = c(1L, 1L, 1L, 1L), end = c(1L, 1L, 1L, 5L))
 
-  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_empty = TRUE, merge_abutting = FALSE)
+  out <- vec_interval_locate_minimal_groups(x$start, x$end, keep_empty = TRUE, keep_abutting = TRUE)
 
   expect_identical(out$key, data_frame(start = 1:4, end = 1:4))
   expect_identical(out$loc, list(1L, 2L, 3L, 4L))
@@ -689,11 +689,11 @@ test_that("missing intervals don't affect the result", {
   expect_identical(interval_minimize(x), interval(2, 5))
 })
 
-test_that("can choose not to merge abutting", {
+test_that("can choose to keep abutting intervals separate", {
   x <- interval(start = c(1, 2, 3), end = c(2, 5, 8))
 
   expect_identical(
-    interval_minimize(x, merge_abutting = FALSE),
+    interval_minimize(x, keep_abutting = TRUE),
     interval(c(1, 2), c(2, 8))
   )
 })
@@ -734,11 +734,11 @@ test_that("update is generic over container", {
   )
 })
 
-test_that("can update and not merge abutting", {
+test_that("can update and keep abutting separate", {
   x <- interval(start = c(1, 2, 3), end = c(2, 5, 8))
 
   expect_identical(
-    interval_update_minimal(x, merge_abutting = FALSE),
+    interval_update_minimal(x, keep_abutting = TRUE),
     interval(c(1, 2, 2), c(2, 8, 8))
   )
 })

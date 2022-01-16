@@ -13,21 +13,21 @@
 // [[ register() ]]
 r_obj* vctrs_interval_locate_minimal(r_obj* start,
                                      r_obj* end,
-                                     r_obj* merge_abutting,
+                                     r_obj* keep_abutting,
                                      r_obj* keep_empty,
                                      r_obj* keep_missing,
                                      r_obj* groups) {
-  const bool c_merge_abutting = r_as_bool(merge_abutting);
+  const bool c_keep_abutting = r_as_bool(keep_abutting);
   const bool c_keep_empty = r_as_bool(keep_empty);
   const bool c_keep_missing = r_as_bool(keep_missing);
   const bool c_groups = r_as_bool(groups);
-  return vec_interval_locate_minimal(start, end, c_merge_abutting, c_keep_empty, c_keep_missing, c_groups);
+  return vec_interval_locate_minimal(start, end, c_keep_abutting, c_keep_empty, c_keep_missing, c_groups);
 }
 
 static
 r_obj* vec_interval_locate_minimal(r_obj* start,
                                    r_obj* end,
-                                   bool merge_abutting,
+                                   bool keep_abutting,
                                    bool keep_empty,
                                    bool keep_missing,
                                    bool groups) {
@@ -196,13 +196,13 @@ r_obj* vec_interval_locate_minimal(r_obj* start,
     ++i;
   }
 
-  const int limit = merge_abutting ? -1 : 0;
+  const int limit = keep_abutting ? 0 : -1;
 
   for (; i < size; ++i) {
     const r_ssize loc = v_order[i] - 1;
 
-    // If `merge_abutting`, this is: `cmp(end, start) == -1`
-    // If `!merge_abutting`, this is: `cmp(end, start) <= 0`
+    // If `keep_abutting`, this is: `cmp(end, start) <= 0`
+    // If `!keep_abutting`, this is: `cmp(end, start) == -1`
     if (fn_compare(p_end, loc_set_end, p_start, loc) <= limit) {
       r_int_push_back(p_loc_start, loc_set_start + 1);
       r_int_push_back(p_loc_end, loc_set_end + 1);
@@ -388,14 +388,14 @@ r_obj* vec_interval_complement(r_obj* start,
 
   // Minimize to sort, remove all missings, remove all empty intervals,
   // and merge all abutting intervals
-  const bool merge_abutting = true;
+  const bool keep_abutting = false;
   const bool keep_empty = false;
   const bool keep_missing = false;
   const bool groups = false;
   r_obj* minimal = KEEP_N(vec_interval_locate_minimal(
     start,
     end,
-    merge_abutting,
+    keep_abutting,
     keep_empty,
     keep_missing,
     groups

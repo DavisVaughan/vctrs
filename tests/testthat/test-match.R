@@ -1383,8 +1383,15 @@ test_that("potential overflow on large output size is caught informatively", {
   # intermediate `r_ssize` will be too large
   skip_if(.Machine$sizeof.pointer < 8L, message = "No long vector support")
 
+  x <- 1:1e7 + 0L
+
   expect_snapshot({
-    (expect_error(vec_locate_matches(1:1e7, 1:1e7, condition = ">=")))
-    (expect_error(vec_locate_matches(1:1e7, 1:1e7, condition = NULL)))
+    (expect_error(vec_locate_matches(x, x, condition = ">=")))
+    (expect_error(vec_locate_matches(x, x, condition = NULL)))
+  })
+
+  # Multiple matches error is hit first
+  expect_snapshot({
+    (expect_error(vec_locate_matches(x, x, condition = ">=", multiple = "error")))
   })
 })

@@ -1550,7 +1550,8 @@ r_obj* expand_compact_indices(const int* v_o_haystack,
   const bool one_match_per_needle =
     multiple == VCTRS_MULTIPLE_any ||
     multiple == VCTRS_MULTIPLE_first ||
-    multiple == VCTRS_MULTIPLE_last;
+    multiple == VCTRS_MULTIPLE_last ||
+    multiple == VCTRS_MULTIPLE_error;
 
   r_ssize size_out = 0;
   if (one_match_per_needle) {

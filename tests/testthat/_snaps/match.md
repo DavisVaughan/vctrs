@@ -220,15 +220,25 @@
 # potential overflow on large output size is caught informatively
 
     Code
-      (expect_error(vec_locate_matches(1:1e+07, 1:1e+07, condition = ">=")))
+      (expect_error(vec_locate_matches(x, x, condition = ">=")))
     Output
       <error/rlang_error>
       Error:
       ! Match procedure results in an allocation larger than 2^31-1 elements. Attempted allocation size was 50000005000000. Please report this to the vctrs maintainers at <https://github.com/r-lib/vctrs/issues>.
     Code
-      (expect_error(vec_locate_matches(1:1e+07, 1:1e+07, condition = NULL)))
+      (expect_error(vec_locate_matches(x, x, condition = NULL)))
     Output
       <error/rlang_error>
       Error:
       ! Match procedure results in an allocation larger than 2^31-1 elements. Attempted allocation size was 100000000000000. Please report this to the vctrs maintainers at <https://github.com/r-lib/vctrs/issues>.
+
+---
+
+    Code
+      (expect_error(vec_locate_matches(x, x, condition = ">=", multiple = "error")))
+    Output
+      <error/vctrs_error_matches_multiple>
+      Error in `stop_vctrs()`:
+      ! Each element can match at most 1 observation.
+      x The element at location 2 has multiple matches.
 

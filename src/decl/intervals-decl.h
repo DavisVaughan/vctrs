@@ -11,12 +11,12 @@ static struct vctrs_arg* const args_lower = &args_lower_;
 struct vctrs_arg args_upper_;
 static struct vctrs_arg* const args_upper = &args_upper_;
 
-static r_obj* vec_interval_locate_minimal(r_obj* start,
-                                          r_obj* end,
-                                          bool keep_abutting,
-                                          bool keep_empty,
-                                          bool keep_missing,
-                                          bool groups);
+static r_obj* vec_locate_interval_merge_info(r_obj* start,
+                                             r_obj* end,
+                                             bool abutting,
+                                             enum vctrs_interval_empty empty,
+                                             enum vctrs_interval_missing missing,
+                                             bool groups);
 
 static r_obj* vec_interval_complement(r_obj* start,
                                       r_obj* end,
@@ -25,3 +25,6 @@ static r_obj* vec_interval_complement(r_obj* start,
 
 static inline r_obj* interval_order(r_obj* compare, r_obj* start, r_obj* end);
 static inline r_obj* interval_detect_complete(r_obj* start, r_obj* end);
+
+static inline enum vctrs_interval_empty parse_empty(r_obj* empty);
+static inline enum vctrs_interval_missing parse_missing(r_obj* missing);

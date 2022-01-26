@@ -6,31 +6,43 @@
 #include "translate.h"
 #include "poly-op.h"
 
+enum vctrs_interval_empty {
+  VCTRS_INTERVAL_EMPTY_overlap = 0,
+  VCTRS_INTERVAL_EMPTY_drop = 1,
+  VCTRS_INTERVAL_EMPTY_error = 2
+};
+
+enum vctrs_interval_missing {
+  VCTRS_INTERVAL_MISSING_overlap = 0,
+  VCTRS_INTERVAL_MISSING_drop = 1,
+  VCTRS_INTERVAL_MISSING_error = 2
+};
+
 #include "decl/intervals-decl.h"
 
 // -----------------------------------------------------------------------------
 
 // [[ register() ]]
-r_obj* vctrs_interval_locate_minimal(r_obj* start,
-                                     r_obj* end,
-                                     r_obj* keep_abutting,
-                                     r_obj* keep_empty,
-                                     r_obj* keep_missing,
-                                     r_obj* groups) {
-  const bool c_keep_abutting = r_as_bool(keep_abutting);
-  const bool c_keep_empty = r_as_bool(keep_empty);
-  const bool c_keep_missing = r_as_bool(keep_missing);
+r_obj* vctrs_locate_interval_merge_info(r_obj* start,
+                                        r_obj* end,
+                                        r_obj* abutting,
+                                        r_obj* empty,
+                                        r_obj* missing,
+                                        r_obj* groups) {
+  const bool c_abutting = r_as_bool(abutting);
+  const enum vctrs_interval_empty c_empty = parse_empty(empty);
+  const enum vctrs_interval_missing c_missing = parse_missing(missing);
   const bool c_groups = r_as_bool(groups);
-  return vec_interval_locate_minimal(start, end, c_keep_abutting, c_keep_empty, c_keep_missing, c_groups);
+  return vec_locate_interval_merge_info(start, end, c_abutting, c_empty, c_missing, c_groups);
 }
 
 static
-r_obj* vec_interval_locate_minimal(r_obj* start,
-                                   r_obj* end,
-                                   bool keep_abutting,
-                                   bool keep_empty,
-                                   bool keep_missing,
-                                   bool groups) {
+r_obj* vec_locate_interval_merge_info(r_obj* start,
+                                      r_obj* end,
+                                      bool abutting,
+                                      enum vctrs_interval_empty empty,
+                                      enum vctrs_interval_missing missing,
+                                      bool groups) {
   int n_prot = 0;
 
   const r_ssize size = vec_size(start);
@@ -108,21 +120,37 @@ r_obj* vec_interval_locate_minimal(r_obj* start,
   r_obj* complete = KEEP_N(interval_detect_complete(start, end), &n_prot);
   const int* v_complete = r_lgl_cbegin(complete);
 
+  bool all_complete = true;
+
   for (r_ssize i = 0; i < size; ++i) {
     if (!v_complete[i]) {
       v_compare[i] = r_globals.na_int;
+      all_complete = false;
     }
   }
 
-  for (r_ssize i = 0; i < size; ++i) {
-    if (v_compare[i] == -1) {
-      r_abort("`start` must be less than or equal to `end`.");
+  if (!all_complete && missing == VCTRS_INTERVAL_MISSING_error) {
+    r_abort("`start` and `end` can't contain missing values.");
+  }
+
+  if (empty == VCTRS_INTERVAL_EMPTY_error) {
+    for (r_ssize i = 0; i < size; ++i) {
+      if (v_compare[i] == 0 || v_compare[i] == -1) {
+        r_abort("`start` must be less than `end`.");
+      }
+    }
+  } else {
+    for (r_ssize i = 0; i < size; ++i) {
+      if (v_compare[i] == -1) {
+        r_abort("`start` must be less than or equal to `end`.");
+      }
     }
   }
 
-  if (keep_empty) {
-    // With `keep_empty`, we only care about using `compare` to order missing
-    // values at the end. Empty intervals shouldn't be grouped separately.
+  if (empty == VCTRS_INTERVAL_EMPTY_overlap) {
+    // When retaining empty intervals and allowing them to overlap, we only
+    // care about using `compare` to order missing values at the end.
+    // Empty intervals shouldn't be grouped separately.
     for (r_ssize i = 0; i < size; ++i) {
       if (v_compare[i] == 0) {
         v_compare[i] = 1;
@@ -171,7 +199,7 @@ r_obj* vec_interval_locate_minimal(r_obj* start,
     loc_order_missing_end = i;
   }
 
-  if (!keep_empty) {
+  if (empty == VCTRS_INTERVAL_EMPTY_drop) {
     // Move `i` past any empty intervals
     for (; i < size; ++i) {
       const r_ssize loc = v_order[i] - 1;
@@ -196,13 +224,13 @@ r_obj* vec_interval_locate_minimal(r_obj* start,
     ++i;
   }
 
-  const int limit = keep_abutting ? 0 : -1;
+  const int limit = abutting ? -1 : 0;
 
   for (; i < size; ++i) {
     const r_ssize loc = v_order[i] - 1;
 
-    // If `keep_abutting`, this is: `cmp(end, start) <= 0`
-    // If `!keep_abutting`, this is: `cmp(end, start) == -1`
+    // If `abutting`, this is: `cmp(end, start) == -1`
+    // If `!abutting`, this is: `cmp(end, start) <= 0`
     if (fn_compare(p_end, loc_set_end, p_start, loc) <= limit) {
       r_int_push_back(p_loc_start, loc_set_start + 1);
       r_int_push_back(p_loc_end, loc_set_end + 1);
@@ -245,7 +273,7 @@ r_obj* vec_interval_locate_minimal(r_obj* start,
     }
   }
 
-  if (keep_missing && loc_order_missing_end != r_globals.na_int) {
+  if (missing == VCTRS_INTERVAL_MISSING_overlap && loc_order_missing_end != r_globals.na_int) {
     // Log missing interval
     r_int_push_back(p_loc_start, r_globals.na_int);
     r_int_push_back(p_loc_end, r_globals.na_int);
@@ -388,16 +416,14 @@ r_obj* vec_interval_complement(r_obj* start,
 
   // Minimize to sort, remove all missings, remove all empty intervals,
   // and merge all abutting intervals
-  const bool keep_abutting = false;
-  const bool keep_empty = false;
-  const bool keep_missing = false;
+  const bool abutting = true;
   const bool groups = false;
-  r_obj* minimal = KEEP_N(vec_interval_locate_minimal(
+  r_obj* minimal = KEEP_N(vec_locate_interval_merge_info(
     start,
     end,
-    keep_abutting,
-    keep_empty,
-    keep_missing,
+    abutting,
+    VCTRS_INTERVAL_EMPTY_drop,
+    VCTRS_INTERVAL_MISSING_drop,
     groups
   ), &n_prot);
   const int* v_loc_minimal_start = r_int_cbegin(r_list_get(minimal, 0));
@@ -744,6 +770,38 @@ r_obj* interval_detect_complete(r_obj* start, r_obj* end) {
 
   FREE(1);
   return out;
+}
+
+// -----------------------------------------------------------------------------
+
+static inline
+enum vctrs_interval_empty parse_empty(r_obj* empty) {
+  if (!r_is_string(empty)) {
+    r_abort("`empty` must be a string.");
+  }
+
+  const char* c_empty = r_chr_get_c_string(empty, 0);
+
+  if (!strcmp(c_empty, "overlap")) return VCTRS_INTERVAL_EMPTY_overlap;
+  if (!strcmp(c_empty, "drop")) return VCTRS_INTERVAL_EMPTY_drop;
+  if (!strcmp(c_empty, "error")) return VCTRS_INTERVAL_EMPTY_error;
+
+  r_abort("`empty` must be one of \"overlap\", \"drop\", or \"error\".");
+}
+
+static inline
+enum vctrs_interval_missing parse_missing(r_obj* missing) {
+  if (!r_is_string(missing)) {
+    r_abort("`missing` must be a string.");
+  }
+
+  const char* c_missing = r_chr_get_c_string(missing, 0);
+
+  if (!strcmp(c_missing, "overlap")) return VCTRS_INTERVAL_MISSING_overlap;
+  if (!strcmp(c_missing, "drop")) return VCTRS_INTERVAL_MISSING_drop;
+  if (!strcmp(c_missing, "error")) return VCTRS_INTERVAL_MISSING_error;
+
+  r_abort("`missing` must be one of \"overlap\", \"drop\", or \"error\".");
 }
 
 // -----------------------------------------------------------------------------

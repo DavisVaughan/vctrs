@@ -140,7 +140,7 @@ extern r_obj* vctrs_list_drop_empty(r_obj*);
 extern r_obj* vctrs_is_altrep(r_obj* x);
 extern r_obj* vctrs_test_compute_nesting_container_info(r_obj*, r_obj*);
 extern r_obj* vctrs_locate_matches(r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*);
-extern r_obj* vctrs_interval_locate_minimal(r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*);
+extern r_obj* vctrs_locate_interval_merge_info(r_obj*, r_obj*, r_obj*, r_obj*, r_obj*, r_obj*);
 extern r_obj* vctrs_interval_complement(r_obj*, r_obj*, r_obj*, r_obj*);
 
 // Maturing
@@ -301,7 +301,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_is_altrep",                              (DL_FUNC) &vctrs_is_altrep, 1},
   {"vctrs_test_compute_nesting_container_info",    (DL_FUNC) &vctrs_test_compute_nesting_container_info, 2},
   {"vctrs_locate_matches",                         (DL_FUNC) &vctrs_locate_matches, 12},
-  {"vctrs_interval_locate_minimal",                (DL_FUNC) &vctrs_interval_locate_minimal, 6},
+  {"vctrs_locate_interval_merge_info",             (DL_FUNC) &vctrs_locate_interval_merge_info, 6},
   {"vctrs_interval_complement",                    (DL_FUNC) &vctrs_interval_complement, 4},
   {NULL, NULL, 0}
 };

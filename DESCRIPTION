@@ -49,7 +49,7 @@ Suggests:
     waldo (>= 0.2.0),
     zeallot
 Remotes:
-    r-lib/rlang
+    url::https://github.com/r-lib/rlang/archive/main.tar.gz
 VignetteBuilder: 
     knitr
 SystemRequirements:

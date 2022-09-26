@@ -44,21 +44,17 @@ static
 void vec_locate_run_starts(const int* p_id, r_ssize size, int* p_out) {
   r_ssize loc = 0;
 
-  // Handle first case
   int ref = p_id[0];
+
+  // Handle first case
   p_out[loc] = 1;
   ++loc;
 
   for (r_ssize i = 1; i < size; ++i) {
-    const int elt = p_id[i];
-
-    if (elt == ref) {
-      continue;
-    }
-
-    ref = elt;
     p_out[loc] = i + 1;
-    ++loc;
+    const int elt = p_id[i];
+    loc += elt != ref;
+    ref = elt;
   }
 }
 
@@ -69,15 +65,10 @@ void vec_locate_run_ends(const int* p_id, r_ssize size, int* p_out) {
   int ref = p_id[0];
 
   for (r_ssize i = 1; i < size; ++i) {
-    const int elt = p_id[i];
-
-    if (elt == ref) {
-      continue;
-    }
-
-    ref = elt;
     p_out[loc] = i;
-    ++loc;
+    const int elt = p_id[i];
+    loc += elt != ref;
+    ref = elt;
   }
 
   // Handle last case
@@ -106,7 +97,6 @@ SEXP vec_detect_runs(SEXP x, bool start) {
 
   SEXP out = PROTECT(r_new_logical(size));
   int* p_out = LOGICAL(out);
-  memset(p_out, 0, size * sizeof(int));
 
   if (size == 0) {
     UNPROTECT(2);
@@ -125,19 +115,15 @@ SEXP vec_detect_runs(SEXP x, bool start) {
 
 static
 void vec_detect_run_starts(const int* p_id, r_ssize size, int* p_out) {
-  // Handle first case
   int ref = p_id[0];
+
+  // Handle first case
   p_out[0] = 1;
 
   for (r_ssize i = 1; i < size; ++i) {
     const int elt = p_id[i];
-
-    if (elt == ref) {
-      continue;
-    }
-
+    p_out[i] = elt != ref;
     ref = elt;
-    p_out[i] = 1;
   }
 }
 
@@ -147,13 +133,8 @@ void vec_detect_run_ends(const int* p_id, r_ssize size, int* p_out) {
 
   for (r_ssize i = 1; i < size; ++i) {
     const int elt = p_id[i];
-
-    if (elt == ref) {
-      continue;
-    }
-
+    p_out[i - 1] = elt != ref;
     ref = elt;
-    p_out[i - 1] = 1;
   }
 
   // Handle last case
@@ -229,13 +210,9 @@ SEXP vec_identify_runs(SEXP x) {
                                                                  \
   for (R_len_t i = 1; i < size; ++i) {                           \
     const CTYPE elt = p_x[i];                                    \
-                                                                 \
-    if (EQUAL_NA_EQUAL(elt, ref) == 0) {                         \
-      ++id;                                                      \
-      ref = elt;                                                 \
-    }                                                            \
-                                                                 \
+    id += !EQUAL_NA_EQUAL(elt, ref);                             \
     p_out[i] = id;                                               \
+    ref = elt;                                                   \
   }                                                              \
                                                                  \
   return id;                                                     \

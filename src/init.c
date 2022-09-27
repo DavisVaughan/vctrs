@@ -121,6 +121,7 @@ extern SEXP vctrs_fast_c(SEXP, SEXP);
 extern r_obj* ffi_data_frame(r_obj*, r_obj*, r_obj*, r_obj*);
 extern r_obj* ffi_df_list(r_obj*, r_obj*, r_obj*, r_obj*, r_obj*);
 extern SEXP vctrs_identify_runs(SEXP);
+extern SEXP vctrs_identify_runs2(SEXP);
 extern SEXP vctrs_locate_runs(SEXP, SEXP);
 extern SEXP vctrs_detect_runs(SEXP, SEXP);
 extern SEXP vctrs_slice_complete(SEXP);
@@ -292,6 +293,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"ffi_data_frame",                        (DL_FUNC) &ffi_data_frame, 4},
   {"ffi_df_list",                           (DL_FUNC) &ffi_df_list, 5},
   {"vctrs_identify_runs",                   (DL_FUNC) &vctrs_identify_runs, 1},
+  {"vctrs_identify_runs2",                   (DL_FUNC) &vctrs_identify_runs2, 1},
   {"vctrs_locate_runs",                     (DL_FUNC) &vctrs_locate_runs, 2},
   {"vctrs_detect_runs",                     (DL_FUNC) &vctrs_detect_runs, 2},
   {"vctrs_slice_complete",                  (DL_FUNC) &vctrs_slice_complete, 1},

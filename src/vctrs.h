@@ -54,6 +54,7 @@ bool vec_is_unspecified(SEXP x);
 #include "slice-assign.h"
 #include "slice.h"
 #include "slice-chop.h"
+#include "slice-partition.h"
 #include "strides.h"
 #include "subscript-loc.h"
 #include "subscript.h"

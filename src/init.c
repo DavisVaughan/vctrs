@@ -158,6 +158,7 @@ extern r_obj* ffi_vec_set_difference(r_obj*, r_obj*, r_obj*, r_obj*);
 extern r_obj* ffi_vec_set_union(r_obj*, r_obj*, r_obj*, r_obj*);
 extern r_obj* ffi_vec_set_symmetric_difference(r_obj*, r_obj*, r_obj*, r_obj*);
 extern r_obj* ffi_vec_expand_grid(r_obj*, r_obj*, r_obj*, r_obj*);
+extern r_obj* ffi_vec_partition(r_obj*, r_obj*);
 
 
 // Maturing
@@ -339,6 +340,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"ffi_vec_set_union",                     (DL_FUNC) &ffi_vec_set_union, 4},
   {"ffi_vec_set_symmetric_difference",      (DL_FUNC) &ffi_vec_set_symmetric_difference, 4},
   {"ffi_vec_expand_grid",                   (DL_FUNC) &ffi_vec_expand_grid, 4},
+  {"ffi_vec_partition",                     (DL_FUNC) &ffi_vec_partition, 2},
   {"ffi_exp_vec_cast",                      (DL_FUNC) &exp_vec_cast, 2},
   {NULL, NULL, 0}
 };

@@ -1,5 +1,8 @@
 # vctrs (development version)
 
+* New `vec_recode_values()` and `vec_replace_values()` for using a lookup table
+  to either create an entirely new vector or update an existing one.
+
 * `list_unchop()` has gained new `size` and `default` arguments (#TODO).
 
 * `vec_detect_complete(NULL)` now returns `logical()`, consistent with

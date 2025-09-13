@@ -6,7 +6,7 @@
 // dimensions of `ptype`. If `x` and `y` are both atomic with `NULL` dimensions,
 // then no dimensions are attached and `ptype` is returned unmodified.
 // [[ include("shape.h") ]]
-r_obj* vec_shaped_ptype(r_obj* ptype,
+r_obj* vec_shaped_ptype_impl(r_obj* ptype,
                         r_obj* x, r_obj* y,
                         struct vctrs_arg* p_x_arg, struct vctrs_arg* p_y_arg) {
   r_obj* ptype_dimensions = vec_shape2(x, y, p_x_arg, p_y_arg);

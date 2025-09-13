@@ -77,10 +77,16 @@ r_ssize vec_size_opts(r_obj* x, const struct vec_error_opts* opts) {
 
 static
 r_ssize vec_raw_size(r_obj* x) {
-  // Faster than `r_dim()` in a tight loop
-  r_obj* dimensions = Rf_getAttrib(x, R_DimSymbol);
+  // For the 99% case of no-dim, we bail immediately.
+  // `has_dim()` is slightly faster than `r_dim()` because
+  // it early exits when there are no `ATTRIB()`.
+  if (!has_dim(x)) {
+    return r_length(x);
+  }
 
-  if (dimensions == r_null || r_length(dimensions) == 0) {
+  r_obj* dimensions = r_dim(x);
+
+  if (r_length(dimensions) == 0) {
     return r_length(x);
   }
 

@@ -13,16 +13,15 @@ r_obj* vec_proxy_recurse(r_obj* x) {
 static
 r_obj* vec_proxy_2(r_obj* x, bool recurse) {
   struct vctrs_type_info info = vec_type_info(x);
-  KEEP(info.shelter);
 
   switch (info.type) {
   case VCTRS_TYPE_dataframe: {
     r_obj* out = recurse ? df_proxy_recurse(x) : x;
-    FREE(1);
     return out;
   }
 
   case VCTRS_TYPE_s3: {
+    KEEP(info.shelter);
     r_obj* out = KEEP(vec_proxy_invoke(x, info.proxy_method));
     if (recurse && is_data_frame(out)) {
       out = df_proxy_recurse(out);
@@ -32,7 +31,6 @@ r_obj* vec_proxy_2(r_obj* x, bool recurse) {
   }
 
   default:
-    FREE(1);
     return x;
   }
 }

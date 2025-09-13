@@ -24,16 +24,35 @@ r_ssize vec_size_3(r_obj* x,
 
 static
 r_ssize vec_size_opts(r_obj* x, const struct vec_error_opts* opts) {
+  if (!r_is_object(x)) {
+    switch (r_typeof(x)) {
+    case R_TYPE_null:
+      return 0;
+
+    case R_TYPE_logical:
+    case R_TYPE_integer:
+    case R_TYPE_double:
+    case R_TYPE_complex:
+    case R_TYPE_character:
+    case R_TYPE_raw:
+    case R_TYPE_list:
+      return vec_raw_size(x);
+
+    default: break;
+    }
+  }
+
   struct vctrs_proxy_info info = vec_proxy_info(x);
-  KEEP(info.shelter);
+  KEEP2(info.proxy, info.proxy_method);
 
-  r_obj* data = info.proxy;
+  r_ssize out;
 
-  r_ssize size;
   switch (info.type) {
+
   case VCTRS_TYPE_null:
-    size = 0;
+    out = 0;
     break;
+
   case VCTRS_TYPE_logical:
   case VCTRS_TYPE_integer:
   case VCTRS_TYPE_double:
@@ -41,24 +60,25 @@ r_ssize vec_size_opts(r_obj* x, const struct vec_error_opts* opts) {
   case VCTRS_TYPE_character:
   case VCTRS_TYPE_raw:
   case VCTRS_TYPE_list:
-    size = vec_raw_size(data);
+    out = vec_raw_size(info.proxy);
     break;
 
   case VCTRS_TYPE_dataframe:
-    size = df_size(data);
+    out = df_size(info.proxy);
     break;
 
   default:
     stop_scalar_type(x, opts->p_arg, opts->call);
-}
+  }
 
-  FREE(1);
-  return size;
+  FREE(2);
+  return out;
 }
 
 static
 r_ssize vec_raw_size(r_obj* x) {
-  r_obj* dimensions = r_dim(x);
+  // Faster than `r_dim()` in a tight loop
+  r_obj* dimensions = Rf_getAttrib(x, R_DimSymbol);
 
   if (dimensions == r_null || r_length(dimensions) == 0) {
     return r_length(x);

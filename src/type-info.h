@@ -30,7 +30,14 @@ struct vctrs_type_info {
 };
 
 /**
+ * Proxy info
+ *
+ * We don't use a `shelter` here, as `vec_proxy_info()` is called
+ * in very tight loops and the allocation / `KEEP()` / `FREE()`
+ * overhead makes a big difference.
+ *
  * @inheritMembers vctrs_type_info
+ *
  * @member type If `proxy_method` was found, the vector type of the
  *   proxy data. Otherwise, the vector type of the original data.
  *   This is never `vctrs_type_s3`.
@@ -38,7 +45,6 @@ struct vctrs_type_info {
  *   the method. Otherwise, the original data.
  */
 struct vctrs_proxy_info {
-  r_obj* shelter;
   enum vctrs_type type;
   r_obj* proxy_method;
   r_obj* proxy;

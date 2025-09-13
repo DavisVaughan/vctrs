@@ -247,7 +247,8 @@ r_obj* vec_proxy_assign_opts(r_obj* proxy,
   opts_copy.ignore_outer_names = false;
 
   struct vctrs_proxy_info value_info = vec_proxy_info(value);
-  KEEP_N(value_info.shelter, &n_protect);
+  KEEP_N(value_info.proxy, &n_protect);
+  KEEP_N(value_info.proxy_method, &n_protect);
 
   if (r_typeof(proxy) != r_typeof(value_info.proxy)) {
     r_stop_internal("`proxy` of type `%s` incompatible with `value` proxy of type `%s`.",

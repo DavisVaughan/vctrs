@@ -196,14 +196,14 @@ r_obj* vec_chop(r_obj* x, r_obj* indices, r_obj* sizes) {
 // Performance variant that doesn't check the types or values of `indices` / `sizes`
 r_obj* vec_chop_unsafe(r_obj* x, r_obj* indices, r_obj* sizes) {
   struct vctrs_proxy_info info = vec_proxy_info(x);
-  KEEP(info.shelter);
+  KEEP2(info.proxy, info.proxy_method);
 
   struct vctrs_chop_indices* p_indices = new_chop_indices(x, indices, sizes);
   KEEP(p_indices->shelter);
 
   r_obj* out = vec_chop_base(x, info, p_indices);
 
-  FREE(2);
+  FREE(3);
   return out;
 }
 

@@ -285,7 +285,8 @@ r_obj* vec_slice_unsafe(r_obj* x, r_obj* subscript) {
   int nprot = 0;
 
   struct vctrs_proxy_info info = vec_proxy_info(x);
-  KEEP_N(info.shelter, &nprot);
+  KEEP_N(info.proxy, &nprot);
+  KEEP_N(info.proxy_method, &nprot);
 
   r_obj* data = info.proxy;
 

@@ -16,49 +16,56 @@ struct vctrs_type_info vec_type_info(r_obj* x) {
   return info;
 }
 
+// This often runs in a tight loop, like:
+//
+// ```
+// x <- as.list(seq_len(1e6))
+// list_sizes(x)
+// ```
+//
+// So we carefully design it to avoid unecessary allocations or `KEEP()` /
+// `FREE()`
 struct vctrs_proxy_info vec_proxy_info(r_obj* x) {
   struct vctrs_proxy_info info;
-  info.shelter = KEEP(r_alloc_list(2));
 
   info.proxy_method = r_is_object(x) ? vec_proxy_method(x) : r_null;
-  r_list_poke(info.shelter, 0, info.proxy_method);
 
   if (info.proxy_method == r_null) {
     info.type = vec_base_typeof(x, false);
     info.proxy = x;
   } else {
-    r_obj* proxy = KEEP(vec_proxy_invoke(x, info.proxy_method));
-    info.type = vec_base_typeof(proxy, true);
-    info.proxy = proxy;
-    FREE(1);
+    KEEP(info.proxy_method);
+    info.proxy = KEEP(vec_proxy_invoke(x, info.proxy_method));
+    info.type = vec_base_typeof(info.proxy, true);
+    FREE(2);
   }
-  r_list_poke(info.shelter, 1, info.proxy);
 
-  FREE(1);
   return info;
 }
 
 // [[ register() ]]
 r_obj* ffi_type_info(r_obj* x) {
   struct vctrs_type_info info = vec_type_info(x);
+  KEEP(info.shelter);
 
   r_obj* out = KEEP(Rf_mkNamed(R_TYPE_list, (const char*[]) { "type", "proxy_method", "" }));
   r_list_poke(out, 0, r_chr(vec_type_as_str(info.type)));
   r_list_poke(out, 1, info.proxy_method);
 
-  FREE(1);
+  FREE(2);
   return out;
 }
 // [[ register() ]]
 r_obj* ffi_proxy_info(r_obj* x) {
   struct vctrs_proxy_info info = vec_proxy_info(x);
+  KEEP2(info.proxy, info.proxy_method);
 
   r_obj* out = KEEP(Rf_mkNamed(R_TYPE_list, (const char*[]) { "type", "proxy_method", "proxy", "" }));
   r_list_poke(out, 0, r_chr(vec_type_as_str(info.type)));
   r_list_poke(out, 1, info.proxy_method);
   r_list_poke(out, 2, info.proxy);
 
-  FREE(1);
+  FREE(3);
   return out;
 }
 

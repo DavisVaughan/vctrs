@@ -37,8 +37,19 @@ r_obj* r_new_pairlist(const struct r_pair* args, int n, r_obj** tail);
 #define r_pairlist4 Rf_list4
 #define r_pairlist5 Rf_list5
 
-r_obj* r_pairlist_find(r_obj* node, r_obj* tag);
 r_obj* r_pairlist_rev(r_obj* node);
+
+static inline
+r_obj* r_pairlist_find(r_obj* node, r_obj* tag) {
+  while (node != r_null) {
+    if (r_node_tag(node) == tag) {
+      return node;
+    }
+    node = r_node_cdr(node);
+  }
+
+  return r_null;
+}
 
 static inline
 r_obj* r_pairlist_get(r_obj* node, r_obj* tag) {

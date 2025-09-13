@@ -9,12 +9,13 @@
 r_obj* vec_shaped_ptype(r_obj* ptype,
                         r_obj* x, r_obj* y,
                         struct vctrs_arg* p_x_arg, struct vctrs_arg* p_y_arg) {
-  r_obj* ptype_dimensions = KEEP(vec_shape2(x, y, p_x_arg, p_y_arg));
+  r_obj* ptype_dimensions = vec_shape2(x, y, p_x_arg, p_y_arg);
 
   if (ptype_dimensions == r_null) {
-    FREE(1);
     return ptype;
   }
+
+  KEEP(ptype_dimensions);
 
   ptype = KEEP(r_clone_referenced(ptype));
   r_attrib_poke_dim(ptype, ptype_dimensions);
@@ -41,7 +42,22 @@ r_obj* vec_shape2(r_obj* x,
                   r_obj* y,
                   struct vctrs_arg* p_x_arg,
                   struct vctrs_arg* p_y_arg) {
-  r_obj* x_dimensions = KEEP(r_dim(x));
+  r_obj* x_dimensions = r_dim(x);
+
+  if (x_dimensions == r_null) {
+    r_obj* y_dimensions = r_dim(y);
+
+    if (y_dimensions == r_null) {
+      return r_null;
+    }
+
+    KEEP(y_dimensions);
+    r_obj* out = vec_shape(y_dimensions);
+    FREE(1);
+    return out;
+  }
+  KEEP(x_dimensions);
+
   r_obj* y_dimensions = KEEP(r_dim(y));
 
   r_obj* out = vec_shape2_impl(x_dimensions, y_dimensions, x, y, p_x_arg, p_y_arg);

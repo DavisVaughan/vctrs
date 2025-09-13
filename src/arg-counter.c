@@ -142,9 +142,11 @@ r_obj* reduce_impl(r_obj* current,
                                   void* data),
                    void* data) {
   r_ssize n = r_length(rest);
+  r_keep_loc pi;
+  KEEP_HERE(current, &pi);
 
   for (r_ssize i = 0; i < n; ++i, counters_inc(counters)) {
-    KEEP(current);
+
 
     r_obj* next = r_list_get(rest, i);
 
@@ -163,9 +165,10 @@ r_obj* reduce_impl(r_obj* current,
       FREE(1);
     }
 
-    FREE(1);
+    KEEP_AT(current, pi);
   }
 
+  FREE(1);
   return current;
 }
 

@@ -131,7 +131,7 @@ extern SEXP vctrs_locate_complete(SEXP);
 extern SEXP vctrs_detect_complete(SEXP);
 extern SEXP vctrs_normalize_encoding(SEXP);
 extern r_obj* ffi_chr_is_normalized(r_obj*);
-extern SEXP vctrs_order(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP vctrs_order(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP vctrs_locate_sorted_groups(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP vctrs_order_info(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern r_obj* ffi_vec_unrep(r_obj*, r_obj*);
@@ -341,7 +341,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"vctrs_detect_complete",                     (DL_FUNC) &vctrs_detect_complete, 1},
   {"vctrs_normalize_encoding",                  (DL_FUNC) &vctrs_normalize_encoding, 1},
   {"ffi_chr_is_normalized",                     (DL_FUNC) &ffi_chr_is_normalized, 1},
-  {"vctrs_order",                               (DL_FUNC) &vctrs_order, 5},
+  {"vctrs_order",                               (DL_FUNC) &vctrs_order, 6},
   {"vctrs_locate_sorted_groups",                (DL_FUNC) &vctrs_locate_sorted_groups, 5},
   {"vctrs_order_info",                          (DL_FUNC) &vctrs_order_info, 6},
   {"ffi_vec_unrep",                             (DL_FUNC) &ffi_vec_unrep, 2},

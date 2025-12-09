@@ -151,10 +151,19 @@ vec_order_radix <- function(
   direction = "asc",
   na_value = "largest",
   nan_distinct = FALSE,
-  chr_proxy_collate = NULL
+  chr_proxy_collate = NULL,
+  chr_old = FALSE
 ) {
   check_dots_empty0(...)
-  .Call(vctrs_order, x, direction, na_value, nan_distinct, chr_proxy_collate)
+  .Call(
+    vctrs_order,
+    x,
+    direction,
+    na_value,
+    nan_distinct,
+    chr_proxy_collate,
+    chr_old
+  )
 }
 
 #' @rdname order-radix
